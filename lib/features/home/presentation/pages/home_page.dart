@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/home_button.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -14,6 +15,39 @@ class HomePage extends StatelessWidget {
             image: AssetImage('assets/images/HomePage_bg.jpeg'),
             fit: BoxFit.cover,
           ),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 100),
+
+            const Text(
+              'My anime\nCharacter List',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'JpAnimeFont',
+                fontSize: 48,
+              ),
+            ),
+
+            const SizedBox(height: 255),
+
+            HomeButton(
+              text: 'My Lists',
+              firstColor: const Color(0xFFD9D9D9),
+              secondColor: const Color(0xFF805858),
+              onPressed: () {},
+            ),
+
+            const SizedBox(height: 40),
+
+            HomeButton(
+              text: 'Library',
+              firstColor: const Color(0xFFD9D9D9),
+              secondColor: const Color(0xFFE73D3D),
+              onPressed: () {},
+            ),
+          ],
         ),
       ),
     );
