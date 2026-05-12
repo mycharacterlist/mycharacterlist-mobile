@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'router/app_router.dart';
+import 'package:mycharacterlist/app/router/app_router.dart';
+// import 'package:mycharacterlist/development/router/development_router.dart';
 
 class MyCharacterListApp extends StatelessWidget {
   const MyCharacterListApp({super.key});
@@ -15,6 +16,7 @@ class MyCharacterListApp extends StatelessWidget {
         useMaterial3: true,
       ),
       routerConfig: appRouter,
+      // routerConfig: developmentRouter,
     );
   }
 }
