@@ -19,19 +19,20 @@ class HomePage extends StatelessWidget {
         ),
 
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
+            const Spacer(),
+
             const Text(
               'My anime\nCharacter List',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: 'JpAnimeFont',
-                fontSize: 45,
+                fontSize: 48,
               ),
             ),
-            const SizedBox(height: 120),
+
+            const Spacer(),
 
             HomeButton(
               text: 'My Lists',
@@ -39,7 +40,8 @@ class HomePage extends StatelessWidget {
               secondColor: const Color(0xFF805858),
               onPressed: () {},
             ),
-            const SizedBox(height: 10),
+
+            const SizedBox(height: 20),
 
             HomeButton(
               text: 'Library',
@@ -47,6 +49,8 @@ class HomePage extends StatelessWidget {
               secondColor: const Color(0xFFE73D3D),
               onPressed: () {},
             ),
+
+            const Spacer(),
           ],
         ),
       ),

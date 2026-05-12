@@ -54,7 +54,7 @@ class HomeButton extends StatelessWidget {
           child: Text(
             text,
             style: const TextStyle(
-              fontSize: 40,
+              fontSize: 35,
               color: Colors.black,
               fontFamily: 'LibreCaslonText',
               fontWeight: FontWeight.bold,
