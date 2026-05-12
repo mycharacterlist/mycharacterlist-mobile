@@ -10,16 +10,18 @@ class HomePage extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
+
         decoration: const BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/images/HomePage_bg.jpeg'),
             fit: BoxFit.cover,
           ),
         ),
-        child: Column(
-          children: [
-            const SizedBox(height: 100),
 
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+
+          children: [
             const Text(
               'My anime\nCharacter List',
               textAlign: TextAlign.center,
@@ -30,16 +32,12 @@ class HomePage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 255),
-
             HomeButton(
               text: 'My Lists',
               firstColor: const Color(0xFFD9D9D9),
               secondColor: const Color(0xFF805858),
               onPressed: () {},
             ),
-
-            const SizedBox(height: 40),
 
             HomeButton(
               text: 'Library',
