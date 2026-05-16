@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mycharacterlist/app/router/routes.dart';
 import '../widgets/home_button.dart';
 
 class HomePage extends StatelessWidget {
@@ -38,7 +40,9 @@ class HomePage extends StatelessWidget {
               text: 'My Lists',
               firstColor: const Color(0xFFD9D9D9),
               secondColor: const Color(0xFF805858),
-              onPressed: () {},
+              onPressed: () {
+                context.push(AppRoutes.lists);
+              },
             ),
 
             const SizedBox(height: 20),

@@ -6,8 +6,17 @@ class ListsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lists list')),
-      body: const Center(child: Text('Lists page')),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/ListsPage_bg.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
     );
   }
 }
