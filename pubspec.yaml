@@ -96,6 +96,9 @@ flutter:
     - family: LibreCaslonText
       fonts:
         - asset: assets/fonts/LibreCaslonText.ttf
+    - family: JosefinSans
+      fonts:
+        - asset: assets/fonts/JosefinSansStd-Light.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
