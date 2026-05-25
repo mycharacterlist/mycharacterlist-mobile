@@ -52,7 +52,8 @@ class CreateListDialog {
                     const SizedBox(height: 10,),
 
                     ColorPicker(
-                      pickerColor: selectedColor,
+                      pickerColor:
+                      selectedColor,
 
                       onColorChanged:
                           (color) {
@@ -60,19 +61,21 @@ class CreateListDialog {
                         setDialogState(
                               () {
 
-                            selectedColor = color;
+                            selectedColor =
+                                color;
                           },
                         );
                       },
 
-                      enableAlpha:
-                      false,
+                      enableAlpha: false,
 
-                      displayThumbColor:
-                      true,
+                      displayThumbColor: true,
 
-                      portraitOnly:
-                      true,
+                      portraitOnly: true,
+
+                      showLabel: false,
+
+                      pickerAreaHeightPercent: 0.8,
                     ),
                   ],
                 ),
