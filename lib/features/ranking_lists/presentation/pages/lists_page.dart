@@ -29,7 +29,8 @@ class _ListsPageState
 
       controller: controller,
 
-      onCreate: () {
+      onCreate:
+          (selectedColor) {
 
         if (controller.text.isNotEmpty) {
 
@@ -39,20 +40,13 @@ class _ListsPageState
 
               'title': controller.text,
 
-              'color': Color.fromARGB(255,
-
-                Random().nextInt(256),
-                Random().nextInt(256),
-                Random().nextInt(256),
-              ),
+              'color': selectedColor,
             });
           });
 
           controller.clear();
 
-          Navigator.pop(
-            context,
-          );
+          Navigator.pop(context,);
         }
       },
     );
@@ -61,6 +55,9 @@ class _ListsPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+
+      resizeToAvoidBottomInset: false,
+
       appBar: CustomAppBar(
         title: 'My Lists',
 
@@ -74,28 +71,23 @@ class _ListsPageState
         const Color(0xFFB60894),
       ),
 
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
+      body: Stack(
+        children: [
 
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(
+          Positioned.fill(
+            child: Image.asset(
               'assets/images/ListsPage_bg.png',
+              fit: BoxFit.cover,
             ),
-            fit: BoxFit.cover,
           ),
-        ),
 
-        child: Column(
-          children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 120,),
 
-            const SizedBox(
-              height: 20,
-            ),
-
-            Expanded(
               child: ListView(
+                padding: const EdgeInsets.only(top: 20,),
+
                 children: [
 
                   ...lists.map(
@@ -115,7 +107,8 @@ class _ListsPageState
                           gradient:
                           LinearGradient(
                             colors: [
-                              const Color(0xFF3D4789),
+                              const Color(0xFF3D4789,),
+
                               list['color'],
                             ],
 
@@ -128,11 +121,9 @@ class _ListsPageState
 
                           boxShadow: [
                             BoxShadow(
-                              color:
-                              Colors.black.withOpacity(0.35,),
+                              color: Colors.black.withOpacity(0.35,),
                               blurRadius: 15,
-                              offset:
-                              const Offset(0, -5,),
+                              offset: const Offset(0, -5,),
                             ),
                           ],
                         ),
@@ -154,7 +145,7 @@ class _ListsPageState
                             const TextStyle(
                               fontSize: 24,
                               fontFamily: 'JPAnimeFont',
-                              color: Colors.white,
+                              color: Color(0xFFBEB53E,),
                             ),
                           ),
                         ),
@@ -164,13 +155,14 @@ class _ListsPageState
                 ],
               ),
             ),
+          ),
 
-            Padding(
-              padding:
-              const EdgeInsets.only(
-                bottom: 40,
-              ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 40,
 
+            child: Center(
               child: CreateNewButton(
                 text: 'Create new',
 
@@ -178,8 +170,8 @@ class _ListsPageState
                 showCreateDialog,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

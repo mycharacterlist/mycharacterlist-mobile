@@ -61,7 +61,7 @@ class CreateNewButton extends StatelessWidget {
 
             fontFamily: 'JPAnimeFont',
 
-            fontSize: 32,
+            fontSize: 30,
           ),
         ),
       ),
