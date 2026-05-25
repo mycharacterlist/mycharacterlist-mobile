@@ -83,76 +83,88 @@ class _ListsPageState
 
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 120,),
+              padding:
+              const EdgeInsets.only(
+                bottom: 120,
+              ),
 
-              child: ListView(
-                padding: const EdgeInsets.only(top: 20,),
+              child: Scrollbar(
+                thumbVisibility: true,
 
-                children: [
+                child: ListView(
+                  padding:
+                  const EdgeInsets.only(
+                    top: 20,
+                  ),
 
-                  ...lists.map(
-                        (list) => Padding(
-                      padding:
-                      const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
+                  children: [
 
-                      child: Container(
-                        height: 70,
-
-                        decoration:
-                        BoxDecoration(
-
-                          gradient:
-                          LinearGradient(
-                            colors: [
-                              const Color(0xFF3D4789,),
-
-                              list['color'],
-                            ],
-
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-
-                          borderRadius:
-                          BorderRadius.circular(20,),
-
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.35,),
-                              blurRadius: 15,
-                              offset: const Offset(0, -5,),
-                            ),
-                          ],
+                    ...lists.map(
+                          (list) => Padding(
+                        padding:
+                        const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
                         ),
 
-                        child:
-                        ElevatedButton(
-                          style:
-                          ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
+                        child: Container(
+                          height: 70,
+
+                          decoration:
+                          BoxDecoration(
+
+                            gradient:
+                            LinearGradient(
+                              colors: [
+                                const Color(0xFF3D4789,),
+
+                                list['color'],
+                              ],
+
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+
+                            borderRadius:
+                            BorderRadius.circular(20,),
+
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                Colors.black.withOpacity(0.35,),
+                                blurRadius: 15,
+                                offset:
+                                const Offset(0, -5,),
+                              ),
+                            ],
                           ),
 
-                          onPressed: () {},
-
-                          child: Text(
-                            list['title'],
-
+                          child:
+                          ElevatedButton(
                             style:
-                            const TextStyle(
-                              fontSize: 24,
-                              fontFamily: 'JPAnimeFont',
-                              color: Color(0xFFBEB53E,),
+                            ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                            ),
+
+                            onPressed: () {},
+
+                            child: Text(
+                              list['title'],
+
+                              style:
+                              const TextStyle(
+                                fontSize: 24,
+                                fontFamily: 'JPAnimeFont',
+                                color: Color(0xFFBEB53E,),
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

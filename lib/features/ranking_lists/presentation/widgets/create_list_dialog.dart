@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class CreateListDialog {
 
@@ -8,18 +9,7 @@ class CreateListDialog {
     required Function(Color) onCreate,
   }) {
 
-    final colors = [
-
-      const Color(0xFF768AFD),
-      const Color(0xFFB60894),
-      const Color(0xFF3D4789),
-      const Color(0xFF2F013B),
-      Colors.green,
-      Colors.red,
-      Colors.amber
-    ];
-
-    Color selectedColor = colors.first;
+    Color selectedColor = const Color(0xFF768AFD);
 
     showDialog(
       context: context,
@@ -27,9 +17,10 @@ class CreateListDialog {
       builder: (context) {
 
         return StatefulBuilder(
-          builder: (context, setDialogState,
-              )
-          {
+          builder: (
+              context,
+              setDialogState,
+              ) {
 
             return AlertDialog(
               title: const Text('Create list',),
@@ -37,8 +28,7 @@ class CreateListDialog {
               content:
               SingleChildScrollView(
                 child: Column(
-                  mainAxisSize:
-                  MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min,
 
                   children: [
 
@@ -47,64 +37,42 @@ class CreateListDialog {
 
                       decoration:
                       const InputDecoration(
-                        hintText:
-                        'Enter list name',
+                        hintText: 'Enter list name',
                       ),
                     ),
 
-                    const SizedBox(
-                      height: 20,
-                    ),
+                    const SizedBox(height: 20,),
 
                     const Align(
-                      alignment:
-                      Alignment.centerLeft,
+                      alignment: Alignment.centerLeft,
 
-                      child: Text(
-                        'Choose color',
-                      ),
+                      child: Text('Choose color',),
                     ),
 
-                    const SizedBox(
-                      height: 10,
-                    ),
+                    const SizedBox(height: 10,),
 
-                    ...colors.map(
+                    ColorPicker(
+                      pickerColor: selectedColor,
+
+                      onColorChanged:
                           (color) {
 
-                        return Row(
-                          children: [
+                        setDialogState(
+                              () {
 
-                            Checkbox(
-                              value:
-                              selectedColor == color,
-
-                              activeColor: color,
-
-                              onChanged:
-                                  (_) {
-
-                                setDialogState(
-                                      () {
-
-                                    selectedColor = color;
-                                  },
-                                );
-                              },
-                            ),
-
-                            Container(
-                              width: 30,
-                              height: 30,
-
-                              decoration:
-                              BoxDecoration(color: color,
-                                borderRadius: BorderRadius.circular(8,),
-                              ),
-                            ),
-                          ],
+                            selectedColor = color;
+                          },
                         );
                       },
+
+                      enableAlpha:
+                      false,
+
+                      displayThumbColor:
+                      true,
+
+                      portraitOnly:
+                      true,
                     ),
                   ],
                 ),
@@ -114,14 +82,10 @@ class CreateListDialog {
 
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(
-                      context,
-                    );
+                    Navigator.pop(context,);
                   },
 
-                  child: const Text(
-                    'Cancel',
-                  ),
+                  child: const Text('Cancel',),
                 ),
 
                 TextButton(
