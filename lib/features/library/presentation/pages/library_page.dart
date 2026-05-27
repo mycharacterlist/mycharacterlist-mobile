@@ -28,6 +28,10 @@ class _LibraryPageState
   sideController =
   TextEditingController();
 
+  final TextEditingController
+  searchController =
+  TextEditingController();
+
   void showCreateDialog() {
 
     CreateCharacterDialog.show(
@@ -58,7 +62,7 @@ class _LibraryPageState
           mainController.clear();
           sideController.clear();
 
-          Navigator.pop(context,);
+          Navigator.pop(context);
         }
       },
     );
@@ -72,14 +76,11 @@ class _LibraryPageState
       appBar: CustomAppBar(
         title: 'Library',
 
-        backgroundColor:
-        const Color(0xFF1A4043),
+        backgroundColor: const Color(0xFF1A4043),
 
-        backButtonColor:
-        const Color(0xFF009768),
+        backButtonColor: const Color(0xFF009768),
 
-        titleColor:
-        const Color(0xFF4CB897),
+        titleColor: const Color(0xFF4CB897),
       ),
 
       body: Stack(
@@ -93,56 +94,59 @@ class _LibraryPageState
           ),
 
           SafeArea(
-            child: Padding(
-              padding:
-              const EdgeInsets.only(
-                bottom: 105,
-              ),
+            child: Column(
+              children: [
 
-              child: Scrollbar(
-                thumbVisibility:
-                true,
-
-                child: ListView(
-                  padding:
-                  const EdgeInsets.only(
-                    top: 20,
-                  ),
-
-                  children: [
-
-                    const SearchBarWidget(),
-
-                    ...cards.asMap().entries.map(
-                          (entry) {
-
-                        final index = entry.key;
-
-                        final card = entry.value;
-
-                        return LibraryCard(
-                          mainText: card['main']!,
-
-                          sideText: card['side']!,
-
-                          index: index,
-
-                          onPressed: () {},
-
-                          onEditPressed: () {},
-                        );
-                      },
-                    ),
-                  ],
+                SearchBarWidget(
+                  controller: searchController,
                 ),
-              ),
+
+                Expanded(
+                  child: Padding(
+                    padding:
+                    const EdgeInsets.only(bottom: 110,),
+
+                    child: Scrollbar(
+                      thumbVisibility: true,
+
+                      child: ListView(
+                        padding: const EdgeInsets.only(top: 5,),
+
+                        children: [
+
+                          ...cards.asMap().entries.map(
+                                (entry) {
+
+                              final index = entry.key;
+
+                              final card = entry.value;
+
+                              return LibraryCard(
+                                mainText: card['main']!,
+
+                                sideText: card['side']!,
+
+                                index: index,
+
+                                onPressed: () {},
+
+                                onEditPressed: () {},
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
           Positioned(
             left: 0,
             right: 0,
-            bottom: 35,
+            bottom: 20,
 
             child: Center(
               child: PlusButton(

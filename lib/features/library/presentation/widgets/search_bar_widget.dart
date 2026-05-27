@@ -4,8 +4,13 @@ import 'filter_button.dart';
 class SearchBarWidget
     extends StatelessWidget {
 
+  final TextEditingController
+  controller;
+
   const SearchBarWidget({
     super.key,
+
+    required this.controller,
   });
 
   @override
@@ -25,7 +30,7 @@ class SearchBarWidget
 
           Expanded(
             child: Container(
-              height: 50,
+              height: 60,
 
               decoration:
               BoxDecoration(
@@ -37,35 +42,50 @@ class SearchBarWidget
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.25,),
-
                     blurRadius: 12,
                     offset: const Offset(0, 5,),
                   ),
                 ],
               ),
 
-              child: const Row(
+              child: Row(
                 children: [
 
-                  SizedBox(width: 12,),
+                  const SizedBox(width: 12,),
 
-                  Icon(
+                  const Icon(
                     Icons.search,
                     size: 40,
                     color: Colors.black54,
                   ),
 
-                  SizedBox(width: 8,),
+                  const SizedBox(width: 8,),
 
-                  Text(
-                    'Search',
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
 
-                    style:
-                    TextStyle(
-                      color: Colors.black54,
-                      fontSize: 24,
-                      fontFamily: 'JosefinSlab',
-                      fontWeight: FontWeight.bold,
+                      decoration:
+                      const InputDecoration(
+                        hintText: 'Search',
+
+                        hintStyle:
+                        TextStyle(
+                          color: Colors.black54,
+                          fontSize: 24,
+                          fontFamily: 'JosefinSlab',
+                          fontWeight: FontWeight.bold,
+                        ),
+
+                        border: InputBorder.none,
+                      ),
+
+                      style:
+                      const TextStyle(
+                        color: Colors.black,
+                        fontSize: 24,
+                        fontFamily: 'JosefinSlab',
+                      ),
                     ),
                   ),
                 ],
