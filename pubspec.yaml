@@ -101,6 +101,11 @@ flutter:
     - family: JosefinSans
       fonts:
         - asset: assets/fonts/JosefinSansStd-Light.ttf
+    - family: JosefinSlab
+      fonts:
+        - asset: assets/fonts/JosefinSlab.ttf
+
+
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
