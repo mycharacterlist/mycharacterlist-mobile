@@ -4,13 +4,16 @@ import 'filter_button.dart';
 class SearchBarWidget
     extends StatelessWidget {
 
-  final TextEditingController
-  controller;
+  final TextEditingController controller;
+
+  final VoidCallback onFilterPressed;
 
   const SearchBarWidget({
     super.key,
 
     required this.controller,
+
+    required this.onFilterPressed,
   });
 
   @override
@@ -36,8 +39,7 @@ class SearchBarWidget
               BoxDecoration(
                 color: const Color(0xFFD9D4D9,),
 
-                borderRadius:
-                BorderRadius.circular(22,),
+                borderRadius: BorderRadius.circular(22,),
 
                 boxShadow: [
                   BoxShadow(
@@ -70,8 +72,8 @@ class SearchBarWidget
                         hintText: 'Search',
 
                         hintStyle:
-                        TextStyle(
-                          color: Colors.black54,
+                        TextStyle(color: Colors.black54,
+
                           fontSize: 24,
                           fontFamily: 'JosefinSlab',
                           fontWeight: FontWeight.bold,
@@ -96,7 +98,7 @@ class SearchBarWidget
           const SizedBox(width: 10,),
 
           FilterButton(
-            onPressed: () {},
+            onPressed: onFilterPressed,
           ),
         ],
       ),

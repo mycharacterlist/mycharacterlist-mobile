@@ -5,6 +5,7 @@ import '../widgets/Plus_button.dart';
 import '../widgets/library_card.dart';
 import '../widgets/create_character_dialog.dart';
 import '../widgets/search_bar_widget.dart';
+import '../widgets/filter_dropdown.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -21,16 +22,13 @@ class _LibraryPageState
   cards = [];
 
   final TextEditingController
-  mainController =
-  TextEditingController();
+  mainController = TextEditingController();
 
   final TextEditingController
-  sideController =
-  TextEditingController();
+  sideController = TextEditingController();
 
   final TextEditingController
-  searchController =
-  TextEditingController();
+  searchController = TextEditingController();
 
   void showCreateDialog() {
 
@@ -51,11 +49,9 @@ class _LibraryPageState
 
             cards.add({
 
-              'main':
-              mainController.text,
+              'main': mainController.text,
 
-              'side':
-              sideController.text,
+              'side': sideController.text,
             });
           });
 
@@ -64,6 +60,89 @@ class _LibraryPageState
 
           Navigator.pop(context);
         }
+      },
+    );
+  }
+
+  void showFilterSheet() {
+
+    showModalBottomSheet(
+      context: context,
+
+      isScrollControlled: true,
+
+      backgroundColor:
+      const Color(0xFFD9D4D9,),
+
+      shape:
+      const RoundedRectangleBorder(
+        borderRadius:
+        BorderRadius.only(
+          topLeft:
+          Radius.circular(30,),
+
+          topRight:
+          Radius.circular(30,),
+        ),
+      ),
+
+      clipBehavior:
+      Clip.antiAlias,
+
+      builder: (context) {
+
+        return Container(
+          width:
+          double.infinity,
+
+          height:
+          MediaQuery.of(context).size.height * 0.75,
+
+          child: Column(
+            children: [
+
+              const SizedBox(height: 20,),
+
+              Container(
+                width: 60,
+                height: 5,
+
+                decoration:
+                BoxDecoration(
+                  color: Colors.black26,
+
+                  borderRadius: BorderRadius.circular(10,),
+                ),
+              ),
+
+              const SizedBox(height: 20,),
+
+              const Text(
+                'Filter',
+
+                style:
+                TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'FrancoisOne',
+                ),
+              ),
+
+              const SizedBox(height: 20,),
+
+              const FilterDropdown(
+                title: 'Anime',
+
+                items: [
+                  'Naruto',
+                  'Bleach',
+                  'Code Geass',
+                  'Attack on Titan',
+                ],
+              ),
+            ],
+          ),
+        );
       },
     );
   }
@@ -99,6 +178,8 @@ class _LibraryPageState
 
                 SearchBarWidget(
                   controller: searchController,
+
+                  onFilterPressed: showFilterSheet,
                 ),
 
                 Expanded(
@@ -110,7 +191,8 @@ class _LibraryPageState
                       thumbVisibility: true,
 
                       child: ListView(
-                        padding: const EdgeInsets.only(top: 5,),
+                        padding:
+                        const EdgeInsets.only(top: 5,),
 
                         children: [
 
@@ -156,7 +238,8 @@ class _LibraryPageState
                   size: 45,
                 ),
 
-                onPressed: showCreateDialog,
+                onPressed:
+                showCreateDialog,
               ),
             ),
           ),

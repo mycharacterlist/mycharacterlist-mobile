@@ -104,6 +104,9 @@ flutter:
     - family: JosefinSlab
       fonts:
         - asset: assets/fonts/JosefinSlab.ttf
+    - family: FrancoisOne
+      fonts:
+        - asset: assets/fonts/FrancoisOne-Regular.ttf
 
 
   #       - asset: fonts/TrajanPro_Bold.ttf

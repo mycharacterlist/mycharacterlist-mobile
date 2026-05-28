@@ -17,8 +17,8 @@ class FilterButton
       ) {
 
     return Container(
-      width: 50,
-      height: 50,
+      width: 60,
+      height: 60,
 
       decoration:
       BoxDecoration(
@@ -27,8 +27,8 @@ class FilterButton
         borderRadius: BorderRadius.circular(20,),
 
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.25,),
-
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25,),
             blurRadius: 12,
             offset: const Offset(0, 5,),
           ),
