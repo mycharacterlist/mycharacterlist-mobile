@@ -6,6 +6,7 @@ import '../widgets/library_card.dart';
 import '../widgets/create_character_dialog.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/filter_dropdown.dart';
+import '../widgets/grade_range_slider.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -18,17 +19,13 @@ class LibraryPage extends StatefulWidget {
 class _LibraryPageState
     extends State<LibraryPage> {
 
-  final List<Map<String, String>>
-  cards = [];
+  final List<Map<String, String>> cards = [];
 
-  final TextEditingController
-  mainController = TextEditingController();
+  final TextEditingController mainController = TextEditingController();
 
-  final TextEditingController
-  sideController = TextEditingController();
+  final TextEditingController sideController = TextEditingController();
 
-  final TextEditingController
-  searchController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
 
   void showCreateDialog() {
 
@@ -78,11 +75,8 @@ class _LibraryPageState
       const RoundedRectangleBorder(
         borderRadius:
         BorderRadius.only(
-          topLeft:
-          Radius.circular(30,),
-
-          topRight:
-          Radius.circular(30,),
+          topLeft: Radius.circular(30,),
+          topRight: Radius.circular(30,),
         ),
       ),
 
@@ -92,55 +86,77 @@ class _LibraryPageState
       builder: (context) {
 
         return Container(
-          width:
-          double.infinity,
+          width: double.infinity,
 
-          height:
-          MediaQuery.of(context).size.height * 0.75,
+          height: MediaQuery.of(context).size.height * 0.75,
 
-          child: Column(
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
 
-              const SizedBox(height: 20,),
+                const SizedBox(height: 20,),
 
-              Container(
-                width: 60,
-                height: 5,
+                Container(
+                  width: 60,
+                  height: 5,
 
-                decoration:
-                BoxDecoration(
-                  color: Colors.black26,
-
-                  borderRadius: BorderRadius.circular(10,),
+                  decoration:
+                  BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(10,),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 20,),
+                const SizedBox(height: 20,),
 
-              const Text(
-                'Filter',
+                const Text(
+                  'Filter',
 
-                style:
-                TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'FrancoisOne',
+                  style:
+                  TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'FrancoisOne',
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 20,),
+                const SizedBox(height: 20,),
 
-              const FilterDropdown(
-                title: 'Anime',
+                const FilterDropdown(
+                  title: 'Anime',
 
-                items: [
-                  'Naruto',
-                  'Bleach',
-                  'Code Geass',
-                  'Attack on Titan',
-                ],
-              ),
-            ],
+                  items: [
+                    'Naruto',
+                    'Bleach',
+                    'Code Geass',
+                    'Attack on Titan',
+                    'Classroom of the elite',
+                    'Невероятно эпичный путь в топ 100 ладдера на лоу порядочности с сыном шлюхи на мидере',
+                  ],
+                ),
+
+                const SizedBox(height: 10,),
+
+                const FilterDropdown(
+                  title: 'Archetype',
+
+                  items: [
+                    'Dandere',
+                    'Deredere',
+                    'Himedere',
+                    'Kuudere',
+                    'Tsundere',
+                    'Yandere',
+                  ],
+                ),
+
+                const SizedBox(height: 10,),
+
+                const GradeRangeSlider(),
+
+                const SizedBox(height: 20,),
+              ],
+            ),
           ),
         );
       },
@@ -184,15 +200,13 @@ class _LibraryPageState
 
                 Expanded(
                   child: Padding(
-                    padding:
-                    const EdgeInsets.only(bottom: 110,),
+                    padding: const EdgeInsets.only(bottom: 110,),
 
                     child: Scrollbar(
                       thumbVisibility: true,
 
                       child: ListView(
-                        padding:
-                        const EdgeInsets.only(top: 5,),
+                        padding: const EdgeInsets.only(top: 5,),
 
                         children: [
 
@@ -238,8 +252,7 @@ class _LibraryPageState
                   size: 45,
                 ),
 
-                onPressed:
-                showCreateDialog,
+                onPressed: showCreateDialog,
               ),
             ),
           ),

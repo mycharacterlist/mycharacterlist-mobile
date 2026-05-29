@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-class FilterDropdown
-    extends StatefulWidget {
+class FilterDropdown extends StatefulWidget {
 
   final String title;
 
@@ -44,14 +43,16 @@ class _FilterDropdownState
       BoxDecoration(
         color: const Color(0xFFE9E9E9,),
 
-        borderRadius: BorderRadius.circular(18,),
+        borderRadius:
+        BorderRadius.circular(18,),
       ),
 
       child: Column(
         children: [
 
           InkWell(
-            borderRadius: BorderRadius.circular(18,),
+            borderRadius:
+            BorderRadius.circular(18,),
 
             onTap: () {
 
@@ -77,7 +78,7 @@ class _FilterDropdownState
 
                       style:
                       const TextStyle(
-                        fontSize: 30,
+                        fontSize: 35,
                         fontFamily: 'JosefinSlab',
                         fontWeight: FontWeight.bold,
                       ),
@@ -90,6 +91,7 @@ class _FilterDropdownState
                         : Icons.chevron_right,
 
                     size: 38,
+
                     color: Colors.black54,
                   ),
                 ],
@@ -99,50 +101,84 @@ class _FilterDropdownState
 
           if (isExpanded)
 
-            Column(
-              children:
-              widget.items.map(
-                    (item) {
+            Container(
+              constraints:
+              const BoxConstraints(maxHeight: 220,),
 
-                  return CheckboxListTile(
-                    value: selected.contains(item,),
+              child: Scrollbar(
+                thumbVisibility: true,
 
-                    activeColor: Colors.black,
+                child: ListView.builder(
+                  shrinkWrap: true,
 
-                    title: Text(
-                      item,
+                  itemCount: widget.items.length,
 
-                      style:
-                      const TextStyle(
-                        fontSize: 25,
-                        fontFamily: 'JosefinSlab',
+                  itemBuilder:
+                      (context, index) {
+
+                    final item = widget.items[index];
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 2,
                       ),
-                    ),
 
-                    onChanged:
-                        (value) {
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
 
-                      setState(() {
+                        children: [
 
-                        if (value ==
-                            true) {
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 8,),
 
-                          selected.add(
-                            item,
-                          );
-                        }
+                              child: Text(
+                                item,
 
-                        else {
+                                softWrap: true,
 
-                          selected.remove(
-                            item,
-                          );
-                        }
-                      });
-                    },
-                  );
-                },
-              ).toList(),
+                                style:
+                                const TextStyle(
+                                  fontSize: 25,
+                                  fontFamily: 'JosefinSlab',
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          Checkbox(
+                            value:
+                            selected.contains(item,),
+
+                            activeColor: Colors.black,
+
+                            onChanged:
+                                (value) {
+
+                              setState(() {
+
+                                if (
+                                value ==
+                                    true
+                                ) {
+
+                                  selected.add(item,);
+                                }
+
+                                else {
+
+                                  selected.remove(item,);
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
             ),
         ],
       ),
