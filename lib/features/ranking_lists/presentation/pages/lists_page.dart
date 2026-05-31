@@ -1,59 +1,73 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../../app/widgets/app_appbar.dart';
-import '../widgets/CreateNew_button.dart';
-import '../widgets/create_list_dialog.dart';
+import 'package:mycharacterlist/app/router/routes.dart';
+import 'package:mycharacterlist/app/widgets/app_appbar.dart';
+import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/CreateNew_button.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/create_list_dialog.dart';
 
-class ListsPage extends StatefulWidget {
+class ListsPage extends ConsumerStatefulWidget {
   const ListsPage({super.key});
 
   @override
-  State<ListsPage> createState() =>
-      _ListsPageState();
+  ConsumerState<ListsPage> createState() => _ListsPageState();
 }
 
-class _ListsPageState
-    extends State<ListsPage> {
+class _ListsPageState extends ConsumerState<ListsPage> {
 
-  final List<Map<String, dynamic>>
-  lists = [];
-
-  final TextEditingController controller =
-  TextEditingController();
+  final TextEditingController controller = TextEditingController();
 
   void showCreateDialog() {
 
     CreateListDialog.show(
       context: context,
-
       controller: controller,
+      onCreate: (selectedColor) async {
+        final viewModel = ref.read(listsViewModelProvider.notifier);
+        final created = await viewModel.createList(
+          name: controller.text,
+          color: selectedColor,
+        );
 
-      onCreate:
-          (selectedColor) {
-
-        if (controller.text.isNotEmpty) {
-
-          setState(() {
-
-            lists.add({
-
-              'title': controller.text,
-
-              'color': selectedColor,
-            });
-          });
-
-          controller.clear();
-
-          Navigator.pop(context,);
+        if (!mounted || !created) {
+          return;
         }
+
+        controller.clear();
+
+        Navigator.pop(context,);
       },
     );
   }
 
   @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = ref.watch(listsViewModelProvider);
+
+    ref.listen(listsViewModelProvider, (previous, next) {
+      final errorMessage = next.errorMessage;
+
+      if (errorMessage == null || previous?.errorMessage == errorMessage) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context,).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+        ),
+      );
+
+      ref.read(listsViewModelProvider.notifier).clearError();
+    });
+
     return Scaffold(
 
       resizeToAvoidBottomInset: false,
@@ -97,12 +111,10 @@ class _ListsPageState
                     top: 20,
                   ),
 
-                  children: [
-
-                    ...lists.map(
-                          (list) => Padding(
-                        padding:
-                        const EdgeInsets.symmetric(
+                  children: state.lists.map(
+                    (list) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 10,
                         ),
@@ -118,7 +130,7 @@ class _ListsPageState
                               colors: [
                                 const Color(0xFF3D4789,),
 
-                                list['color'],
+                                Color(list.colorValue,),
                               ],
 
                               begin: Alignment.topLeft,
@@ -147,10 +159,14 @@ class _ListsPageState
                               shadowColor: Colors.transparent,
                             ),
 
-                            onPressed: () {},
+                            onPressed: () {
+                              context.push(
+                                AppRoutes.rankingListById(list.id),
+                              );
+                            },
 
                             child: Text(
-                              list['title'],
+                              list.name,
 
                               style:
                               const TextStyle(
@@ -161,9 +177,9 @@ class _ListsPageState
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  ],
+                      );
+                    },
+                  ).toList(),
                 ),
               ),
             ),

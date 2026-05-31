@@ -1,0 +1,21 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:mycharacterlist/core/database/database_providers.dart';
+import 'package:mycharacterlist/features/ranking_lists/data/repositories/ranking_list_repository_impl.dart';
+import 'package:mycharacterlist/features/ranking_lists/data/sources/local/ranking_list_local_data_source.dart';
+import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
+
+final rankingListLocalDataSourceProvider = Provider<RankingListLocalDataSource>(
+  (ref) => RankingListLocalDataSource(appDatabase: ref.watch(appDatabaseProvider)),
+);
+
+final rankingListRepositoryProvider = Provider<RankingListRepository>(
+  (ref) => RankingListRepositoryImpl(
+    localDataSource: ref.watch(rankingListLocalDataSourceProvider),
+  ),
+);
+
+final listsViewModelProvider = StateNotifierProvider<ListsViewModel, ListsState>(
+  (ref) => ListsViewModel(repository: ref.watch(rankingListRepositoryProvider)),
+);
