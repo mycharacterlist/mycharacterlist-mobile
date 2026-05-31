@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class CreateListDialog {
-
   static void show({
     required BuildContext context,
     required TextEditingController controller,
-    required Function(Color) onCreate,
+    required Future<void> Function(Color) onCreate,
   }) {
 
     Color selectedColor = const Color(0xFF768AFD);
+    String? nameErrorText;
 
     showDialog(
       context: context,
@@ -17,16 +17,10 @@ class CreateListDialog {
       builder: (context) {
 
         return StatefulBuilder(
-          builder: (
-              context,
-              setDialogState,
-              ) {
-
+          builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Create list',),
-
-              content:
-              SingleChildScrollView(
+              title: const Text('Create list'),
+              content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
 
@@ -34,47 +28,37 @@ class CreateListDialog {
 
                     TextField(
                       controller: controller,
+                      onChanged: (_) {
+                        if (nameErrorText == null) {
+                          return;
+                        }
 
-                      decoration:
-                      const InputDecoration(
+                        setDialogState(() {
+                          nameErrorText = null;
+                        });
+                      },
+                      decoration: InputDecoration(
                         hintText: 'Enter list name',
+                        errorText: nameErrorText,
                       ),
                     ),
-
-                    const SizedBox(height: 20,),
-
+                    const SizedBox(height: 20),
                     const Align(
                       alignment: Alignment.centerLeft,
-
-                      child: Text('Choose color',),
+                      child: Text('Choose color'),
                     ),
-
-                    const SizedBox(height: 10,),
-
+                    const SizedBox(height: 10),
                     ColorPicker(
-                      pickerColor:
-                      selectedColor,
-
-                      onColorChanged:
-                          (color) {
-
-                        setDialogState(
-                              () {
-
-                            selectedColor =
-                                color;
-                          },
-                        );
+                      pickerColor: selectedColor,
+                      onColorChanged: (color) {
+                        setDialogState(() {
+                          selectedColor = color;
+                        });
                       },
-
                       enableAlpha: false,
-
                       displayThumbColor: true,
-
                       portraitOnly: true,
-
-                      showLabel: false,
-
+                      labelTypes: const [],
                       pickerAreaHeightPercent: 0.8,
                     ),
                   ],
@@ -85,21 +69,26 @@ class CreateListDialog {
 
                 TextButton(
                   onPressed: () {
-                    Navigator.pop(context,);
+                    controller.clear();
+                    Navigator.pop(context);
                   },
-
-                  child: const Text('Cancel',),
+                  child: const Text('Cancel'),
                 ),
 
                 TextButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    if (controller.text.trim().isEmpty) {
+                      setDialogState(() {
+                        nameErrorText = 'Enter list name';
+                      });
 
-                    onCreate(
-                      selectedColor,
-                    );
+                      return;
+                    }
+
+                    await onCreate(selectedColor);
                   },
 
-                  child: const Text('Create',),
+                  child: const Text('Create'),
                 ),
               ],
             );
