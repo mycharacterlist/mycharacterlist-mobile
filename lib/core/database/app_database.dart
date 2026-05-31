@@ -91,6 +91,7 @@ class AppDatabase {
             name TEXT NOT NULL COLLATE NOCASE UNIQUE,
             description TEXT NOT NULL,
             show_avatars INTEGER NOT NULL,
+            color_value INTEGER NOT NULL DEFAULT 4285958909,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
           )
