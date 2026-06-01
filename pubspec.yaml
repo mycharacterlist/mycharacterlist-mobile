@@ -107,6 +107,9 @@ flutter:
     - family: FrancoisOne
       fonts:
         - asset: assets/fonts/FrancoisOne-Regular.ttf
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Black.ttf
 
 
   #       - asset: fonts/TrajanPro_Bold.ttf

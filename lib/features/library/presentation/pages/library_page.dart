@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../../../app/widgets/app_appbar.dart';
 import '../widgets/Plus_button.dart';
 import '../widgets/library_card.dart';
@@ -7,6 +6,8 @@ import '../widgets/create_character_dialog.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/filter_dropdown.dart';
 import '../widgets/grade_range_slider.dart';
+import '../widgets/additional_filters_card.dart';
+import '../widgets/filter_bottom_buttons.dart';
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -16,10 +17,10 @@ class LibraryPage extends StatefulWidget {
       _LibraryPageState();
 }
 
-class _LibraryPageState
-    extends State<LibraryPage> {
+class _LibraryPageState extends State<LibraryPage> {
 
-  final List<Map<String, String>> cards = [];
+  final List<Map<String, String>>
+  cards = [];
 
   final TextEditingController mainController = TextEditingController();
 
@@ -38,9 +39,7 @@ class _LibraryPageState
 
       onCreate: () {
 
-        if (
-        mainController.text.isNotEmpty
-        ) {
+        if (mainController.text.isNotEmpty) {
 
           setState(() {
 
@@ -55,7 +54,7 @@ class _LibraryPageState
           mainController.clear();
           sideController.clear();
 
-          Navigator.pop(context);
+          Navigator.pop(context,);
         }
       },
     );
@@ -67,30 +66,31 @@ class _LibraryPageState
       context: context,
 
       isScrollControlled: true,
-
-      backgroundColor:
-      const Color(0xFFD9D4D9,),
+      backgroundColor: const Color(0xFFD9D4D9,),
 
       shape:
       const RoundedRectangleBorder(
         borderRadius:
         BorderRadius.only(
           topLeft: Radius.circular(30,),
+
           topRight: Radius.circular(30,),
         ),
       ),
 
-      clipBehavior:
-      Clip.antiAlias,
+      clipBehavior: Clip.antiAlias,
 
       builder: (context) {
 
         return Container(
-          width: double.infinity,
+          width:
+          double.infinity,
 
-          height: MediaQuery.of(context).size.height * 0.75,
+          height:
+          MediaQuery.of(context).size.height * 0.75,
 
-          child: SingleChildScrollView(
+          child:
+          SingleChildScrollView(
             child: Column(
               children: [
 
@@ -103,7 +103,9 @@ class _LibraryPageState
                   decoration:
                   BoxDecoration(
                     color: Colors.black26,
-                    borderRadius: BorderRadius.circular(10,),
+
+                    borderRadius:
+                    BorderRadius.circular(10,),
                   ),
                 ),
 
@@ -135,7 +137,7 @@ class _LibraryPageState
                   ],
                 ),
 
-                const SizedBox(height: 10,),
+                const SizedBox(height: 5,),
 
                 const FilterDropdown(
                   title: 'Archetype',
@@ -150,9 +152,21 @@ class _LibraryPageState
                   ],
                 ),
 
-                const SizedBox(height: 10,),
+                const SizedBox(height: 5,),
 
                 const GradeRangeSlider(),
+
+                const SizedBox(height: 5,),
+
+                const AdditionalFiltersCard(),
+
+                const SizedBox(height: 10,),
+
+                FilterBottomButtons(
+                  onClear: () {},
+
+                  onShow: () {},
+                ),
 
                 const SizedBox(height: 20,),
               ],
@@ -164,18 +178,22 @@ class _LibraryPageState
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
 
-      appBar: CustomAppBar(
+      appBar:
+      CustomAppBar(
         title: 'Library',
 
-        backgroundColor: const Color(0xFF1A4043),
+        backgroundColor: const Color(0xFF1A4043,),
 
-        backButtonColor: const Color(0xFF009768),
+        backButtonColor: const Color(0xFF009768,),
 
-        titleColor: const Color(0xFF4CB897),
+        titleColor: const Color(0xFF4CB897,),
       ),
 
       body: Stack(
@@ -184,7 +202,9 @@ class _LibraryPageState
           Positioned.fill(
             child: Image.asset(
               'assets/images/Library_bg.jpg',
-              fit: BoxFit.cover,
+
+              fit:
+              BoxFit.cover,
             ),
           ),
 
@@ -200,7 +220,8 @@ class _LibraryPageState
 
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 110,),
+                    padding:
+                    const EdgeInsets.only(bottom: 110,),
 
                     child: Scrollbar(
                       thumbVisibility: true,
@@ -210,7 +231,10 @@ class _LibraryPageState
 
                         children: [
 
-                          ...cards.asMap().entries.map(
+                          ...cards
+                              .asMap()
+                              .entries
+                              .map(
                                 (entry) {
 
                               final index = entry.key;
@@ -245,8 +269,10 @@ class _LibraryPageState
             bottom: 20,
 
             child: Center(
-              child: PlusButton(
-                icon: const Icon(
+              child:
+              PlusButton(
+                icon:
+                const Icon(
                   Icons.add,
                   color: Colors.black,
                   size: 45,

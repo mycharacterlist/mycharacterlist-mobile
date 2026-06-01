@@ -6,12 +6,18 @@ class FilterDropdown extends StatefulWidget {
 
   final List<String> items;
 
+  final GlobalKey<
+      _FilterDropdownState>?
+  clearKey;
+
   const FilterDropdown({
     super.key,
 
     required this.title,
 
     required this.items,
+
+    this.clearKey,
   });
 
   @override
@@ -20,12 +26,19 @@ class FilterDropdown extends StatefulWidget {
       _FilterDropdownState();
 }
 
-class _FilterDropdownState
-    extends State<FilterDropdown> {
+class _FilterDropdownState extends State<FilterDropdown> {
 
   bool isExpanded = false;
 
   final List<String> selected = [];
+
+  void clearFilters() {
+
+    setState(() {
+
+      selected.clear();
+    });
+  }
 
   @override
   Widget build(
@@ -33,6 +46,8 @@ class _FilterDropdownState
       ) {
 
     return Container(
+      key: widget.clearKey,
+
       margin:
       const EdgeInsets.symmetric(
         horizontal: 10,
@@ -43,16 +58,14 @@ class _FilterDropdownState
       BoxDecoration(
         color: const Color(0xFFE9E9E9,),
 
-        borderRadius:
-        BorderRadius.circular(18,),
+        borderRadius: BorderRadius.circular(18,),
       ),
 
       child: Column(
         children: [
 
           InkWell(
-            borderRadius:
-            BorderRadius.circular(18,),
+            borderRadius: BorderRadius.circular(18,),
 
             onTap: () {
 
@@ -78,7 +91,7 @@ class _FilterDropdownState
 
                       style:
                       const TextStyle(
-                        fontSize: 35,
+                        fontSize: 37,
                         fontFamily: 'JosefinSlab',
                         fontWeight: FontWeight.bold,
                       ),
@@ -91,7 +104,6 @@ class _FilterDropdownState
                         : Icons.chevron_right,
 
                     size: 38,
-
                     color: Colors.black54,
                   ),
                 ],
@@ -114,24 +126,28 @@ class _FilterDropdownState
                   itemCount: widget.items.length,
 
                   itemBuilder:
-                      (context, index) {
+                      (context,
+                      index) {
 
                     final item = widget.items[index];
 
                     return Padding(
-                      padding: const EdgeInsets.symmetric(
+                      padding:
+                      const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 2,
                       ),
 
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment:
+                        CrossAxisAlignment.center,
 
                         children: [
 
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(left: 8,),
+                              padding:
+                              const EdgeInsets.only(left: 8,),
 
                               child: Text(
                                 item,
@@ -140,7 +156,7 @@ class _FilterDropdownState
 
                                 style:
                                 const TextStyle(
-                                  fontSize: 25,
+                                  fontSize: 28,
                                   fontFamily: 'JosefinSlab',
                                 ),
                               ),
@@ -149,7 +165,9 @@ class _FilterDropdownState
 
                           Checkbox(
                             value:
-                            selected.contains(item,),
+                            selected.contains(
+                              item,
+                            ),
 
                             activeColor: Colors.black,
 
@@ -158,17 +176,19 @@ class _FilterDropdownState
 
                               setState(() {
 
-                                if (
-                                value ==
-                                    true
+                                if (value == true
                                 ) {
 
-                                  selected.add(item,);
+                                  selected.add(
+                                    item,
+                                  );
                                 }
 
                                 else {
 
-                                  selected.remove(item,);
+                                  selected.remove(
+                                    item,
+                                  );
                                 }
                               });
                             },

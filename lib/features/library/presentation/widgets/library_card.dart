@@ -57,9 +57,7 @@ class LibraryCard extends StatelessWidget {
         style:
         ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
-
           shadowColor: Colors.transparent,
-
           padding: EdgeInsets.zero,
 
           shape: RoundedRectangleBorder(
@@ -76,12 +74,14 @@ class LibraryCard extends StatelessWidget {
             children: [
 
               Container(
-                width: 60,
+                constraints: const BoxConstraints(minWidth: 60,),
+
+                padding: const EdgeInsets.symmetric(horizontal: 10,),
+
                 height: 90,
 
                 decoration: BoxDecoration(
                   color: Colors.black12,
-
                   borderRadius: BorderRadius.circular(15,),
                 ),
 

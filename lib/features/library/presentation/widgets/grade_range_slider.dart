@@ -8,13 +8,14 @@ class GradeRangeSlider extends StatefulWidget {
 
   @override
   State<GradeRangeSlider>
-  createState() => _GradeRangeSliderState();
+  createState() =>
+      _GradeRangeSliderState();
 }
 
 class _GradeRangeSliderState extends State<GradeRangeSlider> {
 
   RangeValues values =
-  const RangeValues(1, 10);
+  const RangeValues(1, 10,);
 
   late TextEditingController minController;
 
@@ -31,22 +32,33 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
 
   void updateFromText() {
 
-    double min = double.tryParse(minController.text,) ?? 1;
+    double min =
+        double.tryParse(
+          minController.text,
+        ) ?? 1;
 
     double max =
-        double.tryParse(maxController.text,) ?? 10;
+        double.tryParse(
+          maxController.text,
+        ) ?? 10;
 
     min = min.clamp(1, 10,);
 
     max = max.clamp(1, 10,);
 
-    if (min > max) {
+    if (
+    min > max
+    ) {
+
       min = max;
     }
 
     setState(() {
 
-      values = RangeValues(min, max,);
+      values =
+          RangeValues(
+            min, max,
+          );
     });
   }
 
@@ -62,13 +74,15 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
         vertical: 12,
       ),
 
-      padding: const EdgeInsets.all(15,),
+      padding:
+      const EdgeInsets.all(15,),
 
       decoration:
       BoxDecoration(
         color: const Color(0xFFE9E9E9,),
 
-        borderRadius: BorderRadius.circular(18,),
+        borderRadius:
+        BorderRadius.circular(18,),
       ),
 
       child: Column(
@@ -81,7 +95,7 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
 
             style:
             TextStyle(
-              fontSize: 28,
+              fontSize: 32,
               fontFamily: 'JosefinSlab',
               fontWeight: FontWeight.bold,
             ),
@@ -105,7 +119,9 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
                   decoration:
                   InputDecoration(
                     labelText: 'Min',
+
                     filled: true,
+
                     fillColor: Colors.white,
 
                     border:
@@ -129,10 +145,13 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
                       updateFromText(),
 
                   decoration:
-                  InputDecoration(labelText: 'Max',
+                  InputDecoration(
+                    labelText: 'Max',
 
                     filled: true,
+
                     fillColor: Colors.white,
+
                     border:
                     OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12,),
@@ -153,9 +172,15 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
 
             divisions: 9,
 
-            labels: RangeLabels(
-              values.start.round().toString(),
-              values.end.round().toString(),
+            labels:
+            RangeLabels(
+              values.start
+                  .round()
+                  .toString(),
+
+              values.end
+                  .round()
+                  .toString(),
             ),
 
             onChanged:
@@ -180,7 +205,8 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
 
           LayoutBuilder(
             builder:
-                (context, constraints) {
+                (context,
+                constraints) {
 
               const double sliderPadding = 24;
 
@@ -198,14 +224,16 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
                         (index) {
 
                       return Positioned(
-                        left:
-                        sliderPadding + step * index - 8,
+                        left: sliderPadding + step * index - 8,
 
-                        child: SizedBox(
+                        child:
+                        SizedBox(
                           width: 16,
 
-                          child: Center(
-                            child: Text(
+                          child:
+                          Center(
+                            child:
+                            Text(
                               '${index + 1}',
 
                               style:
