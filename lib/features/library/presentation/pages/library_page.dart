@@ -154,11 +154,11 @@ class _LibraryPageState extends State<LibraryPage> {
 
                 const SizedBox(height: 5,),
 
-                const GradeRangeSlider(),
+                const AdditionalFiltersCard(),
 
                 const SizedBox(height: 5,),
 
-                const AdditionalFiltersCard(),
+                const GradeRangeSlider(),
 
                 const SizedBox(height: 10,),
 

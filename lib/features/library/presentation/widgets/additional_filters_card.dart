@@ -14,6 +14,8 @@ class AdditionalFiltersCard extends StatefulWidget {
 
 class _AdditionalFiltersCardState extends State<AdditionalFiltersCard> {
 
+  bool isExpanded = false;
+
   final List<String> selectedGender = [];
 
   final List<String> selectedPosition = [];
@@ -48,8 +50,7 @@ class _AdditionalFiltersCardState extends State<AdditionalFiltersCard> {
           ),
 
           Checkbox(
-            value:
-            selected.contains(item,),
+            value: selected.contains(item,),
 
             activeColor: Colors.black,
 
@@ -61,12 +62,16 @@ class _AdditionalFiltersCardState extends State<AdditionalFiltersCard> {
                 if (value == true
                 ) {
 
-                  selected.add(item,);
+                  selected.add(
+                    item,
+                  );
                 }
 
                 else {
 
-                  selected.remove(item,);
+                  selected.remove(
+                    item,
+                  );
                 }
               });
             },
@@ -98,91 +103,133 @@ class _AdditionalFiltersCardState extends State<AdditionalFiltersCard> {
       ),
 
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
 
         children: [
 
-          const Text(
-            'Additional filters',
-
-            style:
-            TextStyle(
-              fontSize: 32,
-              fontFamily: 'JosefinSlab',
-              fontWeight: FontWeight.bold,
+          InkWell(
+            borderRadius:
+            BorderRadius.circular(
+              18,
             ),
-          ),
 
-          const SizedBox(height: 20,),
+            onTap: () {
 
-          const Text(
-            'Gender',
+              setState(() {
 
-            style:
-            TextStyle(
-              fontSize: 28,
-              fontFamily: 'JosefinSlab',
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+                isExpanded =
+                !isExpanded;
+              });
+            },
 
-          const SizedBox(height: 8,),
+            child: Row(
+              children: [
 
-          Row(
-            children: [
+                const Expanded(
+                  child: Text(
+                    'Additional filters',
 
-              Expanded(
-                child:
-                buildCheckboxItem(
-                  'Male',
-                  selectedGender,
+                    style:
+                    TextStyle(
+                      fontSize: 32,
+                      fontFamily: 'JosefinSlab',
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
 
-              Expanded(
-                child:
-                buildCheckboxItem(
-                  'Female',
-                  selectedGender,
+                Icon(
+                  isExpanded
+                      ? Icons.keyboard_arrow_down
+                      : Icons.chevron_right,
+
+                  size: 38,
+
+                  color:
+                  Colors.black54,
                 ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20,),
-
-          const Text(
-            'Position',
-
-            style:
-            TextStyle(
-              fontSize: 28,
-              fontFamily: 'JosefinSlab',
-              fontWeight: FontWeight.bold,
+              ],
             ),
           ),
 
-          const SizedBox(height: 8,),
+          if (isExpanded) ...[
 
-          buildCheckboxItem(
-            '#1',
-            selectedPosition,
-          ),
+            const SizedBox(height: 20,),
 
-          buildCheckboxItem(
-            'Podium',
-            selectedPosition,
-          ),
+            const Text(
+              'Gender',
 
-          buildCheckboxItem(
-            'In lists',
-            selectedPosition,
-          ),
+              style:
+              TextStyle(
+                fontSize: 28,
+                fontFamily: 'JosefinSlab',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
 
-          buildCheckboxItem(
-            'Out of lists',
-            selectedPosition,
-          ),
+            const SizedBox(height: 8,),
+
+            Row(
+              children: [
+
+                Expanded(
+                  child:
+                  buildCheckboxItem(
+                    'Male',
+                    selectedGender,
+                  ),
+                ),
+
+                Expanded(
+                  child:
+                  buildCheckboxItem(
+                    'Female',
+                    selectedGender,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(
+              height: 20,
+            ),
+
+            const Text(
+              'Position',
+
+              style:
+              TextStyle(
+                fontSize: 28,
+                fontFamily: 'JosefinSlab',
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(
+              height: 8,
+            ),
+
+            buildCheckboxItem(
+              '#1',
+              selectedPosition,
+            ),
+
+            buildCheckboxItem(
+              'Podium',
+              selectedPosition,
+            ),
+
+            buildCheckboxItem(
+              'In lists',
+              selectedPosition,
+            ),
+
+            buildCheckboxItem(
+              'Out of lists',
+              selectedPosition,
+            ),
+          ],
         ],
       ),
     );
