@@ -75,6 +75,7 @@ flutter:
   assets:
     - assets/images/HomePage_bg.jpeg
     - assets/images/ListsPage_bg.png
+    - assets/images/Library_bg.jpg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -100,6 +101,17 @@ flutter:
     - family: JosefinSans
       fonts:
         - asset: assets/fonts/JosefinSansStd-Light.ttf
+    - family: JosefinSlab
+      fonts:
+        - asset: assets/fonts/JosefinSlab.ttf
+    - family: FrancoisOne
+      fonts:
+        - asset: assets/fonts/FrancoisOne-Regular.ttf
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Black.ttf
+
+
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #

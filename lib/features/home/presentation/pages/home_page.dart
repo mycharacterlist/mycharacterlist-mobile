@@ -51,7 +51,9 @@ class HomePage extends StatelessWidget {
               text: 'Library',
               firstColor: const Color(0xFFD9D9D9),
               secondColor: const Color(0xFFE73D3D),
-              onPressed: () {},
+              onPressed: () {
+                context.push(AppRoutes.library);
+              },
             ),
 
             const Spacer(),
