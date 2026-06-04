@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../../../app/widgets/app_appbar.dart';
-import '../widgets/Plus_button.dart';
-import '../widgets/library_card.dart';
-import '../widgets/create_character_dialog.dart';
-import '../widgets/search_bar_widget.dart';
-import '../widgets/filter_dropdown.dart';
-import '../widgets/grade_range_slider.dart';
-import '../widgets/additional_filters_card.dart';
-import '../widgets/filter_bottom_buttons.dart';
+import '../widgets/library_widgets/Plus_button.dart';
+import '../widgets/library_widgets/library_card.dart';
+import '../widgets/library_widgets/create_character_dialog.dart';
+import '../widgets/library_widgets/search_bar_widget.dart';
+import '../widgets/library_widgets/filter_dropdown.dart';
+import '../widgets/library_widgets/grade_range_slider.dart';
+import '../widgets/library_widgets/additional_filters_card.dart';
+import '../widgets/library_widgets/filter_bottom_buttons.dart';
+
+import 'package:go_router/go_router.dart';
+import 'package:mycharacterlist/app/router/routes.dart';
+
 
 class LibraryPage extends StatefulWidget {
   const LibraryPage({super.key});
@@ -278,7 +282,10 @@ class _LibraryPageState extends State<LibraryPage> {
                   size: 45,
                 ),
 
-                onPressed: showCreateDialog,
+                onPressed: () {
+
+                  context.push(AppRoutes.characterCreate);
+                },
               ),
             ),
           ),

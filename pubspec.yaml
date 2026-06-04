@@ -45,6 +45,7 @@ dependencies:
   sqflite: ^2.4.1
   flutter_colorpicker: ^1.1.0
 
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -76,6 +77,8 @@ flutter:
     - assets/images/HomePage_bg.jpeg
     - assets/images/ListsPage_bg.png
     - assets/images/Library_bg.jpg
+    - assets/images/PagePicture.png
+    - assets/images/PagePictureFixed.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -110,6 +113,15 @@ flutter:
     - family: Cairo
       fonts:
         - asset: assets/fonts/Cairo-Black.ttf
+    - family: GreatVibes
+      fonts:
+        - asset: assets/fonts/GreatVibes-Regular.ttf
+    - family: GrandifloraOne
+      fonts:
+        - asset: assets/fonts/GrandifloraOne-Regular.ttf
+    - family: GrenzeGotisch
+      fonts:
+        - asset: assets/fonts/GrenzeGotisch-VariableFont_wght.ttf
 
 
   #       - asset: fonts/TrajanPro_Bold.ttf
