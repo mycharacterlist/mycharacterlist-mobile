@@ -78,9 +78,7 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
 
                       ? const Icon(
                     Icons.image_outlined,
-
                     size: 100,
-
                     color: Colors.black,
                   )
 
@@ -127,16 +125,16 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
           ),
         ),
 
-        const SizedBox(height: 8,),
+        const SizedBox(height: 8),
 
         const Text(
-          'Add main\nphoto',
+          'Add main photo',
 
           textAlign: TextAlign.center,
 
           style:
           TextStyle(
-            fontSize: 28,
+            fontSize: 30,
             color: Colors.black,
             fontFamily: 'JosefinSlab',
           ),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'gender_selector.dart';
+import 'fields/archetype_field.dart';
+import 'fields/anime_field.dart';
 
 class MainInformationDropdown extends StatefulWidget {
 
@@ -30,7 +33,6 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
 
   final List<String>
   animeList = [
-
     'Code Geass',
     'Naruto',
     'Bleach',
@@ -41,7 +43,6 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
 
   final List<String>
   archetypes = [
-
     'Dandere',
     'Deredere',
     'Himedere',
@@ -56,7 +57,7 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
       ) {
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12,),
+      padding: const EdgeInsets.only(bottom: 12),
 
       child: TextField(
         controller: controller,
@@ -64,264 +65,21 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
         decoration:
         InputDecoration(
           labelText: label,
-
           filled: true,
-
-          fillColor: Colors.white.withOpacity(0.65,),
+          fillColor: Colors.white.withOpacity(0.65),
 
           border:
           OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12,),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
     );
   }
 
-  Widget buildAnimeField() {
 
-    return Autocomplete<String>(
-      optionsBuilder:
-          (
-          TextEditingValue
-          textEditingValue,
-          ) {
 
-        if (textEditingValue.text.isEmpty)
-        {
 
-          return const Iterable<
-              String>.empty();
-        }
-
-        return animeList.where(
-              (item) {
-
-            return item
-                .toLowerCase()
-                .startsWith(
-              textEditingValue
-                  .text
-                  .toLowerCase(),
-            );
-          },
-        );
-      },
-
-      fieldViewBuilder:
-          (
-          context,
-          controller,
-          focusNode,
-          onFieldSubmitted,
-          ) {
-
-        return TextField(
-          controller: controller,
-
-          focusNode: focusNode,
-
-          decoration:
-          InputDecoration(
-            labelText: 'Anime',
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.65,),
-
-            border:
-            OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12,),
-            ),
-
-            suffixIcon:
-            Padding(
-              padding: const EdgeInsets.all(4,),
-
-              child:
-              ElevatedButton(
-                onPressed: () {},
-
-                style:
-                ElevatedButton.styleFrom(
-                  elevation: 0,
-
-                  backgroundColor: Colors.transparent,
-
-                  foregroundColor: const Color(0xFF7B61FF,),
-
-                  side:
-                  const BorderSide(
-                    color: Color(0xFF7B61FF,),
-                  ),
-
-                  shape:
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10,),
-                  ),
-                ),
-
-                child:
-                const Text('New+',),
-              ),
-            ),
-
-            suffixIconConstraints:
-            const BoxConstraints(
-              minWidth: 90,
-              minHeight: 40,
-            ),
-          ),
-        );
-      },
-
-      optionsViewBuilder:
-          (
-          context,
-          onSelected,
-          options,
-          ) {
-
-        return Material(
-          elevation: 4,
-
-          child: Container(
-            constraints:
-            const BoxConstraints(maxHeight: 200,),
-
-            color: Colors.white,
-
-            child: ListView.builder(
-              shrinkWrap: true,
-
-              itemCount: options.length,
-
-              itemBuilder:
-                  (
-                  context,
-                  index,
-                  ) {
-
-                final option = options.elementAt(index,);
-
-                return ListTile(
-                  title: Text(option,),
-
-                  onTap: () {
-
-                    onSelected(option,);
-                  },
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget buildArchetypeField() {
-
-    return Autocomplete<String>(
-      optionsBuilder:
-          (
-          TextEditingValue
-          textEditingValue,
-          ) {
-
-        if (textEditingValue.text.isEmpty)
-        {
-
-          return const Iterable<
-              String>.empty();
-        }
-
-        return archetypes.where(
-              (item) {
-
-            return item
-                .toLowerCase()
-                .contains(
-              textEditingValue
-                  .text
-                  .toLowerCase(),
-            );
-          },
-        );
-      },
-
-      fieldViewBuilder:
-          (
-          context,
-          controller,
-          focusNode,
-          onFieldSubmitted,
-          ) {
-
-        return TextField(
-          controller: controller,
-
-          focusNode: focusNode,
-
-          decoration:
-          InputDecoration(
-            labelText: 'Archetype',
-
-            filled: true,
-
-            fillColor: Colors.white.withOpacity(0.65,),
-
-            border:
-            OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12,),
-            ),
-          ),
-        );
-      },
-
-      optionsViewBuilder:
-          (
-          context,
-          onSelected,
-          options,
-          ) {
-
-        return Material(
-          elevation: 4,
-
-          child: Container(
-            constraints:
-            const BoxConstraints(maxHeight: 200,),
-
-            color: Colors.white,
-
-            child: ListView.builder(
-              shrinkWrap: true,
-
-              itemCount: options.length,
-
-              itemBuilder:
-                  (
-                  context,
-                  index,
-                  ) {
-
-                final option = options.elementAt(index,);
-
-                return ListTile(
-                  title:
-                  Text(option,),
-
-                  onTap: () {
-
-                    onSelected(option,);
-                  },
-                );
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(
@@ -391,10 +149,13 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
 
             Padding(
               padding:
-              const EdgeInsets.all(12,),
+              const EdgeInsets.all(12),
 
               child: Column(
                 children: [
+                  const GenderSelector(),
+
+                  const SizedBox(height: 12),
 
                   buildField(
                     'Name (Name, Surname)',
@@ -416,13 +177,13 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
                     japaneseNameController,
                   ),
 
-                  const SizedBox(height: 12,),
+                  const SizedBox(height: 12),
 
-                  buildAnimeField(),
+                  const AnimeField(),
 
-                  const SizedBox(height: 12,),
+                  const SizedBox(height: 12),
 
-                  buildArchetypeField(),
+                  const ArchetypeField(),
                 ],
               ),
             ),

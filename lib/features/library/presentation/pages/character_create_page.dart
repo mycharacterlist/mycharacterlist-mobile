@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import '../../../../app/widgets/app_appbar.dart';
 import '../widgets/character_create_widgets/main_photo_picker.dart';
 import '../widgets/character_create_widgets/main_information_dropdown.dart';
+import '../widgets/character_create_widgets/personal_grades_dropdown.dart';
+import '../widgets/character_create_widgets/gallery_dropdown.dart';
+import '../widgets/character_create_widgets/personal_notes_dropdown.dart';
+import '../widgets/character_create_widgets/lower_buttons.dart';
+
 
 class CharacterCreatePage extends StatelessWidget {
   const CharacterCreatePage({
@@ -62,47 +67,65 @@ class CharacterCreatePage extends StatelessWidget {
                   ),
 
                   Positioned(
-                    top: 0,
+                    top: 55,
                     left: 20,
                     right: 20,
-                    bottom: 20,
+                    bottom: 25,
 
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    child: ClipRect(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
 
-                        children: [
+                          children: [
 
-                          const SizedBox(height: 17,),
+                            const SizedBox(height: 17),
 
-                          Center(
-                            child: Text(
-                              'New character',
+                            Center(
+                              child: Text(
+                                'New character',
 
-                              style: TextStyle(
-                                fontSize: 45,
-                                color: Colors.black,
-                                fontFamily: 'GreatVibes',
+                                style: TextStyle(
+                                  fontSize: 45,
+                                  color: Colors.black,
+                                  fontFamily: 'GreatVibes',
+                                ),
                               ),
                             ),
-                          ),
 
-                          const SizedBox(height: 20,),
+                            const SizedBox(height: 20),
 
-                          const Align(
-                            alignment: Alignment.centerLeft,
+                            const Center(
+                              child:
+                              MainPhotoPicker(),
+                            ),
 
-                            child: MainPhotoPicker(),
-                          ),
+                            const SizedBox(height: 25),
 
-                          const SizedBox(height: 25,),
+                            const MainInformationDropdown(),
 
-                          const MainInformationDropdown(),
+                            const SizedBox(height: 25),
 
-                          const SizedBox(height: 25,),
+                            const PersonalGradesDropdown(),
 
-                          // Следующие виджеты добавлять сюда
-                        ],
+                            const SizedBox(height: 25),
+
+                            const GalleryDropdown(),
+
+                            const SizedBox(height: 25),
+
+                            const PersonalNotesDropdown(),
+
+                            const SizedBox(height: 25),
+
+                            const LowerButtons(),
+
+                            const SizedBox(height: 20),
+
+                            // Следующие виджеты добавлять сюда
+                          ],
+                        ),
                       ),
                     ),
                   ),
