@@ -105,19 +105,19 @@ class CharacterCreatePage extends StatelessWidget {
 
                             const MainInformationDropdown(),
 
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 15),
 
                             const PersonalGradesDropdown(),
 
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 15),
 
                             const GalleryDropdown(),
 
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 15),
 
                             const PersonalNotesDropdown(),
 
-                            const SizedBox(height: 25),
+                            const SizedBox(height: 15),
 
                             const LowerButtons(),
 

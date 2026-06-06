@@ -30,8 +30,9 @@ class _GenderSelectorState extends State<GenderSelector> {
 
               style:
               const TextStyle(
-                fontSize: 20,
+                fontSize: 26,
                 fontFamily: 'JosefinSlab',
+                //fontWeight: FontWeight.bold,
               ),
             ),
           ),
