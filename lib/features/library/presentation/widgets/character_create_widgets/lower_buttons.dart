@@ -1,36 +1,36 @@
 import 'package:flutter/material.dart';
 
 class LowerButtons extends StatelessWidget {
-
   const LowerButtons({
     super.key,
+    required this.onClear,
+    required this.onCreate,
+    this.isSaving = false,
   });
 
-  @override
-  Widget build(
-      BuildContext context,
-      ) {
+  final VoidCallback onClear;
+  final VoidCallback onCreate;
+  final bool isSaving;
 
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
       children: [
-
         SizedBox(
           width: 130,
           height: 45,
 
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: isSaving ? null : onClear,
 
-            style:
-            ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6E2E00,),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6E2E00),
               foregroundColor: Colors.white,
               elevation: 4,
 
-              shape:
-              RoundedRectangleBorder(
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
@@ -52,24 +52,21 @@ class LowerButtons extends StatelessWidget {
           height: 45,
 
           child: ElevatedButton(
-            onPressed: () {},
+            onPressed: isSaving ? null : onCreate,
 
-            style:
-            ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF444444,),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF444444),
 
-              foregroundColor:
-              Colors.white,
+              foregroundColor: Colors.white,
               elevation: 4,
 
-              shape:
-              RoundedRectangleBorder(
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
 
-            child: const Text(
-              'Create',
+            child: Text(
+              isSaving ? 'Saving...' : 'Create',
 
               style: TextStyle(
                 fontSize: 20,

@@ -1,108 +1,86 @@
 import 'package:flutter/material.dart';
 
 class AnimeField extends StatelessWidget {
-
   const AnimeField({
     super.key,
+    required this.controller,
+    required this.items,
+    required this.onAdd,
+    this.hasError = false,
   });
 
+  final TextEditingController controller;
+  final List<String> items;
+  final VoidCallback onAdd;
+  final bool hasError;
+
   @override
-  Widget build(
-      BuildContext context,
-      ) {
-
-    final List<String>
-    animeList = [
-      'Code Geass',
-      'Naruto',
-      'Bleach',
-      'Attack on Titan',
-      'Classroom of the Elite',
-      'Death Note',
-    ];
-
+  Widget build(BuildContext context) {
     return Autocomplete<String>(
-      optionsBuilder:
-          (
-          TextEditingValue
-          textEditingValue,
-          ) {
-
-        if (textEditingValue.text.isEmpty)
-        {
-          return const Iterable<
-              String>.empty();
+      initialValue: controller.value,
+      onSelected: (value) => controller.text = value,
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) {
+          return const Iterable<String>.empty();
         }
 
-        return animeList.where(
-              (item) {
-
-            return item
-                .toLowerCase()
-                .startsWith(
-              textEditingValue
-                  .text
-                  .toLowerCase(),
-            );
-          },
-        );
+        return items.where((item) {
+          return item.toLowerCase().startsWith(
+            textEditingValue.text.toLowerCase(),
+          );
+        });
       },
 
-      fieldViewBuilder:
-          (
-          context,
-          controller,
-          focusNode,
-          onFieldSubmitted,
-          ) {
-
+      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
         return TextField(
           controller: controller,
           focusNode: focusNode,
+          onChanged: (value) => this.controller.text = value,
 
-          decoration:
-          InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Anime',
             filled: true,
-            fillColor: Colors.white.withOpacity(0.65,),
+            fillColor: Colors.white.withOpacity(0.65),
 
-            border:
-            OutlineInputBorder(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : Colors.grey,
+                width: hasError ? 2 : 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: hasError ? Colors.red : const Color(0xFF7B61FF),
+                width: 2,
+              ),
             ),
 
-            suffixIcon:
-            Padding(
+            suffixIcon: Padding(
               padding: const EdgeInsets.all(4),
 
-              child:
-              ElevatedButton(
-                onPressed: () {},
+              child: ElevatedButton(
+                onPressed: onAdd,
 
-                style:
-                ElevatedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
                   elevation: 0,
                   backgroundColor: Colors.transparent,
                   foregroundColor: const Color(0xFF7B61FF),
 
-                  side:
-                  const BorderSide(
-                    color: Color(0xFF7B61FF),
-                  ),
+                  side: const BorderSide(color: Color(0xFF7B61FF)),
 
-                  shape:
-                  RoundedRectangleBorder(
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
 
-                child:
-                const Text('New+'),
+                child: const Text('New+'),
               ),
             ),
 
-            suffixIconConstraints:
-            const BoxConstraints(
+            suffixIconConstraints: const BoxConstraints(
               minWidth: 90,
               minHeight: 40,
             ),
@@ -110,50 +88,28 @@ class AnimeField extends StatelessWidget {
         );
       },
 
-      optionsViewBuilder:
-          (
-          context,
-          onSelected,
-          options,
-          ) {
-
+      optionsViewBuilder: (context, onSelected, options) {
         return Material(
           elevation: 4,
 
           child: Container(
-            constraints:
-            const BoxConstraints(maxHeight: 200),
+            constraints: const BoxConstraints(maxHeight: 200),
 
-            color:
-            Colors.white,
+            color: Colors.white,
 
             child: ListView.builder(
               shrinkWrap: true,
 
               itemCount: options.length,
 
-              itemBuilder:
-                  (
-                  context,
-                  index,
-                  ) {
-
-                final option =
-                options.elementAt(
-                  index,
-                );
+              itemBuilder: (context, index) {
+                final option = options.elementAt(index);
 
                 return ListTile(
-                  title:
-                  Text(
-                    option,
-                  ),
+                  title: Text(option),
 
                   onTap: () {
-
-                    onSelected(
-                      option,
-                    );
+                    onSelected(option);
                   },
                 );
               },

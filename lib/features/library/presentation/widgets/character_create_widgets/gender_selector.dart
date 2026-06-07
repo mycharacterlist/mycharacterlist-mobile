@@ -1,35 +1,24 @@
 import 'package:flutter/material.dart';
 
-class GenderSelector extends StatefulWidget {
-
+class GenderSelector extends StatelessWidget {
   const GenderSelector({
     super.key,
+    required this.selectedGender,
+    required this.onChanged,
   });
 
-  @override
-  State<GenderSelector>
-  createState() =>
-      _GenderSelectorState();
-}
+  final String selectedGender;
+  final ValueChanged<String> onChanged;
 
-class _GenderSelectorState extends State<GenderSelector> {
-
-  String? selectedGender;
-
-  Widget buildGenderRadio(
-      String gender,
-      ) {
-
+  Widget buildGenderRadio(String gender) {
     return Expanded(
       child: Row(
         children: [
-
           Expanded(
             child: Text(
               gender,
 
-              style:
-              const TextStyle(
+              style: const TextStyle(
                 fontSize: 26,
                 fontFamily: 'JosefinSlab',
                 //fontWeight: FontWeight.bold,
@@ -42,13 +31,10 @@ class _GenderSelectorState extends State<GenderSelector> {
             groupValue: selectedGender,
             activeColor: Colors.black,
 
-            onChanged:
-                (value) {
-
-              setState(() {
-
-                selectedGender = value;
-              });
+            onChanged: (value) {
+              if (value != null) {
+                onChanged(value);
+              }
             },
           ),
         ],
@@ -57,38 +43,24 @@ class _GenderSelectorState extends State<GenderSelector> {
   }
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
-
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
 
       children: [
-
         const Text(
           'Gender',
 
-          style:
-          TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontFamily: 'GrenzeGotisch',
             fontWeight: FontWeight.bold,
           ),
         ),
 
-        const SizedBox(
-          height: 8,
-        ),
+        const SizedBox(height: 8),
 
-        Row(
-          children: [
-
-            buildGenderRadio('Male'),
-
-            buildGenderRadio('Female'),
-          ],
-        ),
+        Row(children: [buildGenderRadio('Male'), buildGenderRadio('Female')]),
       ],
     );
   }

@@ -4,128 +4,122 @@ import 'fields/archetype_field.dart';
 import 'fields/anime_field.dart';
 
 class MainInformationDropdown extends StatefulWidget {
-
   const MainInformationDropdown({
     super.key,
+    required this.nameController,
+    required this.ageController,
+    required this.heightController,
+    required this.japaneseNameController,
+    required this.animeController,
+    required this.archetypeController,
+    required this.animeTitles,
+    required this.archetypes,
+    required this.onAddAnime,
+    required this.selectedGender,
+    required this.onGenderChanged,
+    this.nameHasError = false,
+    this.animeHasError = false,
+    this.archetypeHasError = false,
   });
 
+  final TextEditingController nameController;
+  final TextEditingController ageController;
+  final TextEditingController heightController;
+  final TextEditingController japaneseNameController;
+  final TextEditingController animeController;
+  final TextEditingController archetypeController;
+  final List<String> animeTitles;
+  final List<String> archetypes;
+  final VoidCallback onAddAnime;
+  final String selectedGender;
+  final ValueChanged<String> onGenderChanged;
+  final bool nameHasError;
+  final bool animeHasError;
+  final bool archetypeHasError;
+
   @override
-  State<MainInformationDropdown>
-  createState() =>
+  State<MainInformationDropdown> createState() =>
       _MainInformationDropdownState();
 }
 
 class _MainInformationDropdownState extends State<MainInformationDropdown> {
-
   bool isExpanded = false;
 
-  final TextEditingController
-  nameController = TextEditingController();
-
-  final TextEditingController
-  ageController = TextEditingController();
-
-  final TextEditingController
-  heightController = TextEditingController();
-
-  final TextEditingController
-  japaneseNameController = TextEditingController();
-
-  final List<String>
-  animeList = [
-    'Code Geass',
-    'Naruto',
-    'Bleach',
-    'Attack on Titan',
-    'Classroom of the Elite',
-    'Death Note',
-  ];
-
-  final List<String>
-  archetypes = [
-    'Dandere',
-    'Deredere',
-    'Himedere',
-    'Kuudere',
-    'Tsundere',
-    'Yandere',
-  ];
-
   Widget buildField(
-      String label,
-      TextEditingController controller,
-      ) {
-
+    String label,
+    TextEditingController controller, {
+    bool hasError = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
 
       child: TextField(
         controller: controller,
 
-        decoration:
-        InputDecoration(
+        decoration: InputDecoration(
           labelText: label,
           filled: true,
           fillColor: Colors.white.withOpacity(0.65),
 
-          border:
-          OutlineInputBorder(
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: hasError ? Colors.red : Colors.grey,
+              width: hasError ? 2 : 1,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: hasError ? Colors.red : const Color(0xFF7B61FF),
+              width: 2,
+            ),
           ),
         ),
       ),
     );
   }
 
-
-
-
-
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
+    final hasError =
+        widget.nameHasError || widget.animeHasError || widget.archetypeHasError;
+
+    if (hasError && !isExpanded) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !isExpanded) {
+          setState(() => isExpanded = true);
+        }
+      });
+    }
 
     return Container(
-      decoration:
-      BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.transparent,
 
-        border:
-        Border.all(
-          color: Colors.black,
-          width: 2,
-        ),
+        border: Border.all(color: Colors.black, width: 2),
       ),
 
       child: Column(
         children: [
-
           InkWell(
             onTap: () {
-
               setState(() {
-
                 isExpanded = !isExpanded;
               });
             },
 
             child: Padding(
-              padding:
-              const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
 
               child: Row(
                 children: [
-
                   const Expanded(
                     child: Text(
                       'Main information',
 
-                      style:
-                      TextStyle(
+                      style: TextStyle(
                         fontSize: 28,
                         fontFamily: 'GrenzeGotisch',
                         fontWeight: FontWeight.bold,
@@ -146,44 +140,46 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
           ),
 
           if (isExpanded)
-
             Padding(
-              padding:
-              const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
 
               child: Column(
                 children: [
-                  const GenderSelector(),
+                  GenderSelector(
+                    selectedGender: widget.selectedGender,
+                    onChanged: widget.onGenderChanged,
+                  ),
 
                   const SizedBox(height: 12),
 
                   buildField(
                     'Name (Name, Surname)',
-                    nameController,
+                    widget.nameController,
+                    hasError: widget.nameHasError,
                   ),
 
-                  buildField(
-                    'Age',
-                    ageController,
-                  ),
+                  buildField('Age', widget.ageController),
 
-                  buildField(
-                    'Height (cm)',
-                    heightController,
-                  ),
+                  buildField('Height (cm)', widget.heightController),
 
-                  buildField(
-                    'Japanese name',
-                    japaneseNameController,
+                  buildField('Japanese name', widget.japaneseNameController),
+
+                  const SizedBox(height: 12),
+
+                  AnimeField(
+                    controller: widget.animeController,
+                    items: widget.animeTitles,
+                    onAdd: widget.onAddAnime,
+                    hasError: widget.animeHasError,
                   ),
 
                   const SizedBox(height: 12),
 
-                  const AnimeField(),
-
-                  const SizedBox(height: 12),
-
-                  const ArchetypeField(),
+                  ArchetypeField(
+                    controller: widget.archetypeController,
+                    items: widget.archetypes,
+                    hasError: widget.archetypeHasError,
+                  ),
                 ],
               ),
             ),

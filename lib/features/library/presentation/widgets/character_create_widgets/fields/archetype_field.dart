@@ -1,128 +1,61 @@
 import 'package:flutter/material.dart';
 
 class ArchetypeField extends StatelessWidget {
-
   const ArchetypeField({
     super.key,
+    required this.controller,
+    required this.items,
+    this.hasError = false,
   });
 
+  final TextEditingController controller;
+  final List<String> items;
+  final bool hasError;
+
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
+    const noneValue = '';
+    final selectedValue = items.contains(controller.text)
+        ? controller.text
+        : noneValue;
 
-    final List<String>
-    archetypes = [
-      'Dandere',
-      'Deredere',
-      'Himedere',
-      'Kuudere',
-      'Tsundere',
-      'Yandere',
-    ];
-
-    return Autocomplete<String>(
-      optionsBuilder:
-          (
-          TextEditingValue
-          textEditingValue,
-          ) {
-
-        if (textEditingValue.text.isEmpty)
-        {
-          return const Iterable<
-              String>.empty();
-        }
-
-        return archetypes.where(
-              (item) {
-
-            return item
-                .toLowerCase()
-                .startsWith(
-              textEditingValue
-                  .text
-                  .toLowerCase(),
-            );
-          },
-        );
-      },
-
-      fieldViewBuilder:
-          (
-          context,
-          controller,
-          focusNode,
-          onFieldSubmitted,
-          ) {
-
-        return TextField(
-          controller: controller,
-
-          focusNode: focusNode,
-
-          decoration:
-          InputDecoration(
-            labelText: 'Archetype',
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.65,),
-
-            border:
-            OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+    return DropdownButtonFormField<String>(
+      initialValue: selectedValue,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: 'Archetype',
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.65),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: hasError ? Colors.red : Colors.grey,
+            width: hasError ? 2 : 1,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: hasError ? Colors.red : const Color(0xFF7B61FF),
+            width: 2,
+          ),
+        ),
+      ),
+      items: [
+        const DropdownMenuItem<String>(
+          value: noneValue,
+          child: Text('None'),
+        ),
+        ...items.map(
+            (item) => DropdownMenuItem<String>(
+              value: item,
+              child: Text(item),
             ),
           ),
-        );
-      },
-
-      optionsViewBuilder:
-          (
-          context,
-          onSelected,
-          options,
-          ) {
-
-        return Material(
-          elevation: 4,
-
-          child: Container(
-            constraints:
-            const BoxConstraints(maxHeight: 200,),
-            color: Colors.white,
-
-            child: ListView.builder(
-              shrinkWrap:
-              true,
-
-              itemCount:
-              options.length,
-
-              itemBuilder:
-                  (
-                  context,
-                  index,
-                  ) {
-
-                final option =
-                options.elementAt(
-                  index,
-                );
-
-                return ListTile(
-                  title:
-                  Text(option,),
-
-                  onTap: () {
-
-                    onSelected(
-                      option,
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        );
+      ],
+      onChanged: (value) {
+        controller.text = value ?? '';
       },
     );
   }
