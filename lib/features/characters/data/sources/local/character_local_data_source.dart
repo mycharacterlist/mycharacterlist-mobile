@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'package:mycharacterlist/core/database/app_database.dart';
 import 'package:mycharacterlist/features/characters/data/models/character_model.dart';
+import 'package:mycharacterlist/features/characters/data/models/character_fact_model.dart';
 
 class CharacterLocalDataSource {
   const CharacterLocalDataSource({required AppDatabase appDatabase})
@@ -41,6 +42,23 @@ class CharacterLocalDataSource {
     return _mapCharacter(database, characters.first);
   }
 
+  Future<List<CharacterModel>> searchCharacters(String query) async {
+    final database = await _appDatabase.database;
+    final normalizedQuery = '%${query.trim()}%';
+    final characters = await database.query(
+      'characters',
+      where: 'name LIKE ? COLLATE NOCASE OR source_title LIKE ? COLLATE NOCASE',
+      whereArgs: [normalizedQuery, normalizedQuery],
+      orderBy: 'name COLLATE NOCASE ASC',
+    );
+
+    final models = <CharacterModel>[];
+    for (final character in characters) {
+      models.add(await _mapCharacter(database, character));
+    }
+    return models;
+  }
+
   Future<void> saveCharacter(CharacterModel character) async {
     final database = await _appDatabase.database;
 
@@ -61,6 +79,11 @@ class CharacterLocalDataSource {
         where: 'character_id = ?',
         whereArgs: [character.id],
       );
+      await transaction.delete(
+        'character_facts',
+        where: 'character_id = ?',
+        whereArgs: [character.id],
+      );
 
       for (var index = 0; index < character.galleryImagePaths.length; index++) {
         await transaction.insert('character_gallery_images', {
@@ -75,9 +98,20 @@ class CharacterLocalDataSource {
         await transaction.insert('character_grades', {
           'id': '${character.id}_grade_${entry.key}',
           'character_id': character.id,
-          'grade_key': entry.key,
+          'grade_definition_id': entry.key,
           'grade_value': entry.value,
         });
+      }
+
+      for (var index = 0; index < character.facts.length; index++) {
+        final fact = CharacterFactModel.fromEntity(character.facts[index]);
+        await transaction.insert(
+          'character_facts',
+          fact.toDatabase(
+            id: '${character.id}_fact_$index',
+            characterId: character.id,
+          ),
+        );
       }
     });
   }
@@ -98,11 +132,13 @@ class CharacterLocalDataSource {
       characterId,
     );
     final grades = await _getGrades(database, characterId);
+    final facts = await _getFacts(database, characterId);
 
     return CharacterModel.fromDatabase(
       character,
       galleryImagePaths: galleryImagePaths,
       grades: grades,
+      facts: facts,
     );
   }
 
@@ -127,15 +163,29 @@ class CharacterLocalDataSource {
   ) async {
     final grades = await database.query(
       'character_grades',
-      columns: ['grade_key', 'grade_value'],
+      columns: ['grade_definition_id', 'grade_value'],
       where: 'character_id = ?',
       whereArgs: [characterId],
-      orderBy: 'grade_key COLLATE NOCASE ASC',
+      orderBy: 'grade_definition_id COLLATE NOCASE ASC',
     );
 
     return {
       for (final grade in grades)
-        grade['grade_key']! as String: grade['grade_value']! as int,
+        grade['grade_definition_id']! as String: grade['grade_value']! as int,
     };
+  }
+
+  Future<List<CharacterFactModel>> _getFacts(
+    DatabaseExecutor database,
+    String characterId,
+  ) async {
+    final facts = await database.query(
+      'character_facts',
+      where: 'character_id = ?',
+      whereArgs: [characterId],
+      orderBy: 'fact_key COLLATE NOCASE ASC',
+    );
+
+    return facts.map(CharacterFactModel.fromDatabase).toList();
   }
 }

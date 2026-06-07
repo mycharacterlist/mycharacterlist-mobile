@@ -1,4 +1,6 @@
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
+import 'package:mycharacterlist/features/characters/domain/entities/character_fact.dart';
+import 'package:mycharacterlist/features/characters/data/models/character_fact_model.dart';
 
 class CharacterModel extends Character {
   const CharacterModel({
@@ -17,6 +19,7 @@ class CharacterModel extends Character {
     super.mainImagePath,
     super.galleryImagePaths,
     super.grades,
+    super.facts,
   });
 
   factory CharacterModel.fromEntity(Character character) {
@@ -34,6 +37,7 @@ class CharacterModel extends Character {
       mainImagePath: character.mainImagePath,
       galleryImagePaths: character.galleryImagePaths,
       grades: character.grades,
+      facts: character.facts,
       createdAt: character.createdAt,
       updatedAt: character.updatedAt,
     );
@@ -56,6 +60,13 @@ class CharacterModel extends Character {
         json['galleryImagePaths'] as List? ?? const [],
       ),
       grades: Map<String, int>.from(json['grades'] as Map? ?? const {}),
+      facts: (json['facts'] as List? ?? const [])
+          .map(
+            (fact) => CharacterFactModel.fromJson(
+              Map<String, dynamic>.from(fact as Map),
+            ),
+          )
+          .toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -65,6 +76,7 @@ class CharacterModel extends Character {
     Map<String, Object?> data, {
     List<String> galleryImagePaths = const [],
     Map<String, int> grades = const {},
+    List<CharacterFact> facts = const [],
   }) {
     return CharacterModel(
       id: data['id']! as String,
@@ -80,6 +92,7 @@ class CharacterModel extends Character {
       mainImagePath: data['main_image_path'] as String?,
       galleryImagePaths: galleryImagePaths,
       grades: grades,
+      facts: facts,
       createdAt: DateTime.parse(data['created_at']! as String),
       updatedAt: DateTime.parse(data['updated_at']! as String),
     );
@@ -100,6 +113,9 @@ class CharacterModel extends Character {
       'mainImagePath': mainImagePath,
       'galleryImagePaths': galleryImagePaths,
       'grades': grades,
+      'facts': facts
+          .map((fact) => CharacterFactModel.fromEntity(fact).toJson())
+          .toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };

@@ -30,6 +30,31 @@ class AppDatabase {
       },
       onCreate: (database, version) async {
         await database.execute('''
+          CREATE TABLE anime_titles (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            created_at TEXT NOT NULL
+          )
+        ''');
+
+        await database.execute('''
+          CREATE TABLE archetypes (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            created_at TEXT NOT NULL
+          )
+        ''');
+
+        await database.execute('''
+          CREATE TABLE grade_definitions (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            max_value INTEGER NOT NULL CHECK (max_value > 0),
+            position INTEGER NOT NULL UNIQUE CHECK (position > 0)
+          )
+        ''');
+
+        await database.execute('''
           CREATE TABLE characters (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -60,28 +85,45 @@ class AppDatabase {
           )
         ''');
 
-        // TODO: Add custom text attributes.
-        // await database.execute('''
-        //   CREATE TABLE character_facts (
-        //     id TEXT PRIMARY KEY,
-        //     character_id TEXT NOT NULL,
-        //     fact_key TEXT NOT NULL,
-        //     fact_value TEXT NOT NULL,
-        //     FOREIGN KEY(character_id) REFERENCES characters(id)
-        //       ON DELETE CASCADE,
-        //     UNIQUE(character_id, fact_key)
-        //   )
-        // ''');
+        await database.execute('''
+          CREATE TABLE character_facts (
+            id TEXT PRIMARY KEY,
+            character_id TEXT NOT NULL,
+            fact_key TEXT NOT NULL,
+            fact_type TEXT NOT NULL
+              CHECK (fact_type IN ('text', 'grade')),
+            fact_value TEXT,
+            numeric_value INTEGER,
+            max_value INTEGER,
+            FOREIGN KEY(character_id) REFERENCES characters(id)
+              ON DELETE CASCADE,
+            UNIQUE(character_id, fact_key),
+            CHECK (
+              (fact_type = 'text'
+                AND fact_value IS NOT NULL
+                AND numeric_value IS NULL
+                AND max_value IS NULL)
+              OR
+              (fact_type = 'grade'
+                AND fact_value IS NULL
+                AND numeric_value IS NOT NULL
+                AND max_value IS NOT NULL
+                AND max_value > 0
+                AND numeric_value BETWEEN 0 AND max_value)
+            )
+          )
+        ''');
 
         await database.execute('''
           CREATE TABLE character_grades (
             id TEXT PRIMARY KEY,
             character_id TEXT NOT NULL,
-            grade_key TEXT NOT NULL,
+            grade_definition_id TEXT NOT NULL,
             grade_value INTEGER NOT NULL,
             FOREIGN KEY(character_id) REFERENCES characters(id)
               ON DELETE CASCADE,
-            UNIQUE(character_id, grade_key)
+            FOREIGN KEY(grade_definition_id) REFERENCES grade_definitions(id),
+            UNIQUE(character_id, grade_definition_id)
           )
         ''');
 
@@ -126,15 +168,55 @@ class AppDatabase {
           'ON character_gallery_images(character_id)',
         );
 
-        // await database.execute(
-        //   'CREATE INDEX character_facts_character_id_index '
-        //   'ON character_facts(character_id)',
-        // );
+        await database.execute(
+          'CREATE INDEX character_facts_character_id_index '
+          'ON character_facts(character_id)',
+        );
 
         await database.execute(
           'CREATE INDEX character_grades_character_id_index '
           'ON character_grades(character_id)',
         );
+
+        await database.execute(
+          'CREATE INDEX character_grades_definition_id_index '
+          'ON character_grades(grade_definition_id)',
+        );
+
+        final now = DateTime.now().toIso8601String();
+        const archetypes = [
+          'Dandere',
+          'Deredere',
+          'Himedere',
+          'Kuudere',
+          'Tsundere',
+          'Yandere',
+        ];
+        const gradeDefinitions = [
+          ('appearance', 'Appearance', 10),
+          ('character', 'Character', 10),
+          ('outfit', 'Outfit', 10),
+          ('haircut', 'Haircut', 10),
+          ('eyes', 'Eyes', 10),
+        ];
+
+        for (final name in archetypes) {
+          await database.insert('archetypes', {
+            'id': name.toLowerCase(),
+            'name': name,
+            'created_at': now,
+          });
+        }
+
+        for (var index = 0; index < gradeDefinitions.length; index++) {
+          final definition = gradeDefinitions[index];
+          await database.insert('grade_definitions', {
+            'id': definition.$1,
+            'name': definition.$2,
+            'max_value': definition.$3,
+            'position': index + 1,
+          });
+        }
       },
     );
   }

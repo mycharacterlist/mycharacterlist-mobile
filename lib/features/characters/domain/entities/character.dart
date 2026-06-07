@@ -1,4 +1,5 @@
 import 'package:mycharacterlist/features/characters/domain/entities/character_gender.dart';
+import 'package:mycharacterlist/features/characters/domain/entities/character_fact.dart';
 
 class Character {
   const Character({
@@ -17,6 +18,7 @@ class Character {
     this.mainImagePath,
     this.galleryImagePaths = const [],
     this.grades = const {},
+    this.facts = const [],
   });
 
   final String id;
@@ -32,6 +34,7 @@ class Character {
   final String? mainImagePath;
   final List<String> galleryImagePaths;
   final Map<String, int> grades;
+  final List<CharacterFact> facts;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -49,6 +52,7 @@ class Character {
     String? mainImagePath,
     List<String>? galleryImagePaths,
     Map<String, int>? grades,
+    List<CharacterFact>? facts,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -66,6 +70,7 @@ class Character {
       mainImagePath: mainImagePath ?? this.mainImagePath,
       galleryImagePaths: galleryImagePaths ?? this.galleryImagePaths,
       grades: grades ?? this.grades,
+      facts: facts ?? this.facts,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
