@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'marquee_text.dart';
 
-
 class LibraryCard extends StatelessWidget {
-
   final String mainText;
   final String sideText;
   final int index;
@@ -25,72 +23,62 @@ class LibraryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin:
-      const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 10,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
 
       height: 100,
 
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF00734F),
-            Color(0xFF009768),
-          ],
+          colors: [Color(0xFF00734F), Color(0xFF009768)],
         ),
 
-        borderRadius:
-        BorderRadius.circular(25,),
+        borderRadius: BorderRadius.circular(25),
 
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.35,),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
 
             blurRadius: 15,
-            offset: const Offset(0, 8,),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
 
       child: ElevatedButton(
-        style:
-        ElevatedButton.styleFrom(
+        style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           padding: EdgeInsets.zero,
 
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25,),
+            borderRadius: BorderRadius.circular(25),
           ),
         ),
 
         onPressed: onPressed,
 
         child: Padding(
-          padding: const EdgeInsets.all(16,),
+          padding: const EdgeInsets.all(16),
 
           child: Row(
             children: [
-
               Container(
-                constraints: const BoxConstraints(minWidth: 60,),
+                constraints: const BoxConstraints(minWidth: 60),
 
-                padding: const EdgeInsets.symmetric(horizontal: 10,),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
 
                 height: 90,
 
                 decoration: BoxDecoration(
                   color: Colors.black12,
-                  borderRadius: BorderRadius.circular(15,),
+                  borderRadius: BorderRadius.circular(15),
                 ),
 
                 child: Center(
                   child: Text(
                     '${index + 1}.',
 
-                    style:
-                    const TextStyle(
+                    style: const TextStyle(
                       fontSize: 42,
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
@@ -100,7 +88,7 @@ class LibraryCard extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(width: 15,),
+              const SizedBox(width: 15),
 
               Expanded(
                 child: Column(
@@ -111,16 +99,15 @@ class LibraryCard extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
 
                   children: [
-
                     Flexible(
                       child: SizedBox(
                         height: 35,
 
                         child: MarqueeText(
+                          key: ValueKey('main_$mainText'),
                           text: mainText,
 
-                          style:
-                          const TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 28,
@@ -135,6 +122,7 @@ class LibraryCard extends StatelessWidget {
                         height: 28,
 
                         child: MarqueeText(
+                          key: ValueKey('side_$sideText'),
                           text: sideText,
 
                           style: const TextStyle(

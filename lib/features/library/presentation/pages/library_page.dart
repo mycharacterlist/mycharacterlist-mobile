@@ -5,12 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
+import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/Plus_button.dart';
-import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/additional_filters_card.dart';
-import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/filter_bottom_buttons.dart';
-import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/filter_dropdown.dart';
-import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/grade_range_slider.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/library_card.dart';
+import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/library_filter_sheet.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/search_bar_widget.dart';
 
 class LibraryPage extends ConsumerStatefulWidget {
@@ -22,20 +20,53 @@ class LibraryPage extends ConsumerStatefulWidget {
 
 class _LibraryPageState extends ConsumerState<LibraryPage> {
   final searchController = TextEditingController();
+  final charactersScrollController = ScrollController();
+  CharacterFilters filters = const CharacterFilters();
 
   @override
   void initState() {
     super.initState();
     searchController.addListener(_search);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(charactersViewModelProvider.notifier).reset();
+    });
   }
 
   void _search() {
+    _resetListPosition();
     ref
         .read(charactersViewModelProvider.notifier)
         .search(searchController.text);
   }
 
+  void _unfocusSearch() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+  void _resetListPosition() {
+    if (charactersScrollController.hasClients) {
+      charactersScrollController.jumpTo(0);
+    }
+  }
+
+  void _resetSearch() {
+    _unfocusSearch();
+    searchController
+      ..removeListener(_search)
+      ..clear()
+      ..addListener(_search);
+    filters = const CharacterFilters();
+    _resetListPosition();
+    ref.read(charactersViewModelProvider.notifier).reset();
+  }
+
+  void _openPage(String route) {
+    _resetSearch();
+    context.push(route);
+  }
+
   void showFilterSheet() {
+    _unfocusSearch();
     final references = ref.read(characterReferencesViewModelProvider);
 
     showModalBottomSheet(
@@ -49,53 +80,23 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      builder: (context) {
-        return SizedBox(
-          width: double.infinity,
-          height: MediaQuery.of(context).size.height * 0.75,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                Container(
-                  width: 60,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.black26,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Filter',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'FrancoisOne',
-                  ),
-                ),
-                const SizedBox(height: 20),
-                FilterDropdown(
-                  title: 'Anime',
-                  items: references.animeTitles,
-                ),
-                const SizedBox(height: 5),
-                FilterDropdown(
-                  title: 'Archetype',
-                  items: references.archetypes,
-                ),
-                const SizedBox(height: 5),
-                const AdditionalFiltersCard(),
-                const SizedBox(height: 5),
-                const GradeRangeSlider(),
-                const SizedBox(height: 10),
-                FilterBottomButtons(onClear: () {}, onShow: () {}),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (sheetContext) => LibraryFilterSheet(
+        filters: filters,
+        animeTitles: references.animeTitles,
+        archetypes: references.archetypes,
+        onClear: () {
+          filters = const CharacterFilters();
+          _resetListPosition();
+          ref.read(charactersViewModelProvider.notifier).clearFilters();
+          sheetContext.pop();
+        },
+        onApply: (value) {
+          filters = value;
+          _resetListPosition();
+          ref.read(charactersViewModelProvider.notifier).applyFilters(value);
+          sheetContext.pop();
+        },
+      ),
     );
   }
 
@@ -104,6 +105,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     searchController
       ..removeListener(_search)
       ..dispose();
+    charactersScrollController.dispose();
     super.dispose();
   }
 
@@ -120,62 +122,71 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         backButtonColor: const Color(0xFF009768),
         titleColor: const Color(0xFF4CB897),
       ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/Library_bg.jpg',
-              fit: BoxFit.cover,
-            ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                SearchBarWidget(
-                  controller: searchController,
-                  onFilterPressed: showFilterSheet,
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 110),
-                    child: state.isLoading && state.characters.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
-                        : Scrollbar(
-                            thumbVisibility: true,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.only(top: 5),
-                              itemCount: state.characters.length,
-                              itemBuilder: (context, index) {
-                                final character = state.characters[index];
-                                return LibraryCard(
-                                  mainText: character.name,
-                                  sideText: character.sourceTitle,
-                                  index: index,
-                                  onPressed: () => context.push(
-                                    AppRoutes.characterById(character.id),
-                                  ),
-                                  onEditPressed: () {},
-                                );
-                              },
-                            ),
-                          ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 20,
-            child: Center(
-              child: PlusButton(
-                icon: const Icon(Icons.add, color: Colors.black, size: 45),
-                onPressed: () => context.push(AppRoutes.characterCreate),
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: _unfocusSearch,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/Library_bg.jpg',
+                fit: BoxFit.cover,
               ),
             ),
-          ),
-        ],
+            SafeArea(
+              child: Column(
+                children: [
+                  SearchBarWidget(
+                    controller: searchController,
+                    onFilterPressed: showFilterSheet,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 110),
+                      child: state.isLoading && state.characters.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : Scrollbar(
+                              thumbVisibility: true,
+                              controller: charactersScrollController,
+                              child: ListView.builder(
+                                controller: charactersScrollController,
+                                padding: const EdgeInsets.only(top: 5),
+                                itemCount: state.characters.length,
+                                itemBuilder: (context, index) {
+                                  final character = state.characters[index];
+                                  return LibraryCard(
+                                    key: ValueKey(character.id),
+                                    mainText: character.name,
+                                    sideText: character.sourceTitle,
+                                    index: index,
+                                    onPressed: () => _openPage(
+                                      AppRoutes.characterById(character.id),
+                                    ),
+                                    onEditPressed: () => _openPage(
+                                      AppRoutes.characterEditById(character.id),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 20,
+              child: Center(
+                child: PlusButton(
+                  icon: const Icon(Icons.add, color: Colors.black, size: 45),
+                  onPressed: () => _openPage(AppRoutes.characterCreate),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

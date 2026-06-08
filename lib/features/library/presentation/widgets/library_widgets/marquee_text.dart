@@ -1,50 +1,55 @@
 import 'package:flutter/material.dart';
 
 class MarqueeText extends StatefulWidget {
-
   final String text;
   final TextStyle style;
 
-  const MarqueeText({
-    super.key,
-
-    required this.text,
-    required this.style,
-  });
+  const MarqueeText({super.key, required this.text, required this.style});
 
   @override
-  State<MarqueeText> createState() =>
-      _MarqueeTextState();
+  State<MarqueeText> createState() => _MarqueeTextState();
 }
 
-class _MarqueeTextState
-    extends State<MarqueeText> {
-
+class _MarqueeTextState extends State<MarqueeText> {
   late ScrollController controller;
+  int animationId = 0;
 
   @override
   void initState() {
     super.initState();
 
-    controller =
-        ScrollController();
+    controller = ScrollController();
 
-    WidgetsBinding.instance
-        .addPostFrameCallback(
-          (_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      startAnimation();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant MarqueeText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.text != widget.text || oldWidget.style != widget.style) {
+      animationId++;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !controller.hasClients) {
+          return;
+        }
+
+        controller.jumpTo(0);
         startAnimation();
-      },
-    );
+      });
+    }
   }
 
   void startAnimation() async {
+    final currentAnimationId = ++animationId;
 
     if (!controller.hasClients) {
       return;
     }
 
-    final maxScroll =
-        controller.position.maxScrollExtent;
+    final maxScroll = controller.position.maxScrollExtent;
 
     if (maxScroll <= 0) {
       return;
@@ -60,40 +65,38 @@ class _MarqueeTextState
       speed = maxSpeed;
     }
 
-    final durationMs =
-    (maxScroll / speed * 1000).round();
+    final durationMs = (maxScroll / speed * 1000).round();
 
-    while (mounted) {
+    while (mounted && currentAnimationId == animationId) {
+      await controller.animateTo(
+        controller.position.maxScrollExtent,
+
+        duration: Duration(milliseconds: durationMs),
+
+        curve: Curves.linear,
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted || currentAnimationId != animationId) {
+        return;
+      }
 
       await controller.animateTo(
-        maxScroll,
+        0,
 
-        duration: Duration(milliseconds: durationMs,),
-
-        curve: Curves.linear,
-      );
-
-      await Future.delayed(
-        const Duration(
-          milliseconds: 500,
-        ),
-      );
-
-      await controller.animateTo(0,
-
-        duration: Duration(milliseconds: durationMs,),
+        duration: Duration(milliseconds: durationMs),
 
         curve: Curves.linear,
       );
 
-      await Future.delayed(
-        const Duration(milliseconds: 500,),
-      );
+      await Future.delayed(const Duration(milliseconds: 500));
     }
   }
 
   @override
   void dispose() {
+    animationId++;
     controller.dispose();
     super.dispose();
   }
@@ -107,11 +110,7 @@ class _MarqueeTextState
 
       physics: const NeverScrollableScrollPhysics(),
 
-      child: Text(
-        widget.text,
-        softWrap: false,
-        style: widget.style,
-      ),
+      child: Text(widget.text, softWrap: false, style: widget.style),
     );
   }
 }
