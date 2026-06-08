@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
 class GradeRangeSlider extends StatefulWidget {
-
   const GradeRangeSlider({
     super.key,
+    this.initialValues = const RangeValues(0, 10),
+    required this.onChanged,
   });
 
+  final RangeValues initialValues;
+  final ValueChanged<RangeValues> onChanged;
+
   @override
-  State<GradeRangeSlider>
-  createState() =>
-      _GradeRangeSliderState();
+  State<GradeRangeSlider> createState() => _GradeRangeSliderState();
 }
 
 class _GradeRangeSliderState extends State<GradeRangeSlider> {
-
-  RangeValues values =
-  const RangeValues(1, 10,);
+  late RangeValues values;
 
   late TextEditingController minController;
 
@@ -25,114 +25,86 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
   void initState() {
     super.initState();
 
-    minController = TextEditingController(text: '1',);
+    values = widget.initialValues;
 
-    maxController = TextEditingController(text: '10',);
+    minController = TextEditingController(text: '${values.start.round()}');
+
+    maxController = TextEditingController(text: '${values.end.round()}');
   }
 
   void updateFromText() {
+    double min = double.tryParse(minController.text) ?? 0;
 
-    double min =
-        double.tryParse(
-          minController.text,
-        ) ?? 1;
+    double max = double.tryParse(maxController.text) ?? 10;
 
-    double max =
-        double.tryParse(
-          maxController.text,
-        ) ?? 10;
+    min = min.clamp(0, 10);
 
-    min = min.clamp(1, 10,);
+    max = max.clamp(0, 10);
 
-    max = max.clamp(1, 10,);
-
-    if (
-    min > max
-    ) {
-
+    if (min > max) {
       min = max;
     }
 
     setState(() {
-
-      values =
-          RangeValues(
-            min, max,
-          );
+      values = RangeValues(min, max);
     });
+    widget.onChanged(values);
   }
 
   @override
-  Widget build(
-      BuildContext context,
-      ) {
-
+  Widget build(BuildContext context) {
     return Container(
-      margin:
-      const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 12,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
 
-      padding:
-      const EdgeInsets.all(15,),
+      padding: const EdgeInsets.all(15),
 
-      decoration:
-      BoxDecoration(
-        color: const Color(0xFFE9E9E9,),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9E9E9),
 
-        borderRadius:
-        BorderRadius.circular(18,),
+        borderRadius: BorderRadius.circular(18),
       ),
 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
-
           const Text(
             'Overall grade',
 
-            style:
-            TextStyle(
+            style: TextStyle(
               fontSize: 32,
               fontFamily: 'JosefinSlab',
               fontWeight: FontWeight.bold,
             ),
           ),
 
-          const SizedBox(height: 15,),
+          const SizedBox(height: 15),
 
           Row(
             children: [
-
               Expanded(
                 child: TextField(
                   controller: minController,
 
                   keyboardType: TextInputType.number,
 
-                  onChanged:
-                      (_) =>
-                      updateFromText(),
+                  onChanged: (_) => updateFromText(),
 
-                  decoration:
-                  InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Min',
 
                     filled: true,
 
                     fillColor: Colors.white,
 
-                    border:
-                    OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12,),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(width: 12,),
+              const SizedBox(width: 12),
 
               Expanded(
                 child: TextField(
@@ -140,21 +112,17 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
 
                   keyboardType: TextInputType.number,
 
-                  onChanged:
-                      (_) =>
-                      updateFromText(),
+                  onChanged: (_) => updateFromText(),
 
-                  decoration:
-                  InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Max',
 
                     filled: true,
 
                     fillColor: Colors.white,
 
-                    border:
-                    OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12,),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
@@ -162,92 +130,67 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
             ],
           ),
 
-          const SizedBox(height: 18,),
+          const SizedBox(height: 18),
 
           RangeSlider(
             values: values,
 
-            min: 1,
+            min: 0,
             max: 10,
 
-            divisions: 9,
+            divisions: 10,
 
-            labels:
-            RangeLabels(
-              values.start
-                  .round()
-                  .toString(),
+            labels: RangeLabels(
+              values.start.round().toString(),
 
-              values.end
-                  .round()
-                  .toString(),
+              values.end.round().toString(),
             ),
 
-            onChanged:
-                (newValues) {
-
+            onChanged: (newValues) {
               setState(() {
-
                 values = newValues;
 
-                minController.text =
-                    newValues.start
-                        .round()
-                        .toString();
+                minController.text = newValues.start.round().toString();
 
-                maxController.text =
-                    newValues.end
-                        .round()
-                        .toString();
+                maxController.text = newValues.end.round().toString();
               });
+              widget.onChanged(newValues);
             },
           ),
 
           LayoutBuilder(
-            builder:
-                (context,
-                constraints) {
-
+            builder: (context, constraints) {
               const double sliderPadding = 24;
 
               final width = constraints.maxWidth - sliderPadding * 2;
 
-              final step = width / 9;
+              final step = width / 10;
 
               return SizedBox(
                 height: 22,
 
                 child: Stack(
-                  children:
-                  List.generate(
-                    10,
-                        (index) {
+                  children: List.generate(11, (index) {
+                    return Positioned(
+                      left: sliderPadding + step * index - 8,
 
-                      return Positioned(
-                        left: sliderPadding + step * index - 8,
+                      child: SizedBox(
+                        width: 16,
 
-                        child:
-                        SizedBox(
-                          width: 16,
+                        child: Center(
+                          child: Text(
+                            '$index',
 
-                          child:
-                          Center(
-                            child:
-                            Text(
-                              '${index + 1}',
-
-                              style:
-                              const TextStyle(
-                                fontSize: 14,
-                                color: Colors.black54,
-                                fontFamily: 'JosefinSlab',
-                              ),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                              fontFamily: 'JosefinSlab',
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  }),
                 ),
               );
             },
