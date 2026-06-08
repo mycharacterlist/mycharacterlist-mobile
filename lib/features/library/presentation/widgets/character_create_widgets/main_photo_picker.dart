@@ -35,6 +35,9 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
       children: [
         GestureDetector(
           onTap: pickImage,
+          onLongPress: widget.imagePath == null
+              ? null
+              : () => widget.onChanged(null),
 
           child: Container(
             width: 150,

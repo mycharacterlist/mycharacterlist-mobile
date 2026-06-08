@@ -5,15 +5,27 @@ class LowerButtons extends StatelessWidget {
     super.key,
     required this.onClear,
     required this.onCreate,
-    this.isSaving = false,
+    this.isClearLoading = false,
+    this.isCreateLoading = false,
+    this.clearLabel = 'Clear all',
+    this.createLabel = 'Create',
+    this.clearLoadingLabel = 'Clearing...',
+    this.createLoadingLabel = 'Saving...',
   });
 
   final VoidCallback onClear;
   final VoidCallback onCreate;
-  final bool isSaving;
+  final bool isClearLoading;
+  final bool isCreateLoading;
+  final String clearLabel;
+  final String createLabel;
+  final String clearLoadingLabel;
+  final String createLoadingLabel;
 
   @override
   Widget build(BuildContext context) {
+    final isBusy = isClearLoading || isCreateLoading;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
@@ -23,7 +35,7 @@ class LowerButtons extends StatelessWidget {
           height: 45,
 
           child: ElevatedButton(
-            onPressed: isSaving ? null : onClear,
+            onPressed: isBusy ? null : onClear,
 
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF6E2E00),
@@ -35,13 +47,15 @@ class LowerButtons extends StatelessWidget {
               ),
             ),
 
-            child: const Text(
-              'Clear all',
-
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'JosefinSlab',
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                isClearLoading ? clearLoadingLabel : clearLabel,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'JosefinSlab',
+                ),
               ),
             ),
           ),
@@ -52,7 +66,7 @@ class LowerButtons extends StatelessWidget {
           height: 45,
 
           child: ElevatedButton(
-            onPressed: isSaving ? null : onCreate,
+            onPressed: isBusy ? null : onCreate,
 
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF444444),
@@ -65,13 +79,15 @@ class LowerButtons extends StatelessWidget {
               ),
             ),
 
-            child: Text(
-              isSaving ? 'Saving...' : 'Create',
-
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'JosefinSlab',
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                isCreateLoading ? createLoadingLabel : createLabel,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'JosefinSlab',
+                ),
               ),
             ),
           ),

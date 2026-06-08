@@ -9,77 +9,145 @@ class GalleryDropdown extends StatefulWidget {
     required this.onChanged,
   });
 
-  final List<String?> imagePaths;
-  final ValueChanged<List<String?>> onChanged;
+  final List<String> imagePaths;
+  final ValueChanged<List<String>> onChanged;
 
   @override
   State<GalleryDropdown> createState() => _GalleryDropdownState();
 }
 
 class _GalleryDropdownState extends State<GalleryDropdown> {
+  static const initialSlotCount = 5;
+
   bool isExpanded = false;
+  final scrollController = ScrollController();
 
-  Future<void> pickImage(int index) async {
+  Future<void> pickImages() async {
     final picker = ImagePicker();
+    final images = await picker.pickMultiImage();
 
-    final image = await picker.pickImage(source: ImageSource.gallery);
-
-    if (image != null) {
-      final updatedPaths = [...widget.imagePaths];
-      updatedPaths[index] = image.path;
-      widget.onChanged(updatedPaths);
+    if (images.isEmpty) {
+      return;
     }
+
+    widget.onChanged([
+      ...widget.imagePaths,
+      ...images.map((image) => image.path),
+    ]);
+  }
+
+  void removeImage(int index) {
+    final updatedPaths = [...widget.imagePaths];
+    updatedPaths.removeAt(index);
+    widget.onChanged(updatedPaths);
+  }
+
+  void moveImage(int fromIndex, int toIndex) {
+    if (fromIndex == toIndex) {
+      return;
+    }
+
+    final updatedPaths = [...widget.imagePaths];
+    final movedPath = updatedPaths.removeAt(fromIndex);
+    updatedPaths.insert(toIndex, movedPath);
+    widget.onChanged(updatedPaths);
+  }
+
+  @override
+  void dispose() {
+    scrollController.dispose();
+    super.dispose();
   }
 
   Widget buildImageSlot(int index) {
-    return GestureDetector(
-      onTap: () {
-        pickImage(index);
-      },
+    final imagePath = widget.imagePaths[index];
+    final slot = _buildImageSlot(index, imagePath);
 
+    return DragTarget<int>(
+      onAcceptWithDetails: (details) => moveImage(details.data, index),
+      builder: (context, candidateData, rejectedData) {
+        final highlightedSlot = candidateData.isEmpty
+            ? slot
+            : DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.green, width: 3),
+                ),
+                child: slot,
+              );
+
+        return LongPressDraggable<int>(
+          data: index,
+          feedback: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              width: 90,
+              height: 120,
+              child: Image.file(File(imagePath), fit: BoxFit.cover),
+            ),
+          ),
+          childWhenDragging: Opacity(opacity: 0.35, child: highlightedSlot),
+          child: highlightedSlot,
+        );
+      },
+    );
+  }
+
+  Widget _buildImageSlot(int index, String imagePath) {
+    return Container(
+      width: 90,
+      height: 120,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.black, width: 2),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.file(File(imagePath), fit: BoxFit.cover),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: GestureDetector(
+              onTap: () => removeImage(index),
+              child: const Icon(Icons.close, size: 22),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddButton() {
+    return GestureDetector(
+      onTap: pickImages,
       child: Container(
         width: 90,
         height: 120,
-
         margin: const EdgeInsets.only(right: 12),
-
         decoration: BoxDecoration(
           border: Border.all(color: Colors.black, width: 2),
         ),
-
-        child: Stack(
+        child: const Stack(
           children: [
-            Positioned.fill(
-              child: widget.imagePaths[index] == null
-                  ? const Icon(Icons.image_outlined, size: 50)
-                  : Image.file(
-                      File(widget.imagePaths[index]!),
-
-                      fit: BoxFit.cover,
-                    ),
-            ),
-
+            Center(child: Icon(Icons.image_outlined, size: 50)),
             Positioned(
               right: 5,
               bottom: 5,
-
-              child: Container(
-                width: 30,
-                height: 30,
-
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-
-                  border: Border.all(color: Colors.black),
-                ),
-
-                child: const Icon(Icons.add, size: 20),
-              ),
+              child: Icon(Icons.add_circle_outline, size: 30),
             ),
           ],
         ),
       ),
     );
+  }
+
+  int get _slotCount {
+    if (widget.imagePaths.length < initialSlotCount) {
+      return initialSlotCount;
+    }
+
+    return widget.imagePaths.length + 1;
   }
 
   @override
@@ -130,14 +198,17 @@ class _GalleryDropdownState extends State<GalleryDropdown> {
               height: 140,
 
               child: ListView.builder(
+                controller: scrollController,
                 scrollDirection: Axis.horizontal,
 
                 padding: const EdgeInsets.all(12),
 
-                itemCount: 6,
+                itemCount: _slotCount,
 
                 itemBuilder: (context, index) {
-                  return buildImageSlot(index);
+                  return index >= widget.imagePaths.length
+                      ? _buildAddButton()
+                      : buildImageSlot(index);
                 },
               ),
             ),

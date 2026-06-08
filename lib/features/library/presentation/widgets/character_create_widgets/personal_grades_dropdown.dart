@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 
@@ -20,6 +21,12 @@ class _PersonalGradesDropdownState extends State<PersonalGradesDropdown> {
   bool isExpanded = false;
 
   Widget buildGradeField(GradeDefinition definition) {
+    final controller = widget.controllers[definition.id]!;
+    final value = int.tryParse(controller.text);
+    final hasError =
+        controller.text.isNotEmpty &&
+        (value == null || value < 0 || value > definition.maxValue);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -34,13 +41,29 @@ class _PersonalGradesDropdownState extends State<PersonalGradesDropdown> {
             width: 45,
             height: 35,
             child: TextField(
-              controller: widget.controllers[definition.id],
+              controller: controller,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.zero,
                 filled: true,
                 fillColor: Colors.white.withOpacity(0.65),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(
+                    color: hasError ? Colors.red : Colors.grey,
+                    width: hasError ? 2 : 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide(
+                    color: hasError ? Colors.red : Colors.purple,
+                    width: 2,
+                  ),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
                 ),
