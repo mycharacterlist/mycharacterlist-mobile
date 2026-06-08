@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
-import 'package:mycharacterlist/features/characters/domain/entities/character_gender.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
+import 'package:mycharacterlist/features/library/presentation/controllers/character_form_controller.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/create_character_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/gallery_dropdown.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/lower_buttons.dart';
@@ -15,7 +15,9 @@ import 'package:mycharacterlist/features/library/presentation/widgets/character_
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/personal_notes_dropdown.dart';
 
 class CharacterCreatePage extends ConsumerStatefulWidget {
-  const CharacterCreatePage({super.key});
+  const CharacterCreatePage({super.key, this.characterId});
+
+  final String? characterId;
 
   @override
   ConsumerState<CharacterCreatePage> createState() =>
@@ -23,26 +25,37 @@ class CharacterCreatePage extends ConsumerStatefulWidget {
 }
 
 class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
-  final nameController = TextEditingController();
-  final ageController = TextEditingController();
-  final heightController = TextEditingController();
-  final japaneseNameController = TextEditingController();
-  final animeController = TextEditingController();
-  final archetypeController = TextEditingController();
-  final notesController = TextEditingController();
-  final gradeControllers = <String, TextEditingController>{};
-
-  String selectedGender = CharacterGender.unknown;
-  String? mainImagePath;
-  List<String?> galleryImagePaths = List.filled(6, null);
+  final form = CharacterFormController();
+  final formScrollController = ScrollController();
   int formVersion = 0;
+
+  bool get isEditing => widget.characterId != null;
 
   @override
   void initState() {
     super.initState();
-    nameController.addListener(_clearNameError);
-    animeController.addListener(_clearAnimeError);
-    archetypeController.addListener(_clearArchetypeError);
+    form.name.addListener(_clearNameError);
+    form.anime.addListener(_clearAnimeError);
+    form.archetype.addListener(_clearArchetypeError);
+
+    if (isEditing) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadCharacter());
+    }
+  }
+
+  Future<void> _loadCharacter() async {
+    final character = await ref
+        .read(createCharacterViewModelProvider.notifier)
+        .loadCharacter(widget.characterId!);
+
+    if (!mounted || character == null) {
+      return;
+    }
+
+    setState(() {
+      form.populate(character);
+      formVersion++;
+    });
   }
 
   void _clearNameError() {
@@ -63,60 +76,82 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
         .clearFieldError(CreateCharacterField.archetype);
   }
 
-  List<TextEditingController> get _controllers => [
-    nameController,
-    ageController,
-    heightController,
-    japaneseNameController,
-    animeController,
-    archetypeController,
-    notesController,
-    ...gradeControllers.values,
-  ];
-
-  Map<String, int> _grades(List<GradeDefinition> definitions) {
-    return {
-      for (final definition in definitions)
-        definition.id:
-            int.tryParse(gradeControllers[definition.id]?.text ?? '') ?? 0,
-    };
-  }
-
-  void _syncGradeControllers(List<GradeDefinition> definitions) {
-    for (final definition in definitions) {
-      gradeControllers.putIfAbsent(
-        definition.id,
-        () => TextEditingController(),
-      );
-    }
-  }
-
   SnackBar _centeredSnackBar(String message) {
-    return SnackBar(
-      content: Text(message, textAlign: TextAlign.center),
-    );
+    return SnackBar(content: Text(message, textAlign: TextAlign.center));
   }
 
   Future<void> _createCharacter(List<GradeDefinition> definitions) async {
     final created = await ref
         .read(createCharacterViewModelProvider.notifier)
-        .create(
-          CreateCharacterInput(
-            name: nameController.text,
-            sourceTitle: animeController.text,
-            age: ageController.text,
-            height: heightController.text,
-            japaneseName: japaneseNameController.text,
-            archetype: archetypeController.text,
-            gender: selectedGender,
-            personalNotes: notesController.text,
-            grades: _grades(definitions),
-            mainImagePath: mainImagePath,
-            galleryImagePaths: galleryImagePaths.whereType<String>().toList(),
-          ),
-        );
+        .create(form.toInput(definitions));
 
     if (!mounted || !created) {
+      return;
+    }
+
+    await ref.read(charactersViewModelProvider.notifier).loadCharacters();
+
+    if (mounted) {
+      context.pop();
+    }
+  }
+
+  Future<void> _saveCharacter(List<GradeDefinition> definitions) async {
+    final character = form.character;
+    if (character == null) {
+      return;
+    }
+
+    final updated = await ref
+        .read(createCharacterViewModelProvider.notifier)
+        .update(character, form.toInput(definitions));
+
+    if (!mounted || !updated) {
+      return;
+    }
+
+    await ref.read(charactersViewModelProvider.notifier).loadCharacters();
+
+    if (mounted) {
+      context.pop();
+    }
+  }
+
+  Future<void> _deleteCharacter() async {
+    final character = form.character;
+    if (character == null) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete character?'),
+        content: const Text(
+          'The character and all saved images will be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => context.pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    final deleted = await ref
+        .read(createCharacterViewModelProvider.notifier)
+        .delete(character.id);
+
+    if (!mounted || !deleted) {
       return;
     }
 
@@ -130,7 +165,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   Future<void> _addAnimeTitle() async {
     final added = await ref
         .read(characterReferencesViewModelProvider.notifier)
-        .addAnimeTitle(animeController.text);
+        .addAnimeTitle(form.anime.text);
 
     if (mounted && added) {
       ScaffoldMessenger.of(
@@ -140,27 +175,19 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   }
 
   void _clearAll() {
-    for (final controller in _controllers) {
-      controller.clear();
-    }
-
     setState(() {
-      selectedGender = CharacterGender.unknown;
-      mainImagePath = null;
-      galleryImagePaths = List.filled(6, null);
+      form.clear();
       formVersion++;
     });
   }
 
   @override
   void dispose() {
-    nameController.removeListener(_clearNameError);
-    animeController.removeListener(_clearAnimeError);
-    archetypeController.removeListener(_clearArchetypeError);
-
-    for (final controller in _controllers) {
-      controller.dispose();
-    }
+    form.name.removeListener(_clearNameError);
+    form.anime.removeListener(_clearAnimeError);
+    form.archetype.removeListener(_clearArchetypeError);
+    form.dispose();
+    formScrollController.dispose();
     super.dispose();
   }
 
@@ -168,7 +195,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   Widget build(BuildContext context) {
     final createState = ref.watch(createCharacterViewModelProvider);
     final referencesState = ref.watch(characterReferencesViewModelProvider);
-    _syncGradeControllers(referencesState.gradeDefinitions);
+    form.syncGradeControllers(referencesState.gradeDefinitions);
 
     ref.listen(createCharacterViewModelProvider, (previous, next) {
       if (next.errorMessage == null ||
@@ -194,7 +221,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
 
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'New Character',
+        title: isEditing ? 'Edit Character' : 'New Character',
         backgroundColor: const Color(0xFF1A4043),
         backButtonColor: const Color(0xFF009768),
         titleColor: const Color(0xFF4CB897),
@@ -207,102 +234,120 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
               fit: BoxFit.cover,
             ),
           ),
-          Center(
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.90,
-              height: MediaQuery.of(context).size.height * 0.87,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/PagePictureFixed.png',
-                      fit: BoxFit.fill,
+          if (createState.isLoading)
+            const Center(child: CircularProgressIndicator())
+          else
+            Center(
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.90,
+                height: MediaQuery.of(context).size.height * 0.87,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Image.asset(
+                        'assets/images/PagePictureFixed.png',
+                        fit: BoxFit.fill,
+                      ),
                     ),
-                  ),
-                  Positioned(
-                    top: 55,
-                    left: 20,
-                    right: 20,
-                    bottom: 25,
-                    child: ClipRect(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 17),
-                            const Center(
-                              child: Text(
-                                'New character',
-                                style: TextStyle(
-                                  fontSize: 45,
-                                  color: Colors.black,
-                                  fontFamily: 'GreatVibes',
+                    Positioned(
+                      top: 55,
+                      left: 20,
+                      right: 20,
+                      bottom: 25,
+                      child: ClipRect(
+                        child: SingleChildScrollView(
+                          controller: formScrollController,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 17),
+                              Center(
+                                child: Text(
+                                  isEditing
+                                      ? 'Edit character'
+                                      : 'New character',
+                                  style: const TextStyle(
+                                    fontSize: 45,
+                                    color: Colors.black,
+                                    fontFamily: 'GreatVibes',
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 20),
-                            Center(
-                              child: MainPhotoPicker(
-                                imagePath: mainImagePath,
-                                onChanged: (path) =>
-                                    setState(() => mainImagePath = path),
+                              const SizedBox(height: 20),
+                              Center(
+                                child: MainPhotoPicker(
+                                  imagePath: form.mainImagePath,
+                                  onChanged: (path) =>
+                                      setState(() => form.mainImagePath = path),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 25),
-                            MainInformationDropdown(
-                              key: ValueKey(formVersion),
-                              nameController: nameController,
-                              ageController: ageController,
-                              heightController: heightController,
-                              japaneseNameController: japaneseNameController,
-                              animeController: animeController,
-                              archetypeController: archetypeController,
-                              animeTitles: referencesState.animeTitles,
-                              archetypes: referencesState.archetypes,
-                              onAddAnime: _addAnimeTitle,
-                              selectedGender: selectedGender,
-                              onGenderChanged: (value) =>
-                                  setState(() => selectedGender = value),
-                              nameHasError: createState.invalidFields.contains(
-                                CreateCharacterField.name,
+                              const SizedBox(height: 25),
+                              MainInformationDropdown(
+                                key: ValueKey(formVersion),
+                                nameController: form.name,
+                                ageController: form.age,
+                                heightController: form.height,
+                                japaneseNameController: form.japaneseName,
+                                animeController: form.anime,
+                                archetypeController: form.archetype,
+                                animeTitles: referencesState.animeTitles,
+                                archetypes: referencesState.archetypes,
+                                onAddAnime: _addAnimeTitle,
+                                selectedGender: form.gender,
+                                onGenderChanged: (value) =>
+                                    setState(() => form.gender = value),
+                                nameHasError: createState.invalidFields
+                                    .contains(CreateCharacterField.name),
+                                animeHasError: createState.invalidFields
+                                    .contains(CreateCharacterField.anime),
+                                archetypeHasError: createState.invalidFields
+                                    .contains(CreateCharacterField.archetype),
                               ),
-                              animeHasError: createState.invalidFields.contains(
-                                CreateCharacterField.anime,
+                              const SizedBox(height: 15),
+                              PersonalGradesDropdown(
+                                definitions: referencesState.gradeDefinitions,
+                                controllers: form.grades,
                               ),
-                              archetypeHasError: createState.invalidFields
-                                  .contains(CreateCharacterField.archetype),
-                            ),
-                            const SizedBox(height: 15),
-                            PersonalGradesDropdown(
-                              definitions: referencesState.gradeDefinitions,
-                              controllers: gradeControllers,
-                            ),
-                            const SizedBox(height: 15),
-                            GalleryDropdown(
-                              imagePaths: galleryImagePaths,
-                              onChanged: (paths) =>
-                                  setState(() => galleryImagePaths = paths),
-                            ),
-                            const SizedBox(height: 15),
-                            PersonalNotesDropdown(controller: notesController),
-                            const SizedBox(height: 15),
-                            LowerButtons(
-                              onClear: _clearAll,
-                              onCreate: () => _createCharacter(
-                                referencesState.gradeDefinitions,
+                              const SizedBox(height: 15),
+                              GalleryDropdown(
+                                imagePaths: form.galleryImagePaths,
+                                onChanged: (paths) => setState(
+                                  () => form.galleryImagePaths = paths,
+                                ),
                               ),
-                              isSaving: createState.isSaving,
-                            ),
-                            const SizedBox(height: 20),
-                          ],
+                              const SizedBox(height: 15),
+                              PersonalNotesDropdown(controller: form.notes),
+                              const SizedBox(height: 15),
+                              LowerButtons(
+                                onClear: isEditing
+                                    ? _deleteCharacter
+                                    : _clearAll,
+                                onCreate: isEditing
+                                    ? () => _saveCharacter(
+                                        referencesState.gradeDefinitions,
+                                      )
+                                    : () => _createCharacter(
+                                        referencesState.gradeDefinitions,
+                                      ),
+                                isClearLoading: createState.isDeleting,
+                                isCreateLoading: createState.isSaving,
+                                clearLabel: isEditing
+                                    ? 'Delete character'
+                                    : 'Clear all',
+                                createLabel: isEditing ? 'Save' : 'Create',
+                                clearLoadingLabel: 'Deleting...',
+                                createLoadingLabel: 'Saving...',
+                              ),
+                              const SizedBox(height: 20),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

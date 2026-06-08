@@ -14,10 +14,7 @@ final GoRouter appRouter = GoRouter(
 );
 
 final List<RouteBase> appRoutes = [
-  GoRoute(
-    path: AppRoutes.home,
-    builder: (context, state) => const HomePage()
-  ),
+  GoRoute(path: AppRoutes.home, builder: (context, state) => const HomePage()),
   GoRoute(
     path: AppRoutes.lists,
     builder: (context, state) => const ListsPage(),
@@ -32,6 +29,13 @@ final List<RouteBase> appRoutes = [
   GoRoute(
     path: AppRoutes.characterCreate,
     builder: (context, state) => const CharacterCreatePage(),
+  ),
+  GoRoute(
+    path: AppRoutes.characterEdit,
+    builder: (context, state) {
+      final id = state.pathParameters['id']!;
+      return CharacterCreatePage(characterId: id);
+    },
   ),
   GoRoute(
     path: AppRoutes.character,

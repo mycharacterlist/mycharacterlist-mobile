@@ -10,12 +10,16 @@ enum CreateCharacterField { name, anime, archetype }
 
 class CreateCharacterState {
   const CreateCharacterState({
+    this.isLoading = false,
     this.isSaving = false,
+    this.isDeleting = false,
     this.errorMessage,
     this.invalidFields = const {},
   });
 
+  final bool isLoading;
   final bool isSaving;
+  final bool isDeleting;
   final String? errorMessage;
   final Set<CreateCharacterField> invalidFields;
 }
@@ -67,12 +71,71 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
     }
 
     state = CreateCharacterState(
+      isLoading: state.isLoading,
       isSaving: state.isSaving,
+      isDeleting: state.isDeleting,
       invalidFields: {...state.invalidFields}..remove(field),
     );
   }
 
   Future<bool> create(CreateCharacterInput input) async {
+    final now = DateTime.now();
+    return _save(
+      input,
+      Character(
+        id: 'character_${now.microsecondsSinceEpoch}',
+        name: input.name,
+        sourceTitle: input.sourceTitle,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+  }
+
+  Future<Character?> loadCharacter(String id) async {
+    state = const CreateCharacterState(isLoading: true);
+
+    try {
+      final character = await _repository.getCharacterById(id);
+      if (character == null) {
+        state = const CreateCharacterState(
+          errorMessage: 'Character not found.',
+        );
+      } else {
+        state = const CreateCharacterState();
+      }
+      return character;
+    } catch (_) {
+      state = const CreateCharacterState(
+        errorMessage: 'Could not load character.',
+      );
+      return null;
+    }
+  }
+
+  Future<bool> update(Character existingCharacter, CreateCharacterInput input) {
+    return _save(input, existingCharacter);
+  }
+
+  Future<bool> delete(String id) async {
+    state = const CreateCharacterState(isDeleting: true);
+
+    try {
+      await _repository.deleteCharacter(id);
+      state = const CreateCharacterState();
+      return true;
+    } catch (_) {
+      state = const CreateCharacterState(
+        errorMessage: 'Could not delete character.',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> _save(
+    CreateCharacterInput input,
+    Character existingCharacter,
+  ) async {
     final name = input.name.trim();
     final sourceTitle = input.sourceTitle.trim();
 
@@ -117,21 +180,34 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
       }
 
       final gradeDefinitions = await _referenceRepository.getGradeDefinitions();
-      final grades = {
-        for (final definition in gradeDefinitions)
-          definition.id: (input.grades[definition.id] ?? 0).clamp(
-            0,
-            definition.maxValue,
-          ),
-      };
+      for (final definition in gradeDefinitions) {
+        final value = input.grades[definition.id];
+        if (value != null && (value < 0 || value > definition.maxValue)) {
+          state = CreateCharacterState(
+            errorMessage:
+                '${definition.name} must be between 0 and '
+                '${definition.maxValue}.',
+          );
+          return false;
+        }
+      }
+
+      final grades = <String, int>{};
+      for (final definition in gradeDefinitions) {
+        final value = input.grades[definition.id];
+        if (value != null) {
+          grades[definition.id] = value;
+        }
+      }
 
       state = const CreateCharacterState(isSaving: true);
 
       final now = DateTime.now();
       final character = Character(
-        id: 'character_${now.microsecondsSinceEpoch}',
+        id: existingCharacter.id,
         name: name,
         sourceTitle: sourceTitle,
+        description: existingCharacter.description,
         age: input.age.trim(),
         height: input.height.trim(),
         japaneseName: input.japaneseName.trim(),
@@ -142,7 +218,7 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
         mainImagePath: input.mainImagePath,
         galleryImagePaths: input.galleryImagePaths,
         facts: input.facts,
-        createdAt: now,
+        createdAt: existingCharacter.createdAt,
         updatedAt: now,
       );
 
