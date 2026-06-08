@@ -37,6 +37,9 @@ class CharacterRepositoryImpl implements CharacterRepository {
   @override
   Future<void> saveCharacter(Character character) async {
     _validateFacts(character);
+    final previousCharacter = await _localDataSource.getCharacterById(
+      character.id,
+    );
 
     final mainImagePath = await _localFileStorage.saveOptionalFile(
       character.mainImagePath,
@@ -47,14 +50,41 @@ class CharacterRepositoryImpl implements CharacterRepository {
       folder: character.id,
     );
 
-    await _localDataSource.saveCharacter(
-      CharacterModel.fromEntity(
-        character.copyWith(
-          mainImagePath: mainImagePath,
-          galleryImagePaths: galleryImagePaths,
-        ),
-      ),
+    final savedCharacter = CharacterModel(
+      id: character.id,
+      name: character.name,
+      sourceTitle: character.sourceTitle,
+      description: character.description,
+      age: character.age,
+      height: character.height,
+      japaneseName: character.japaneseName,
+      archetype: character.archetype,
+      gender: character.gender,
+      personalNotes: character.personalNotes,
+      mainImagePath: mainImagePath,
+      galleryImagePaths: galleryImagePaths,
+      grades: character.grades,
+      facts: character.facts,
+      createdAt: character.createdAt,
+      updatedAt: character.updatedAt,
     );
+
+    await _localDataSource.saveCharacter(savedCharacter);
+
+    if (previousCharacter != null) {
+      final savedPaths = {
+        mainImagePath,
+        ...galleryImagePaths,
+      }.whereType<String>().toSet();
+      final previousPaths = {
+        previousCharacter.mainImagePath,
+        ...previousCharacter.galleryImagePaths,
+      }.whereType<String>().toSet();
+
+      await _localFileStorage.deleteFiles(
+        previousPaths.difference(savedPaths).toList(),
+      );
+    }
   }
 
   void _validateFacts(Character character) {
@@ -104,5 +134,6 @@ class CharacterRepositoryImpl implements CharacterRepository {
 
     await _localFileStorage.deleteFile(character.mainImagePath);
     await _localFileStorage.deleteFiles(character.galleryImagePaths);
+    await _localFileStorage.deleteFolder(character.id);
   }
 }

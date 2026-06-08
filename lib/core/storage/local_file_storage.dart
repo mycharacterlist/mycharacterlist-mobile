@@ -82,6 +82,20 @@ class LocalFileStorage {
     }
   }
 
+  Future<void> deleteFolder(String folder) async {
+    final storageRoot = await _storageRoot();
+    final directory = Directory(p.join(storageRoot.path, folder));
+    final normalizedPath = directory.absolute.path;
+
+    if (!_isInsideDirectory(normalizedPath, storageRoot.path)) {
+      return;
+    }
+
+    if (await directory.exists()) {
+      await directory.delete(recursive: true);
+    }
+  }
+
   Future<Directory> _storageRoot() async {
     final documentsDirectory = await path_provider
         .getApplicationDocumentsDirectory();

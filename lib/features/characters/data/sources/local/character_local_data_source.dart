@@ -63,11 +63,16 @@ class CharacterLocalDataSource {
     final database = await _appDatabase.database;
 
     await database.transaction((transaction) async {
-      await transaction.insert(
+      final updatedRows = await transaction.update(
         'characters',
         character.toDatabase(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
+        where: 'id = ?',
+        whereArgs: [character.id],
       );
+
+      if (updatedRows == 0) {
+        await transaction.insert('characters', character.toDatabase());
+      }
 
       await transaction.delete(
         'character_gallery_images',
