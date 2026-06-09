@@ -5,13 +5,11 @@ class AnimeField extends StatelessWidget {
     super.key,
     required this.controller,
     required this.items,
-    required this.onAdd,
     this.hasError = false,
   });
 
   final TextEditingController controller;
   final List<String> items;
-  final VoidCallback onAdd;
   final bool hasError;
 
   @override
@@ -56,33 +54,6 @@ class AnimeField extends StatelessWidget {
                 color: hasError ? Colors.red : const Color(0xFF7B61FF),
                 width: 2,
               ),
-            ),
-
-            suffixIcon: Padding(
-              padding: const EdgeInsets.all(4),
-
-              child: ElevatedButton(
-                onPressed: onAdd,
-
-                style: ElevatedButton.styleFrom(
-                  elevation: 0,
-                  backgroundColor: Colors.transparent,
-                  foregroundColor: const Color(0xFF7B61FF),
-
-                  side: const BorderSide(color: Color(0xFF7B61FF)),
-
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-
-                child: const Text('New+'),
-              ),
-            ),
-
-            suffixIconConstraints: const BoxConstraints(
-              minWidth: 90,
-              minHeight: 40,
             ),
           ),
         );

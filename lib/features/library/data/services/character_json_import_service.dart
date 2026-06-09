@@ -56,10 +56,9 @@ class CharacterJsonImportService {
         final id = _requiredString(json, 'id');
         final existing = await _characterRepository.getCharacterById(id);
 
-        final sourceTitle = _requiredString(json, 'sourceTitle');
-        if (!await _referenceRepository.containsAnimeTitle(sourceTitle)) {
-          await _referenceRepository.addAnimeTitle(sourceTitle);
-        }
+        final sourceTitle = await _referenceRepository.ensureAnimeTitle(
+          _requiredString(json, 'sourceTitle'),
+        );
 
         final archetype = _optionalString(json, 'archetype');
         if (archetype.isNotEmpty &&
@@ -135,6 +134,8 @@ class CharacterJsonImportService {
         failed++;
       }
     }
+
+    await _referenceRepository.deleteUnusedAnimeTitles();
 
     return CharacterImportResult(
       created: created,

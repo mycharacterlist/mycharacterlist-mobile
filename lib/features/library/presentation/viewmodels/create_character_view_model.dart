@@ -122,6 +122,7 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
 
     try {
       await _repository.deleteCharacter(id);
+      await _referenceRepository.deleteUnusedAnimeTitles();
       state = const CreateCharacterState();
       return true;
     } catch (_) {
@@ -136,6 +137,8 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
     CreateCharacterInput input,
     Character existingCharacter,
   ) async {
+    state = const CreateCharacterState();
+
     final name = input.name.trim();
     final sourceTitle = input.sourceTitle.trim();
 
@@ -169,17 +172,6 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
         state = const CreateCharacterState(
           errorMessage: 'This character already exists for the selected anime.',
           invalidFields: {CreateCharacterField.name},
-        );
-        return false;
-      }
-
-      final animeExists = await _referenceRepository.containsAnimeTitle(
-        sourceTitle,
-      );
-      if (!animeExists) {
-        state = const CreateCharacterState(
-          errorMessage: 'Select an anime from the list or add it with New+.',
-          invalidFields: {CreateCharacterField.anime},
         );
         return false;
       }
@@ -219,11 +211,14 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
 
       state = const CreateCharacterState(isSaving: true);
 
+      final canonicalSourceTitle = await _referenceRepository.ensureAnimeTitle(
+        sourceTitle,
+      );
       final now = DateTime.now();
       final character = Character(
         id: existingCharacter.id,
         name: name,
-        sourceTitle: sourceTitle,
+        sourceTitle: canonicalSourceTitle,
         description: existingCharacter.description,
         age: input.age.trim(),
         height: input.height.trim(),
@@ -240,6 +235,7 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
       );
 
       await _repository.saveCharacter(character);
+      await _referenceRepository.deleteUnusedAnimeTitles();
       state = const CreateCharacterState();
       return true;
     } on StateError catch (error) {

@@ -47,30 +47,6 @@ class CharacterReferencesViewModel
     }
   }
 
-  Future<bool> addAnimeTitle(String name) async {
-    try {
-      await _repository.addAnimeTitle(name);
-      await load();
-      return true;
-    } on StateError catch (error) {
-      state = CharacterReferencesState(
-        animeTitles: state.animeTitles,
-        archetypes: state.archetypes,
-        gradeDefinitions: state.gradeDefinitions,
-        errorMessage: error.message,
-      );
-      return false;
-    } catch (_) {
-      state = CharacterReferencesState(
-        animeTitles: state.animeTitles,
-        archetypes: state.archetypes,
-        gradeDefinitions: state.gradeDefinitions,
-        errorMessage: 'Could not save anime title.',
-      );
-      return false;
-    }
-  }
-
   Future<bool> addGradeDefinition({
     required String name,
     required int maxValue,

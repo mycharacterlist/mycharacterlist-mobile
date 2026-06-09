@@ -24,13 +24,31 @@ class CharacterReferenceLocalDataSource {
     return rows.map(GradeDefinitionModel.fromDatabase).toList();
   }
 
-  Future<bool> containsAnimeTitle(String name) =>
-      _containsName('anime_titles', name);
-
   Future<bool> containsArchetype(String name) =>
       _containsName('archetypes', name);
 
-  Future<void> addAnimeTitle(String name) => _addName('anime_titles', name);
+  Future<String> ensureAnimeTitle(String name) async {
+    final normalizedName = name.trim();
+    final existingName = await _findName('anime_titles', normalizedName);
+    if (existingName != null) {
+      return existingName;
+    }
+
+    await _addName('anime_titles', normalizedName);
+    return normalizedName;
+  }
+
+  Future<void> deleteUnusedAnimeTitles() async {
+    final database = await _appDatabase.database;
+    await database.rawDelete('''
+      DELETE FROM anime_titles
+      WHERE NOT EXISTS (
+        SELECT 1
+        FROM characters
+        WHERE characters.source_title = anime_titles.name COLLATE NOCASE
+      )
+    ''');
+  }
 
   Future<void> addArchetype(String name) => _addName('archetypes', name);
 
@@ -89,14 +107,18 @@ class CharacterReferenceLocalDataSource {
   }
 
   Future<bool> _containsName(String table, String name) async {
+    return await _findName(table, name) != null;
+  }
+
+  Future<String?> _findName(String table, String name) async {
     final database = await _appDatabase.database;
     final rows = await database.query(
       table,
-      columns: ['id'],
+      columns: ['name'],
       where: 'name = ? COLLATE NOCASE',
       whereArgs: [name.trim()],
       limit: 1,
     );
-    return rows.isNotEmpty;
+    return rows.isEmpty ? null : rows.first['name']! as String;
   }
 }

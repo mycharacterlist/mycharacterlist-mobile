@@ -16,7 +16,6 @@ class MainInformationDropdown extends StatefulWidget {
     required this.characterNames,
     required this.animeTitles,
     required this.archetypes,
-    required this.onAddAnime,
     required this.selectedGender,
     required this.onGenderChanged,
     this.nameHasError = false,
@@ -33,7 +32,6 @@ class MainInformationDropdown extends StatefulWidget {
   final List<String> characterNames;
   final List<String> animeTitles;
   final List<String> archetypes;
-  final VoidCallback onAddAnime;
   final String selectedGender;
   final ValueChanged<String> onGenderChanged;
   final bool nameHasError;
@@ -174,7 +172,6 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
                   AnimeField(
                     controller: widget.animeController,
                     items: widget.animeTitles,
-                    onAdd: widget.onAddAnime,
                     hasError: widget.animeHasError,
                   ),
 

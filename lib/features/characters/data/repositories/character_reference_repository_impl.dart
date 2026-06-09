@@ -19,21 +19,21 @@ class CharacterReferenceRepositoryImpl implements CharacterReferenceRepository {
   }
 
   @override
-  Future<bool> containsAnimeTitle(String name) {
-    return localDataSource.containsAnimeTitle(name);
-  }
-
-  @override
   Future<bool> containsArchetype(String name) {
     return localDataSource.containsArchetype(name);
   }
 
   @override
-  Future<void> addAnimeTitle(String name) {
+  Future<String> ensureAnimeTitle(String name) {
     if (name.trim().isEmpty) {
       throw StateError('Anime title cannot be empty.');
     }
-    return localDataSource.addAnimeTitle(name);
+    return localDataSource.ensureAnimeTitle(name);
+  }
+
+  @override
+  Future<void> deleteUnusedAnimeTitles() {
+    return localDataSource.deleteUnusedAnimeTitles();
   }
 
   @override

@@ -133,6 +133,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     }
 
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
+    await ref.read(characterReferencesViewModelProvider.notifier).load();
     ref.invalidate(characterNameSuggestionsProvider);
 
     if (mounted) {
@@ -155,6 +156,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     }
 
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
+    await ref.read(characterReferencesViewModelProvider.notifier).load();
     ref.invalidate(characterNameSuggestionsProvider);
 
     if (mounted) {
@@ -201,22 +203,11 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     }
 
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
+    await ref.read(characterReferencesViewModelProvider.notifier).load();
     ref.invalidate(characterNameSuggestionsProvider);
 
     if (mounted) {
       await _popWithoutWarning();
-    }
-  }
-
-  Future<void> _addAnimeTitle() async {
-    final added = await ref
-        .read(characterReferencesViewModelProvider.notifier)
-        .addAnimeTitle(form.anime.text);
-
-    if (mounted && added) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(_centeredSnackBar('Anime title added.'));
     }
   }
 
@@ -351,7 +342,6 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                   characterNames: characterNames,
                                   animeTitles: referencesState.animeTitles,
                                   archetypes: referencesState.archetypes,
-                                  onAddAnime: _addAnimeTitle,
                                   selectedGender: form.gender,
                                   onGenderChanged: (value) =>
                                       setState(() => form.gender = value),

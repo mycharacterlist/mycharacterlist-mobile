@@ -7,11 +7,11 @@ abstract interface class CharacterReferenceRepository {
 
   Future<List<GradeDefinition>> getGradeDefinitions();
 
-  Future<bool> containsAnimeTitle(String name);
-
   Future<bool> containsArchetype(String name);
 
-  Future<void> addAnimeTitle(String name);
+  Future<String> ensureAnimeTitle(String name);
+
+  Future<void> deleteUnusedAnimeTitles();
 
   Future<void> addArchetype(String name);
 
