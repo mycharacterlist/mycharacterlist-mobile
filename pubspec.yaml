@@ -44,6 +44,7 @@ dependencies:
   path_provider: ^2.1.2
   sqflite: ^2.4.1
   flutter_colorpicker: ^1.1.0
+  marquee: ^2.3.0
 
 
 dev_dependencies:
@@ -79,6 +80,8 @@ flutter:
     - assets/images/Library_bg.jpg
     - assets/images/PagePicture.png
     - assets/images/PagePictureFixed.png
+    - assets/images/InsideListMain_bg.jpg
+    - assets/images/InsideList2_bg.jpg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -122,6 +125,9 @@ flutter:
     - family: GrenzeGotisch
       fonts:
         - asset: assets/fonts/GrenzeGotisch-VariableFont_wght.ttf
+    - family: Joan
+      fonts:
+        - asset: assets/fonts/Joan-Regular.ttf
 
 
   #       - asset: fonts/TrajanPro_Bold.ttf
