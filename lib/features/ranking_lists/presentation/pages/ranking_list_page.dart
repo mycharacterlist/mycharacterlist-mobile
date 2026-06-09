@@ -60,6 +60,7 @@ class _RankingListPageState extends State<RankingListPage> {
       ) {
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
 
       appBar:
       CustomAppBar(
@@ -75,7 +76,7 @@ class _RankingListPageState extends State<RankingListPage> {
         IconButton(
           icon: const Icon(
             Icons.edit_note,
-            color: Colors.black,
+            color: Colors.white,
           ),
 
           onPressed: () {
@@ -90,7 +91,6 @@ class _RankingListPageState extends State<RankingListPage> {
           Positioned.fill(
             child: Container(
               width: double.infinity,
-
               height: double.infinity,
 
               decoration:
@@ -107,102 +107,111 @@ class _RankingListPageState extends State<RankingListPage> {
             ),
           ),
 
-          Padding(
-            padding:
-            const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: 120,
-            ),
+          cards.isEmpty
 
-            child:
-            cards.isEmpty
+              ? const Center(
+            child: Text(
+              'List is empty',
 
-                ? const Center(
-              child: Text(
-                'List is empty',
-
-                style:
-                TextStyle(
-                  fontSize: 24,
-                  color: Colors.white,
-                ),
+              style: TextStyle(
+                fontSize: 24,
+                color: Colors.white,
               ),
-            )
+            ),
+          )
 
-                : ReorderableListView.builder(
-              buildDefaultDragHandles: false,
+              : Scrollbar(
+            thumbVisibility: true,
 
-              proxyDecorator:
-                  (
-                  child,
-                  index,
-                  animation,
-                  ) {
+            child: Padding(
+              padding:
+              const EdgeInsets.only(
+                left: 16,
+                top: 16,
+                bottom: 120,
+              ),
 
-                return Material(
-                  color: Colors.transparent,
-                  child: child,
-                );
-              },
+              child:
+              ReorderableListView.builder(
+                padding: const EdgeInsets.only(right: 16),
 
-              itemCount: cards.length,
+                buildDefaultDragHandles: false,
 
-              onReorder:
-                  (
-                  oldIndex,
-                  newIndex,
-                  ) {
+                proxyDecorator:
+                    (
+                    child,
+                    index,
+                    animation,
+                    ) {
 
-                setState(() {
+                  return Material(
+                    color: Colors.transparent,
+                    child: child,
+                  );
+                },
 
-                  if (newIndex > oldIndex)
-                  {
-                    newIndex--;
-                  }
+                itemCount: cards.length,
 
-                  final item =
-                  cards.removeAt(oldIndex,);
+                onReorder:
+                    (
+                    oldIndex,
+                    newIndex,
+                    ) {
 
-                  cards.insert(newIndex, item,);
-                });
-              },
+                  setState(() {
 
-              itemBuilder:
-                  (
-                  context,
-                  index,
-                  ) {
+                    if (newIndex > oldIndex)
+                    {
+                      newIndex--;
+                    }
 
-                return RankingCharacterCard(
-                  key: ValueKey(
-                    '${cards[index].title}$index',
-                  ),
+                    final item =
+                    cards.removeAt(
+                      oldIndex,
+                    );
 
-                  index: index + 1,
+                    cards.insert(
+                      newIndex,
+                      item,
+                    );
+                  });
+                },
 
-                  title: cards[index].title,
+                itemBuilder:
+                    (
+                    context,
+                    index,
+                    ) {
 
-                  subtitle: cards[index].subtitle,
+                  return RankingCharacterCard(
+                    key: ValueKey(
+                      '${cards[index].title}$index',
+                    ),
 
-                  dragHandle:
-                  ReorderableDragStartListener(
-                    index: index,
+                    index: index + 1,
 
-                    child:
-                    const Padding(
-                      padding: EdgeInsets.only(right: 8),
+                    title: cards[index].title,
 
-                      child: Icon(
-                        Icons.drag_handle,
-                        size: 40,
+                    subtitle: cards[index].subtitle,
+
+                    dragHandle:
+                    ReorderableDragStartListener(
+                      index: index,
+
+                      child:
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8),
+
+                        child: Icon(
+                          Icons.drag_handle,
+                          size: 40,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-            )
+                  );
+                },
+              ),
+            ),
           ),
 
           Positioned(
