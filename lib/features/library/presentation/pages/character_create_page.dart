@@ -28,6 +28,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   final form = CharacterFormController();
   final formScrollController = ScrollController();
   int formVersion = 0;
+  bool allowPop = false;
 
   bool get isEditing => widget.characterId != null;
 
@@ -80,6 +81,48 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     return SnackBar(content: Text(message, textAlign: TextAlign.center));
   }
 
+  Future<void> _requestExit() async {
+    final definitions = ref.read(
+      characterReferencesViewModelProvider.select(
+        (state) => state.gradeDefinitions,
+      ),
+    );
+    if (!form.hasUnsavedChanges(definitions)) {
+      await _popWithoutWarning();
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Discard changes?'),
+        content: const Text('Your unsaved changes will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => dialogContext.pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => dialogContext.pop(true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await _popWithoutWarning();
+    }
+  }
+
+  Future<void> _popWithoutWarning() async {
+    setState(() => allowPop = true);
+    await Future<void>.delayed(Duration.zero);
+    if (mounted) {
+      context.pop();
+    }
+  }
+
   Future<void> _createCharacter(List<GradeDefinition> definitions) async {
     final created = await ref
         .read(createCharacterViewModelProvider.notifier)
@@ -90,9 +133,10 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     }
 
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
+    ref.invalidate(characterNameSuggestionsProvider);
 
     if (mounted) {
-      context.pop();
+      await _popWithoutWarning();
     }
   }
 
@@ -111,9 +155,10 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     }
 
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
+    ref.invalidate(characterNameSuggestionsProvider);
 
     if (mounted) {
-      context.pop();
+      await _popWithoutWarning();
     }
   }
 
@@ -156,9 +201,10 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     }
 
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
+    ref.invalidate(characterNameSuggestionsProvider);
 
     if (mounted) {
-      context.pop();
+      await _popWithoutWarning();
     }
   }
 
@@ -195,6 +241,8 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   Widget build(BuildContext context) {
     final createState = ref.watch(createCharacterViewModelProvider);
     final referencesState = ref.watch(characterReferencesViewModelProvider);
+    final characterNames =
+        ref.watch(characterNameSuggestionsProvider).value ?? const <String>[];
     form.syncGradeControllers(referencesState.gradeDefinitions);
 
     ref.listen(createCharacterViewModelProvider, (previous, next) {
@@ -219,136 +267,147 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       ).showSnackBar(_centeredSnackBar(next.errorMessage!));
     });
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: isEditing ? 'Edit Character' : 'New Character',
-        backgroundColor: const Color(0xFF1A4043),
-        backButtonColor: const Color(0xFF009768),
-        titleColor: const Color(0xFF4CB897),
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/Library_bg.jpg',
-              fit: BoxFit.cover,
+    return PopScope(
+      canPop: allowPop,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _requestExit();
+        }
+      },
+      child: Scaffold(
+        appBar: CustomAppBar(
+          title: isEditing ? 'Edit Character' : 'New Character',
+          backgroundColor: const Color(0xFF1A4043),
+          backButtonColor: const Color(0xFF009768),
+          titleColor: const Color(0xFF4CB897),
+          onBackPressed: _requestExit,
+        ),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/Library_bg.jpg',
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          if (createState.isLoading)
-            const Center(child: CircularProgressIndicator())
-          else
-            Center(
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.90,
-                height: MediaQuery.of(context).size.height * 0.87,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Image.asset(
-                        'assets/images/PagePictureFixed.png',
-                        fit: BoxFit.fill,
+            if (createState.isLoading)
+              const Center(child: CircularProgressIndicator())
+            else
+              Center(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.90,
+                  height: MediaQuery.of(context).size.height * 0.87,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          'assets/images/PagePictureFixed.png',
+                          fit: BoxFit.fill,
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      top: 55,
-                      left: 20,
-                      right: 20,
-                      bottom: 25,
-                      child: ClipRect(
-                        child: SingleChildScrollView(
-                          controller: formScrollController,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 17),
-                              Center(
-                                child: Text(
-                                  isEditing
-                                      ? 'Edit character'
-                                      : 'New character',
-                                  style: const TextStyle(
-                                    fontSize: 45,
-                                    color: Colors.black,
-                                    fontFamily: 'GreatVibes',
+                      Positioned(
+                        top: 55,
+                        left: 20,
+                        right: 20,
+                        bottom: 25,
+                        child: ClipRect(
+                          child: SingleChildScrollView(
+                            controller: formScrollController,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 17),
+                                Center(
+                                  child: Text(
+                                    isEditing
+                                        ? 'Edit character'
+                                        : 'New character',
+                                    style: const TextStyle(
+                                      fontSize: 45,
+                                      color: Colors.black,
+                                      fontFamily: 'GreatVibes',
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 20),
-                              Center(
-                                child: MainPhotoPicker(
-                                  imagePath: form.mainImagePath,
-                                  onChanged: (path) =>
-                                      setState(() => form.mainImagePath = path),
+                                const SizedBox(height: 20),
+                                Center(
+                                  child: MainPhotoPicker(
+                                    imagePath: form.mainImagePath,
+                                    onChanged: (path) => setState(
+                                      () => form.mainImagePath = path,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 25),
-                              MainInformationDropdown(
-                                key: ValueKey(formVersion),
-                                nameController: form.name,
-                                ageController: form.age,
-                                heightController: form.height,
-                                japaneseNameController: form.japaneseName,
-                                animeController: form.anime,
-                                archetypeController: form.archetype,
-                                animeTitles: referencesState.animeTitles,
-                                archetypes: referencesState.archetypes,
-                                onAddAnime: _addAnimeTitle,
-                                selectedGender: form.gender,
-                                onGenderChanged: (value) =>
-                                    setState(() => form.gender = value),
-                                nameHasError: createState.invalidFields
-                                    .contains(CreateCharacterField.name),
-                                animeHasError: createState.invalidFields
-                                    .contains(CreateCharacterField.anime),
-                                archetypeHasError: createState.invalidFields
-                                    .contains(CreateCharacterField.archetype),
-                              ),
-                              const SizedBox(height: 15),
-                              PersonalGradesDropdown(
-                                definitions: referencesState.gradeDefinitions,
-                                controllers: form.grades,
-                              ),
-                              const SizedBox(height: 15),
-                              GalleryDropdown(
-                                imagePaths: form.galleryImagePaths,
-                                onChanged: (paths) => setState(
-                                  () => form.galleryImagePaths = paths,
+                                const SizedBox(height: 25),
+                                MainInformationDropdown(
+                                  key: ValueKey(formVersion),
+                                  nameController: form.name,
+                                  ageController: form.age,
+                                  heightController: form.height,
+                                  japaneseNameController: form.japaneseName,
+                                  animeController: form.anime,
+                                  archetypeController: form.archetype,
+                                  characterNames: characterNames,
+                                  animeTitles: referencesState.animeTitles,
+                                  archetypes: referencesState.archetypes,
+                                  onAddAnime: _addAnimeTitle,
+                                  selectedGender: form.gender,
+                                  onGenderChanged: (value) =>
+                                      setState(() => form.gender = value),
+                                  nameHasError: createState.invalidFields
+                                      .contains(CreateCharacterField.name),
+                                  animeHasError: createState.invalidFields
+                                      .contains(CreateCharacterField.anime),
+                                  archetypeHasError: createState.invalidFields
+                                      .contains(CreateCharacterField.archetype),
                                 ),
-                              ),
-                              const SizedBox(height: 15),
-                              PersonalNotesDropdown(controller: form.notes),
-                              const SizedBox(height: 15),
-                              LowerButtons(
-                                onClear: isEditing
-                                    ? _deleteCharacter
-                                    : _clearAll,
-                                onCreate: isEditing
-                                    ? () => _saveCharacter(
-                                        referencesState.gradeDefinitions,
-                                      )
-                                    : () => _createCharacter(
-                                        referencesState.gradeDefinitions,
-                                      ),
-                                isClearLoading: createState.isDeleting,
-                                isCreateLoading: createState.isSaving,
-                                clearLabel: isEditing
-                                    ? 'Delete character'
-                                    : 'Clear all',
-                                createLabel: isEditing ? 'Save' : 'Create',
-                                clearLoadingLabel: 'Deleting...',
-                                createLoadingLabel: 'Saving...',
-                              ),
-                              const SizedBox(height: 20),
-                            ],
+                                const SizedBox(height: 15),
+                                PersonalGradesDropdown(
+                                  definitions: referencesState.gradeDefinitions,
+                                  controllers: form.grades,
+                                ),
+                                const SizedBox(height: 15),
+                                GalleryDropdown(
+                                  imagePaths: form.galleryImagePaths,
+                                  onChanged: (paths) => setState(
+                                    () => form.galleryImagePaths = paths,
+                                  ),
+                                ),
+                                const SizedBox(height: 15),
+                                PersonalNotesDropdown(controller: form.notes),
+                                const SizedBox(height: 15),
+                                LowerButtons(
+                                  onClear: isEditing
+                                      ? _deleteCharacter
+                                      : _clearAll,
+                                  onCreate: isEditing
+                                      ? () => _saveCharacter(
+                                          referencesState.gradeDefinitions,
+                                        )
+                                      : () => _createCharacter(
+                                          referencesState.gradeDefinitions,
+                                        ),
+                                  isClearLoading: createState.isDeleting,
+                                  isCreateLoading: createState.isSaving,
+                                  clearLabel: isEditing
+                                      ? 'Delete character'
+                                      : 'Clear all',
+                                  createLabel: isEditing ? 'Save' : 'Create',
+                                  clearLoadingLabel: 'Deleting...',
+                                  createLoadingLabel: 'Saving...',
+                                ),
+                                const SizedBox(height: 20),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

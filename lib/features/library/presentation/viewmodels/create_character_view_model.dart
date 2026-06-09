@@ -156,6 +156,23 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
     }
 
     try {
+      final normalizedName = name.toLowerCase();
+      final normalizedSourceTitle = sourceTitle.toLowerCase();
+      final characters = await _repository.getCharacters();
+      final duplicateExists = characters.any(
+        (character) =>
+            character.id != existingCharacter.id &&
+            character.name.trim().toLowerCase() == normalizedName &&
+            character.sourceTitle.trim().toLowerCase() == normalizedSourceTitle,
+      );
+      if (duplicateExists) {
+        state = const CreateCharacterState(
+          errorMessage: 'This character already exists for the selected anime.',
+          invalidFields: {CreateCharacterField.name},
+        );
+        return false;
+      }
+
       final animeExists = await _referenceRepository.containsAnimeTitle(
         sourceTitle,
       );

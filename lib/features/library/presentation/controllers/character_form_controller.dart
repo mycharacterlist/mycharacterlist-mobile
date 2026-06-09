@@ -82,6 +82,55 @@ class CharacterFormController {
     );
   }
 
+  bool hasUnsavedChanges(List<GradeDefinition> definitions) {
+    final original = character;
+
+    if (original == null) {
+      return name.text.isNotEmpty ||
+          age.text.isNotEmpty ||
+          height.text.isNotEmpty ||
+          japaneseName.text.isNotEmpty ||
+          anime.text.isNotEmpty ||
+          archetype.text.isNotEmpty ||
+          notes.text.isNotEmpty ||
+          gender != CharacterGender.unknown ||
+          mainImagePath != null ||
+          galleryImagePaths.isNotEmpty ||
+          definitions.any(
+            (definition) => grades[definition.id]?.text.isNotEmpty ?? false,
+          );
+    }
+
+    return name.text != original.name ||
+        age.text != original.age ||
+        height.text != original.height ||
+        japaneseName.text != original.japaneseName ||
+        anime.text != original.sourceTitle ||
+        archetype.text != original.archetype ||
+        notes.text != original.personalNotes ||
+        gender != original.gender ||
+        mainImagePath != original.mainImagePath ||
+        !_sameList(galleryImagePaths, original.galleryImagePaths) ||
+        definitions.any(
+          (definition) =>
+              (grades[definition.id]?.text ?? '') !=
+              (original.grades[definition.id]?.toString() ?? ''),
+        );
+  }
+
+  bool _sameList(List<String> left, List<String> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+
+    for (var index = 0; index < left.length; index++) {
+      if (left[index] != right[index]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void clear() {
     for (final controller in textControllers) {
       controller.clear();

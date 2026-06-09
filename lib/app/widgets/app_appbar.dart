@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
-class CustomAppBar extends StatelessWidget
-    implements PreferredSizeWidget {
-
+class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
   final Color backgroundColor;
@@ -12,6 +10,7 @@ class CustomAppBar extends StatelessWidget
   final Color backButtonColor;
 
   final Color titleColor;
+  final VoidCallback? onBackPressed;
 
   const CustomAppBar({
     super.key,
@@ -22,6 +21,7 @@ class CustomAppBar extends StatelessWidget
     required this.backButtonColor,
 
     this.actionWidget,
+    this.onBackPressed,
   });
 
   @override
@@ -34,7 +34,7 @@ class CustomAppBar extends StatelessWidget
       title: Text(
         title,
 
-        style:TextStyle(
+        style: TextStyle(
           color: titleColor,
           fontSize: 32,
           fontWeight: FontWeight.bold,
@@ -43,24 +43,15 @@ class CustomAppBar extends StatelessWidget
       ),
 
       leading: IconButton(
-        icon: Icon(
-          Icons.arrow_back,
-          color: backButtonColor,
-        ),
+        icon: Icon(Icons.arrow_back, color: backButtonColor),
 
-        onPressed: () {
-          Navigator.pop(context);
-        },
+        onPressed: onBackPressed ?? () => Navigator.pop(context),
       ),
 
-      actions: [
-        if (actionWidget != null)
-          actionWidget!,
-      ],
+      actions: [if (actionWidget != null) actionWidget!],
     );
   }
 
   @override
-  Size get preferredSize =>
-      const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

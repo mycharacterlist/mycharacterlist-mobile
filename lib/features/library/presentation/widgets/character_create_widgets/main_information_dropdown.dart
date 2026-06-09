@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'gender_selector.dart';
 import 'fields/archetype_field.dart';
 import 'fields/anime_field.dart';
+import 'fields/character_name_field.dart';
 
 class MainInformationDropdown extends StatefulWidget {
   const MainInformationDropdown({
@@ -12,6 +13,7 @@ class MainInformationDropdown extends StatefulWidget {
     required this.japaneseNameController,
     required this.animeController,
     required this.archetypeController,
+    required this.characterNames,
     required this.animeTitles,
     required this.archetypes,
     required this.onAddAnime,
@@ -28,6 +30,7 @@ class MainInformationDropdown extends StatefulWidget {
   final TextEditingController japaneseNameController;
   final TextEditingController animeController;
   final TextEditingController archetypeController;
+  final List<String> characterNames;
   final List<String> animeTitles;
   final List<String> archetypes;
   final VoidCallback onAddAnime;
@@ -152,11 +155,13 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
 
                   const SizedBox(height: 12),
 
-                  buildField(
-                    'Name (Name, Surname)',
-                    widget.nameController,
+                  CharacterNameField(
+                    controller: widget.nameController,
+                    items: widget.characterNames,
                     hasError: widget.nameHasError,
                   ),
+
+                  const SizedBox(height: 12),
 
                   buildField('Age', widget.ageController),
 

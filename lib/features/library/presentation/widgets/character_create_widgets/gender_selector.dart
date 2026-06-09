@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/features/characters/domain/entities/character_gender.dart';
+
 class GenderSelector extends StatelessWidget {
   const GenderSelector({
     super.key,
@@ -10,13 +12,13 @@ class GenderSelector extends StatelessWidget {
   final String selectedGender;
   final ValueChanged<String> onChanged;
 
-  Widget buildGenderRadio(String gender) {
+  Widget buildGenderRadio(String value, String label) {
     return Expanded(
       child: Row(
         children: [
           Expanded(
             child: Text(
-              gender,
+              label,
 
               style: const TextStyle(
                 fontSize: 26,
@@ -27,7 +29,7 @@ class GenderSelector extends StatelessWidget {
           ),
 
           Radio<String>(
-            value: gender,
+            value: value,
             groupValue: selectedGender,
             activeColor: Colors.black,
 
@@ -60,7 +62,12 @@ class GenderSelector extends StatelessWidget {
 
         const SizedBox(height: 8),
 
-        Row(children: [buildGenderRadio('Male'), buildGenderRadio('Female')]),
+        Row(
+          children: [
+            buildGenderRadio(CharacterGender.male, 'Male'),
+            buildGenderRadio(CharacterGender.female, 'Female'),
+          ],
+        ),
       ],
     );
   }
