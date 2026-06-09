@@ -6,26 +6,27 @@ class CreateListDialog {
     required BuildContext context,
     required TextEditingController controller,
     required Future<void> Function(Color) onCreate,
+    Color initialColor = const Color(0xFF768AFD),
+    String title = 'Create list',
+    String submitLabel = 'Create',
+    Future<void> Function()? onDelete,
   }) {
-
-    Color selectedColor = const Color(0xFF768AFD);
+    Color selectedColor = initialColor;
     String? nameErrorText;
 
     showDialog(
       context: context,
 
       builder: (context) {
-
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Create list'),
+              title: Text(title),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
 
                   children: [
-
                     TextField(
                       controller: controller,
                       onChanged: (_) {
@@ -66,6 +67,12 @@ class CreateListDialog {
               ),
 
               actions: [
+                if (onDelete != null)
+                  TextButton(
+                    onPressed: onDelete,
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    child: const Text('Delete'),
+                  ),
 
                 TextButton(
                   onPressed: () {
@@ -88,7 +95,7 @@ class CreateListDialog {
                     await onCreate(selectedColor);
                   },
 
-                  child: const Text('Create'),
+                  child: Text(submitLabel),
                 ),
               ],
             );

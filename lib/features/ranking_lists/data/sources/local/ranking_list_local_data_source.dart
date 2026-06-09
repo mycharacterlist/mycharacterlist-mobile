@@ -38,12 +38,18 @@ class RankingListLocalDataSource {
 
   Future<void> saveList(RankingListModel list) async {
     final database = await _appDatabase.database;
+    final data = list.toDatabase();
 
-    await database.insert(
+    final updatedRows = await database.update(
       'ranking_lists',
-      list.toDatabase(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
+      data,
+      where: 'id = ?',
+      whereArgs: [list.id],
     );
+
+    if (updatedRows == 0) {
+      await database.insert('ranking_lists', data);
+    }
   }
 
   Future<void> deleteList(String id) async {

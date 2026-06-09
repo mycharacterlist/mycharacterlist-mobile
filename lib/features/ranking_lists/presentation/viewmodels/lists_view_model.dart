@@ -80,11 +80,54 @@ class ListsViewModel extends StateNotifier<ListsState> {
     }
   }
 
-  void clearError() {
-    state = ListsState(
-      lists: state.lists,
-      isLoading: state.isLoading,
+  Future<bool> updateList({
+    required RankingList list,
+    required String name,
+    required Color color,
+  }) async {
+    final trimmedName = name.trim();
+
+    if (trimmedName.isEmpty) {
+      state = state.copyWith(errorMessage: 'List name cannot be empty.');
+      return false;
+    }
+
+    final updatedList = list.copyWith(
+      name: trimmedName,
+      colorValue: color.toARGB32(),
+      updatedAt: DateTime.now(),
     );
+
+    try {
+      await _repository.saveList(updatedList);
+
+      state = state.copyWith(
+        lists: state.lists
+            .map((item) => item.id == list.id ? updatedList : item)
+            .toList(),
+      );
+      return true;
+    } catch (error) {
+      state = state.copyWith(errorMessage: _messageFromError(error));
+      return false;
+    }
+  }
+
+  Future<bool> deleteList(String id) async {
+    try {
+      await _repository.deleteList(id);
+      state = state.copyWith(
+        lists: state.lists.where((list) => list.id != id).toList(),
+      );
+      return true;
+    } catch (error) {
+      state = state.copyWith(errorMessage: _messageFromError(error));
+      return false;
+    }
+  }
+
+  void clearError() {
+    state = ListsState(lists: state.lists, isLoading: state.isLoading);
   }
 
   String _messageFromError(Object error) {
