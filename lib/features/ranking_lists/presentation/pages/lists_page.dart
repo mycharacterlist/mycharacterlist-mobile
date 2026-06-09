@@ -5,8 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/CreateNew_button.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/create_list_dialog.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/ListsPage_widgets/CreateNew_button.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/ListsPage_widgets/create_list_dialog.dart';
 
 class ListsPage extends ConsumerStatefulWidget {
   const ListsPage({super.key});
