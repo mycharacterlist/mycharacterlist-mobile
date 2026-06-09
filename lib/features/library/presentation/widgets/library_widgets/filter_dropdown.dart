@@ -125,50 +125,40 @@ class _FilterDropdownState extends State<FilterDropdown> {
                   itemBuilder: (context, index) {
                     final item = widget.items[index];
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 2,
-                      ),
-
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 8),
-
+                    return InkWell(
+                      onTap: () => _toggleItem(item),
+                      child: Container(
+                        padding: const EdgeInsets.only(left: 18, right: 10),
+                        decoration: BoxDecoration(
+                          border: index == widget.items.length - 1
+                              ? null
+                              : const Border(
+                                  bottom: BorderSide(
+                                    color: Colors.black12,
+                                    width: 1,
+                                  ),
+                                ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
                               child: Text(
                                 item,
-
                                 softWrap: true,
-
                                 style: const TextStyle(
                                   fontSize: 28,
                                   fontFamily: 'JosefinSlab',
                                 ),
                               ),
                             ),
-                          ),
-
-                          Checkbox(
-                            value: selected.contains(item),
-
-                            activeColor: Colors.black,
-
-                            onChanged: (value) {
-                              setState(() {
-                                if (value == true) {
-                                  selected.add(item);
-                                } else {
-                                  selected.remove(item);
-                                }
-                                widget.onChanged(selected.toSet());
-                              });
-                            },
-                          ),
-                        ],
+                            Checkbox(
+                              value: selected.contains(item),
+                              activeColor: Colors.black,
+                              onChanged: (_) => _toggleItem(item),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -178,5 +168,16 @@ class _FilterDropdownState extends State<FilterDropdown> {
         ],
       ),
     );
+  }
+
+  void _toggleItem(String item) {
+    setState(() {
+      if (selected.contains(item)) {
+        selected.remove(item);
+      } else {
+        selected.add(item);
+      }
+      widget.onChanged(selected.toSet());
+    });
   }
 }
