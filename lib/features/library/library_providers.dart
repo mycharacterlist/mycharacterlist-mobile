@@ -1,10 +1,40 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mycharacterlist/features/characters/character_providers.dart';
+import 'package:mycharacterlist/core/storage/storage_providers.dart';
+import 'package:mycharacterlist/features/library/data/services/character_json_export_service.dart';
+import 'package:mycharacterlist/features/library/data/services/character_json_import_service.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/characters_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/character_references_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/create_character_view_model.dart';
+
+final characterJsonImportServiceProvider = Provider<CharacterJsonImportService>(
+  (ref) => CharacterJsonImportService(
+    characterRepository: ref.watch(characterRepositoryProvider),
+    referenceRepository: ref.watch(characterReferenceRepositoryProvider),
+    localFileStorage: ref.watch(localFileStorageProvider),
+  ),
+);
+
+final characterJsonExportServiceProvider = Provider<CharacterJsonExportService>(
+  (ref) => CharacterJsonExportService(
+    characterRepository: ref.watch(characterRepositoryProvider),
+  ),
+);
+
+final characterNameSuggestionsProvider = FutureProvider<List<String>>((
+  ref,
+) async {
+  final characters = await ref
+      .watch(characterRepositoryProvider)
+      .getCharacters();
+  final names = characters.map((character) => character.name).toSet().toList();
+  names.sort(
+    (left, right) => left.toLowerCase().compareTo(right.toLowerCase()),
+  );
+  return names;
+});
 
 final charactersViewModelProvider =
     StateNotifierProvider<CharactersViewModel, CharactersState>(
@@ -12,6 +42,8 @@ final charactersViewModelProvider =
         repository: ref.watch(characterRepositoryProvider),
         referenceRepository: ref.watch(characterReferenceRepositoryProvider),
         rankingListRepository: ref.watch(rankingListRepositoryProvider),
+        importService: ref.watch(characterJsonImportServiceProvider),
+        exportService: ref.watch(characterJsonExportServiceProvider),
       ),
     );
 

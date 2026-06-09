@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:mycharacterlist/app/router/routes.dart';
@@ -26,17 +27,23 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
   @override
   void initState() {
     super.initState();
-    searchController.addListener(_search);
+    charactersScrollController.addListener(_loadMore);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(charactersViewModelProvider.notifier).reset();
     });
   }
 
-  void _search() {
+  void _loadMore() {
+    if (!charactersScrollController.hasClients ||
+        charactersScrollController.position.extentAfter > 300) {
+      return;
+    }
+    ref.read(charactersViewModelProvider.notifier).loadMore();
+  }
+
+  void _search(String query) {
     _resetListPosition();
-    ref
-        .read(charactersViewModelProvider.notifier)
-        .search(searchController.text);
+    ref.read(charactersViewModelProvider.notifier).search(query);
   }
 
   void _unfocusSearch() {
@@ -51,10 +58,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
   void _resetSearch() {
     _unfocusSearch();
-    searchController
-      ..removeListener(_search)
-      ..clear()
-      ..addListener(_search);
+    searchController.clear();
     filters = const CharacterFilters();
     _resetListPosition();
     ref.read(charactersViewModelProvider.notifier).reset();
@@ -63,6 +67,95 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
   void _openPage(String route) {
     _resetSearch();
     context.push(route);
+  }
+
+  Future<void> _importCharacters() async {
+    _unfocusSearch();
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    final path = result?.files.single.path;
+    if (path == null || !mounted) {
+      return;
+    }
+
+    final importResult = await ref
+        .read(charactersViewModelProvider.notifier)
+        .importFile(path);
+    ref.invalidate(characterNameSuggestionsProvider);
+    await ref.read(characterReferencesViewModelProvider.notifier).load();
+
+    if (mounted && importResult != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(importResult.message, textAlign: TextAlign.center),
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportCharacters() async {
+    _unfocusSearch();
+    final directoryPath = await FilePicker.getDirectoryPath(
+      dialogTitle: 'Select export folder',
+    );
+    if (directoryPath == null || !mounted) {
+      return;
+    }
+
+    final exportResult = await ref
+        .read(charactersViewModelProvider.notifier)
+        .exportToDirectory(directoryPath);
+
+    if (mounted && exportResult != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(exportResult.message, textAlign: TextAlign.center),
+        ),
+      );
+    }
+  }
+
+  Future<void> _showTransferActions() async {
+    _unfocusSearch();
+    final action = await showModalBottomSheet<_LibraryTransferAction>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.file_download_outlined),
+              title: const Text('Import JSON'),
+              onTap: () =>
+                  sheetContext.pop(_LibraryTransferAction.importCharacters),
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_upload_outlined),
+              title: const Text('Export library'),
+              onTap: () =>
+                  sheetContext.pop(_LibraryTransferAction.exportCharacters),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    switch (action) {
+      case _LibraryTransferAction.importCharacters:
+        await _importCharacters();
+        return;
+      case _LibraryTransferAction.exportCharacters:
+        await _exportCharacters();
+        return;
+      case null:
+        return;
+    }
   }
 
   void showFilterSheet() {
@@ -102,9 +195,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
   @override
   void dispose() {
-    searchController
-      ..removeListener(_search)
-      ..dispose();
+    searchController.dispose();
     charactersScrollController.dispose();
     super.dispose();
   }
@@ -138,6 +229,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                 children: [
                   SearchBarWidget(
                     controller: searchController,
+                    onChanged: _search,
                     onFilterPressed: showFilterSheet,
                   ),
                   Expanded(
@@ -151,8 +243,18 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                               child: ListView.builder(
                                 controller: charactersScrollController,
                                 padding: const EdgeInsets.only(top: 5),
-                                itemCount: state.characters.length,
+                                itemCount:
+                                    state.characters.length +
+                                    (state.isLoadingMore ? 1 : 0),
                                 itemBuilder: (context, index) {
+                                  if (index == state.characters.length) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  }
                                   final character = state.characters[index];
                                   return LibraryCard(
                                     key: ValueKey(character.id),
@@ -182,6 +284,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                 child: PlusButton(
                   icon: const Icon(Icons.add, color: Colors.black, size: 45),
                   onPressed: () => _openPage(AppRoutes.characterCreate),
+                  onLongPress: state.isImporting || state.isExporting
+                      ? null
+                      : _showTransferActions,
                 ),
               ),
             ),
@@ -191,3 +296,5 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     );
   }
 }
+
+enum _LibraryTransferAction { importCharacters, exportCharacters }

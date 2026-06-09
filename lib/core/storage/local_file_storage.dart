@@ -1,9 +1,30 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as path_provider;
 
 class LocalFileStorage {
+  Future<String> saveBytes(
+    Uint8List bytes, {
+    required String folder,
+    String extension = '',
+  }) async {
+    final storageRoot = await _storageRoot();
+    final destinationDirectory = Directory(p.join(storageRoot.path, folder));
+    await destinationDirectory.create(recursive: true);
+
+    final safeExtension = RegExp(r'^\.[a-zA-Z0-9]+$').hasMatch(extension)
+        ? extension
+        : '';
+    final destinationPath = p.join(
+      destinationDirectory.path,
+      '${DateTime.now().microsecondsSinceEpoch}$safeExtension',
+    );
+
+    return (await File(destinationPath).writeAsBytes(bytes)).path;
+  }
+
   Future<String?> saveOptionalFile(
     String? sourcePath, {
     required String folder,

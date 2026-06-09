@@ -21,6 +21,14 @@ class CharacterRepositoryImpl implements CharacterRepository {
   }
 
   @override
+  Future<List<Character>> getCharactersPage({
+    required int offset,
+    required int limit,
+  }) {
+    return _localDataSource.getCharactersPage(offset: offset, limit: limit);
+  }
+
+  @override
   Future<Character?> getCharacterById(String id) {
     return _localDataSource.getCharacterById(id);
   }
@@ -32,6 +40,23 @@ class CharacterRepositoryImpl implements CharacterRepository {
     }
 
     return _localDataSource.searchCharacters(query);
+  }
+
+  @override
+  Future<List<Character>> searchCharactersPage(
+    String query, {
+    required int offset,
+    required int limit,
+  }) {
+    if (query.trim().isEmpty) {
+      return _localDataSource.getCharactersPage(offset: offset, limit: limit);
+    }
+
+    return _localDataSource.searchCharactersPage(
+      query,
+      offset: offset,
+      limit: limit,
+    );
   }
 
   @override

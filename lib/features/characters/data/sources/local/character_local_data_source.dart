@@ -11,10 +11,23 @@ class CharacterLocalDataSource {
   final AppDatabase _appDatabase;
 
   Future<List<CharacterModel>> getCharacters() async {
+    return _getCharacters();
+  }
+
+  Future<List<CharacterModel>> getCharactersPage({
+    required int offset,
+    required int limit,
+  }) {
+    return _getCharacters(offset: offset, limit: limit);
+  }
+
+  Future<List<CharacterModel>> _getCharacters({int? offset, int? limit}) async {
     final database = await _appDatabase.database;
     final characters = await database.query(
       'characters',
       orderBy: 'name COLLATE NOCASE ASC',
+      offset: offset,
+      limit: limit,
     );
 
     final models = <CharacterModel>[];
@@ -43,6 +56,22 @@ class CharacterLocalDataSource {
   }
 
   Future<List<CharacterModel>> searchCharacters(String query) async {
+    return _searchCharacters(query);
+  }
+
+  Future<List<CharacterModel>> searchCharactersPage(
+    String query, {
+    required int offset,
+    required int limit,
+  }) {
+    return _searchCharacters(query, offset: offset, limit: limit);
+  }
+
+  Future<List<CharacterModel>> _searchCharacters(
+    String query, {
+    int? offset,
+    int? limit,
+  }) async {
     final database = await _appDatabase.database;
     final normalizedQuery = '%${query.trim()}%';
     final characters = await database.query(
@@ -50,6 +79,8 @@ class CharacterLocalDataSource {
       where: 'name LIKE ? COLLATE NOCASE OR source_title LIKE ? COLLATE NOCASE',
       whereArgs: [normalizedQuery, normalizedQuery],
       orderBy: 'name COLLATE NOCASE ASC',
+      offset: offset,
+      limit: limit,
     );
 
     final models = <CharacterModel>[];
