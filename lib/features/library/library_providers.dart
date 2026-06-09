@@ -48,7 +48,10 @@ final charactersViewModelProvider =
     );
 
 final createCharacterViewModelProvider =
-    StateNotifierProvider<CreateCharacterViewModel, CreateCharacterState>(
+    StateNotifierProvider.autoDispose<
+      CreateCharacterViewModel,
+      CreateCharacterState
+    >(
       (ref) => CreateCharacterViewModel(
         repository: ref.watch(characterRepositoryProvider),
         referenceRepository: ref.watch(characterReferenceRepositoryProvider),
