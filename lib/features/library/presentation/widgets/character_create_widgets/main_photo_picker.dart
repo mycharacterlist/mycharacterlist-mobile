@@ -35,9 +35,6 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
       children: [
         GestureDetector(
           onTap: pickImage,
-          onLongPress: widget.imagePath == null
-              ? null
-              : () => widget.onChanged(null),
 
           child: Container(
             width: 150,
@@ -66,21 +63,37 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
                 ),
 
                 Positioned(
-                  right: 8,
-                  bottom: 8,
+                  right: widget.imagePath == null ? 8 : 4,
+                  bottom: widget.imagePath == null ? 8 : null,
+                  top: widget.imagePath == null ? null : 4,
 
-                  child: Container(
-                    width: 50,
-                    height: 50,
+                  child: GestureDetector(
+                    onTap: widget.imagePath == null
+                        ? pickImage
+                        : () => widget.onChanged(null),
+                    child: Container(
+                      width: widget.imagePath == null ? 34 : 28,
+                      height: widget.imagePath == null ? 34 : 28,
 
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      shape: BoxShape.circle,
+                      decoration: BoxDecoration(
+                        color: widget.imagePath == null
+                            ? Colors.transparent
+                            : Colors.black38,
+                        shape: BoxShape.circle,
 
-                      border: Border.all(color: Colors.black, width: 2),
+                        border: widget.imagePath == null
+                            ? Border.all(color: Colors.black, width: 2)
+                            : null,
+                      ),
+
+                      child: Icon(
+                        widget.imagePath == null ? Icons.add : Icons.close,
+                        size: widget.imagePath == null ? 28 : 20,
+                        color: widget.imagePath == null
+                            ? Colors.black
+                            : Colors.white,
+                      ),
                     ),
-
-                    child: const Icon(Icons.add, size: 40, color: Colors.black),
                   ),
                 ),
               ],

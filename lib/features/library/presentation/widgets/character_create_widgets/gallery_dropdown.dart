@@ -106,11 +106,19 @@ class _GalleryDropdownState extends State<GalleryDropdown> {
             child: Image.file(File(imagePath), fit: BoxFit.cover),
           ),
           Positioned(
-            top: 2,
-            right: 2,
+            top: 4,
+            right: 4,
             child: GestureDetector(
               onTap: () => removeImage(index),
-              child: const Icon(Icons.close, size: 22),
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: Colors.black38,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 20, color: Colors.white),
+              ),
             ),
           ),
         ],
