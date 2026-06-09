@@ -275,6 +275,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
         }
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: CustomAppBar(
           title: isEditing ? 'Edit Character' : 'New Character',
           backgroundColor: const Color(0xFF1A4043),
