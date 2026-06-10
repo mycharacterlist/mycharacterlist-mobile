@@ -82,6 +82,9 @@ flutter:
     - assets/images/PagePictureFixed.png
     - assets/images/InsideListMain_bg.jpg
     - assets/images/InsideList2_bg.jpg
+    - assets/images/CharacterPage_bg.jpg
+    - assets/images/cropped_rectangle.png
+    - assets/images/LouiseTest.jpg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -128,6 +131,27 @@ flutter:
     - family: Joan
       fonts:
         - asset: assets/fonts/Joan-Regular.ttf
+    - family: JFS
+      fonts:
+        - asset: assets/fonts/JacquesFrancoisShadow-Regular.ttf
+    - family: DoublePicaITA
+      fonts:
+        - asset: assets/fonts/IMFELLDoublePica-Italic.ttf
+    - family: DoublePicaREG
+      fonts:
+        - asset: assets/fonts/IMFELLDoublePica-Regular.ttf
+    - family: Italiana
+      fonts:
+        - asset: assets/fonts/Italiana-Regular.ttf
+    - family: Itim
+      fonts:
+        - asset: assets/fonts/Itim-cyrillic.otf
+    - family: JockeyOne
+      fonts:
+        - asset: assets/fonts/JockeyOne-Regular.ttf
+    - family: JimNightshade
+      fonts:
+        - asset: assets/fonts/JimNightshade-Regular.ttf
 
 
   #       - asset: fonts/TrajanPro_Bold.ttf
