@@ -75,15 +75,15 @@ class CharacterPage extends StatelessWidget {
 
                           const SizedBox(height: 5),
 
-                          const Text(
-                            'Character page',
-
-                            style: TextStyle(
-                              fontSize: 28,
-                              color: Colors.black,
-                              fontFamily: 'JFS',
-                            ),
-                          ),
+                          // const Text(
+                          //   'Character page',
+                          //
+                          //   style: TextStyle(
+                          //     fontSize: 28,
+                          //     color: Colors.black,
+                          //     fontFamily: 'JFS',
+                          //   ),
+                          // ),
 
                           const SizedBox(height: 5),
 
