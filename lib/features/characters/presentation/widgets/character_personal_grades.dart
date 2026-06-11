@@ -1,88 +1,63 @@
 import 'package:flutter/material.dart';
 
-class CharacterPersonalGrades extends StatelessWidget {
+import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 
+class CharacterPersonalGrades extends StatelessWidget {
   const CharacterPersonalGrades({
     super.key,
+    required this.definitions,
+    required this.grades,
   });
 
+  final List<GradeDefinition> definitions;
+  final Map<String, int> grades;
+
   @override
-  Widget build(
-      BuildContext context,
-      ) {
+  Widget build(BuildContext context) {
+    final sortedDefinitions = [...definitions]
+      ..sort((left, right) => left.position.compareTo(right.position));
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
-      decoration:
-      const BoxDecoration(
+      decoration: const BoxDecoration(
         color: Color(0xFFECEBEB),
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
-
           const Text(
             'Personal grades:',
-
             style: TextStyle(
               fontSize: 32,
               color: Colors.black,
               fontFamily: 'Joan',
             ),
           ),
-
           const SizedBox(height: 10),
-
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-
-            children: const [
-
-              _GradeRow(
-                title: 'Appearance',
-                grade: '10/10',
+          if (sortedDefinitions.isEmpty)
+            const Text(
+              'No grades yet',
+              style: TextStyle(
+                fontSize: 22,
+                color: Colors.black,
+                fontFamily: 'Joan',
               ),
-
-              SizedBox(height: 10),
-
-              _GradeRow(
-                title: 'Character',
-                grade: '10/10',
-              ),
-
-              SizedBox(height: 10),
-
-              _GradeRow(
-                title: 'Haircut',
-                grade: '10/10',
-              ),
-
-              SizedBox(height: 10),
-
-              _GradeRow(
-                title: 'Eyes',
-                grade: '10/10',
-              ),
-
-              SizedBox(height: 10),
-
-              _GradeRow(
-                title: 'Outfit',
-                grade: '10/10',
-              ),
-
-              SizedBox(height: 10),
-
-              _GradeRow(
-                title: 'Overall',
-                grade: '10/10',
-                underline: true,
-              ),
-            ],
-          )
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var index = 0; index < sortedDefinitions.length; index++) ...[
+                  if (index > 0) const SizedBox(height: 10),
+                  _GradeRow(
+                    title: sortedDefinitions[index].name,
+                    grade:
+                        '${grades[sortedDefinitions[index].id] ?? 0}/${sortedDefinitions[index].maxValue}',
+                  ),
+                ],
+              ],
+            ),
         ],
       ),
     );
@@ -90,47 +65,30 @@ class CharacterPersonalGrades extends StatelessWidget {
 }
 
 class _GradeRow extends StatelessWidget {
-
-  final String title;
-
-  final String grade;
-
-  final bool underline;
-
   const _GradeRow({
     required this.title,
     required this.grade,
-    this.underline = false,
   });
 
-  @override
-  Widget build(
-      BuildContext context,
-      ) {
+  final String title;
+  final String grade;
 
+  @override
+  Widget build(BuildContext context) {
     return RichText(
       text: TextSpan(
         children: [
-
           TextSpan(
             text: '$title: ',
-
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 24,
               color: Colors.black,
               fontFamily: 'JockeyOne',
               fontWeight: FontWeight.bold,
-
-              decoration:
-              underline
-                  ? TextDecoration.underline
-                  : TextDecoration.none,
             ),
           ),
-
           TextSpan(
             text: grade,
-
             style: const TextStyle(
               fontSize: 24,
               color: Colors.black,

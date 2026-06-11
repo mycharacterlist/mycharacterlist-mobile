@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
 
-import 'package:mycharacterlist/features/characters/presentation/models/character_ranking_display.dart';
+import 'package:mycharacterlist/features/characters/domain/entities/character_fact.dart';
 
-class CharacterRanksStanding extends StatelessWidget {
-  const CharacterRanksStanding({
+class CharacterFacts extends StatelessWidget {
+  const CharacterFacts({
     super.key,
-    required this.rankings,
+    required this.facts,
   });
 
-  final List<CharacterRankingDisplay> rankings;
+  final List<CharacterFact> facts;
 
   @override
   Widget build(BuildContext context) {
+    if (facts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
@@ -22,7 +26,7 @@ class CharacterRanksStanding extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Ranks standing (positions):',
+            'Facts:',
             style: TextStyle(
               fontSize: 32,
               color: Colors.black,
@@ -30,35 +34,30 @@ class CharacterRanksStanding extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          if (rankings.isEmpty)
-            const Text(
-              'Not ranked in any list',
-              style: TextStyle(
-                fontSize: 22,
-                color: Colors.black,
-                fontFamily: 'Joan',
-              ),
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var index = 0; index < rankings.length; index++) ...[
-                  if (index > 0) const SizedBox(height: 10),
-                  _RankingRow(ranking: rankings[index]),
-                ],
-              ],
-            ),
+          for (var index = 0; index < facts.length; index++) ...[
+            if (index > 0) const SizedBox(height: 10),
+            _FactRow(fact: facts[index]),
+          ],
         ],
       ),
     );
   }
 }
 
-class _RankingRow extends StatelessWidget {
-  const _RankingRow({required this.ranking});
+class _FactRow extends StatelessWidget {
+  const _FactRow({required this.fact});
 
-  final CharacterRankingDisplay ranking;
+  final CharacterFact fact;
+
+  String get _value {
+    if (fact.type == CharacterFactType.grade) {
+      return '${fact.numericValue ?? 0}/${fact.maxValue ?? 0}';
+    }
+
+    return fact.textValue?.trim().isNotEmpty == true
+        ? fact.textValue!.trim()
+        : '—';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +65,7 @@ class _RankingRow extends StatelessWidget {
       text: TextSpan(
         children: [
           TextSpan(
-            text: '▪ ${ranking.listName}: ',
+            text: '${fact.key}: ',
             style: const TextStyle(
               fontSize: 24,
               color: Colors.black,
@@ -75,12 +74,11 @@ class _RankingRow extends StatelessWidget {
             ),
           ),
           TextSpan(
-            text: '#${ranking.position}',
+            text: _value,
             style: const TextStyle(
               fontSize: 24,
               color: Colors.black,
               fontFamily: 'JimNightshade',
-              fontWeight: FontWeight.bold,
             ),
           ),
         ],
