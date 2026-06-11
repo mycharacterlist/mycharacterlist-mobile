@@ -33,7 +33,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     super.initState();
     charactersScrollController.addListener(_loadMore);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(charactersViewModelProvider.notifier).reset();
+      ref.read(charactersViewModelProvider.notifier).resetInBackground();
     });
   }
 
@@ -60,16 +60,25 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     }
   }
 
-  void _resetSearch() {
-    _unfocusSearch();
-    searchController.clear();
-    filters = const CharacterFilters();
-    _resetListPosition();
-    ref.read(charactersViewModelProvider.notifier).reset();
+  void _scheduleSearchReset() {
+    final notifier = ref.read(charactersViewModelProvider.notifier);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifier.resetInBackground();
+    });
   }
 
-  void _openPage(String route) {
-    _resetSearch();
+  void _leaveLibrary() {
+    _unfocusSearch();
+    context.pop();
+  }
+
+  void _openPage(String route, {bool resetSearch = true}) {
+    _unfocusSearch();
+    if (resetSearch) {
+      searchController.clear();
+      filters = const CharacterFilters();
+      _scheduleSearchReset();
+    }
     context.push(route);
   }
 
@@ -219,13 +228,21 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     final state = ref.watch(charactersViewModelProvider);
     ref.watch(characterReferencesViewModelProvider);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _leaveLibrary();
+        }
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: CustomAppBar(
         title: 'Library',
         backgroundColor: const Color(0xFF1A4043),
         backButtonColor: const Color(0xFF009768),
         titleColor: const Color(0xFF4CB897),
+        onBackPressed: _leaveLibrary,
       ),
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
@@ -276,6 +293,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                                     index: index,
                                     onPressed: () => _openPage(
                                       AppRoutes.characterById(character.id),
+                                      resetSearch: false,
                                     ),
                                     onEditPressed: () => _openPage(
                                       AppRoutes.characterEditById(character.id),
@@ -305,6 +323,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
