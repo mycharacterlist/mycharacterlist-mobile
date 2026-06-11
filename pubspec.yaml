@@ -34,10 +34,26 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.5.1
+  dio: ^5.4.0
+  go_router: ^13.2.0
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+  image_picker: ^1.1.2
+  path: ^1.9.0
+  path_provider: ^2.1.2
+  sqflite: ^2.4.1
+  flutter_colorpicker: ^1.1.0
+  marquee: ^2.3.0
+  file_picker: ^11.0.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  build_runner: ^2.4.8
+  freezed: ^2.4.7
+  json_serializable: ^6.7.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -45,6 +61,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -58,8 +75,17 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
+  assets:
+    - assets/images/HomePage_bg.jpeg
+    - assets/images/ListsPage_bg.png
+    - assets/images/Library_bg.jpg
+    - assets/images/PagePicture.png
+    - assets/images/PagePictureFixed.png
+    - assets/images/InsideListMain_bg.jpg
+    - assets/images/InsideList2_bg.jpg
+    - assets/images/CharacterPage_bg.jpg
+    - assets/images/cropped_rectangle.png
+    - assets/images/LouiseTest.jpg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -73,17 +99,71 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
+  fonts:
+    - family: JpAnimeFont
+      fonts:
+        - asset: assets/fonts/JpAnimeFont.ttf
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
+    - family: LibreCaslonText
+      fonts:
+        - asset: assets/fonts/LibreCaslonText.ttf
+    - family: JosefinSans
+      fonts:
+        - asset: assets/fonts/JosefinSansStd-Light.ttf
+    - family: JosefinSlab
+      fonts:
+        - asset: assets/fonts/JosefinSlab.ttf
+    - family: FrancoisOne
+      fonts:
+        - asset: assets/fonts/FrancoisOne-Regular.ttf
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Black.ttf
+    - family: GreatVibes
+      fonts:
+        - asset: assets/fonts/GreatVibes-Regular.ttf
+    - family: GrandifloraOne
+      fonts:
+        - asset: assets/fonts/GrandifloraOne-Regular.ttf
+    - family: GrenzeGotisch
+      fonts:
+        - asset: assets/fonts/GrenzeGotisch-VariableFont_wght.ttf
+    - family: Joan
+      fonts:
+        - asset: assets/fonts/Joan-Regular.ttf
+    - family: JFS
+      fonts:
+        - asset: assets/fonts/JacquesFrancoisShadow-Regular.ttf
+    - family: DoublePicaITA
+      fonts:
+        - asset: assets/fonts/IMFELLDoublePica-Italic.ttf
+    - family: DoublePicaREG
+      fonts:
+        - asset: assets/fonts/IMFELLDoublePica-Regular.ttf
+    - family: Italiana
+      fonts:
+        - asset: assets/fonts/Italiana-Regular.ttf
+    - family: Itim
+      fonts:
+        - asset: assets/fonts/Itim-cyrillic.otf
+    - family: JockeyOne
+      fonts:
+        - asset: assets/fonts/JockeyOne-Regular.ttf
+    - family: JimNightshade
+      fonts:
+        - asset: assets/fonts/JimNightshade-Regular.ttf
+
+
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/app_icon.png
+  min_sdk_android: 21
+  remove_alpha_ios: true
