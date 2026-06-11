@@ -3,28 +3,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error.dart';
 
 class ListsState {
   const ListsState({
     this.lists = const [],
     this.isLoading = false,
+    this.isEditMode = false,
     this.errorMessage,
   });
 
   final List<RankingList> lists;
   final bool isLoading;
+  final bool isEditMode;
   final String? errorMessage;
 
   ListsState copyWith({
     List<RankingList>? lists,
     bool? isLoading,
+    bool? isEditMode,
     String? errorMessage,
   }) {
     return ListsState(
       lists: lists ?? this.lists,
       isLoading: isLoading ?? this.isLoading,
+      isEditMode: isEditMode ?? this.isEditMode,
       errorMessage: errorMessage ?? this.errorMessage,
     );
+  }
+
+  RankingList? findById(String id) {
+    for (final list in lists) {
+      if (list.id == id) {
+        return list;
+      }
+    }
+
+    return null;
   }
 }
 
@@ -37,6 +52,14 @@ class ListsViewModel extends StateNotifier<ListsState> {
 
   final RankingListRepository _repository;
 
+  void toggleEditMode() {
+    state = state.copyWith(isEditMode: !state.isEditMode);
+  }
+
+  void exitEditMode() {
+    state = state.copyWith(isEditMode: false);
+  }
+
   Future<void> loadLists() async {
     state = state.copyWith(isLoading: true);
 
@@ -47,7 +70,8 @@ class ListsViewModel extends StateNotifier<ListsState> {
     } catch (error) {
       state = ListsState(
         lists: state.lists,
-        errorMessage: _messageFromError(error),
+        isEditMode: state.isEditMode,
+        errorMessage: messageFromViewModelError(error),
       );
     }
   }
@@ -75,7 +99,7 @@ class ListsViewModel extends StateNotifier<ListsState> {
       state = state.copyWith(lists: [...state.lists, list]);
       return true;
     } catch (error) {
-      state = state.copyWith(errorMessage: _messageFromError(error));
+      state = state.copyWith(errorMessage: messageFromViewModelError(error));
       return false;
     }
   }
@@ -108,7 +132,7 @@ class ListsViewModel extends StateNotifier<ListsState> {
       );
       return true;
     } catch (error) {
-      state = state.copyWith(errorMessage: _messageFromError(error));
+      state = state.copyWith(errorMessage: messageFromViewModelError(error));
       return false;
     }
   }
@@ -121,20 +145,16 @@ class ListsViewModel extends StateNotifier<ListsState> {
       );
       return true;
     } catch (error) {
-      state = state.copyWith(errorMessage: _messageFromError(error));
+      state = state.copyWith(errorMessage: messageFromViewModelError(error));
       return false;
     }
   }
 
   void clearError() {
-    state = ListsState(lists: state.lists, isLoading: state.isLoading);
-  }
-
-  String _messageFromError(Object error) {
-    if (error is StateError) {
-      return error.message;
-    }
-
-    return 'Something went wrong. Please try again.';
+    state = ListsState(
+      lists: state.lists,
+      isLoading: state.isLoading,
+      isEditMode: state.isEditMode,
+    );
   }
 }
