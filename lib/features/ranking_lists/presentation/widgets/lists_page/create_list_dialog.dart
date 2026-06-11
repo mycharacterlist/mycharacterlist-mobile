@@ -16,7 +16,6 @@ class CreateListDialog {
 
     showDialog(
       context: context,
-
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -25,7 +24,6 @@ class CreateListDialog {
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-
                   children: [
                     TextField(
                       controller: controller,
@@ -34,9 +32,7 @@ class CreateListDialog {
                           return;
                         }
 
-                        setDialogState(() {
-                          nameErrorText = null;
-                        });
+                        setDialogState(() => nameErrorText = null);
                       },
                       decoration: InputDecoration(
                         hintText: 'Enter list name',
@@ -52,9 +48,7 @@ class CreateListDialog {
                     ColorPicker(
                       pickerColor: selectedColor,
                       onColorChanged: (color) {
-                        setDialogState(() {
-                          selectedColor = color;
-                        });
+                        setDialogState(() => selectedColor = color);
                       },
                       enableAlpha: false,
                       displayThumbColor: true,
@@ -65,7 +59,6 @@ class CreateListDialog {
                   ],
                 ),
               ),
-
               actions: [
                 if (onDelete != null)
                   TextButton(
@@ -73,7 +66,6 @@ class CreateListDialog {
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                     child: const Text('Delete'),
                   ),
-
                 TextButton(
                   onPressed: () {
                     controller.clear();
@@ -81,20 +73,15 @@ class CreateListDialog {
                   },
                   child: const Text('Cancel'),
                 ),
-
                 TextButton(
                   onPressed: () async {
                     if (controller.text.trim().isEmpty) {
-                      setDialogState(() {
-                        nameErrorText = 'Enter list name';
-                      });
-
+                      setDialogState(() => nameErrorText = 'Enter list name');
                       return;
                     }
 
                     await onCreate(selectedColor);
                   },
-
                   child: Text(submitLabel),
                 ),
               ],
