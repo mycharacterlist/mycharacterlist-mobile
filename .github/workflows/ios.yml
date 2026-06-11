@@ -19,21 +19,17 @@ jobs:
       - name: Build unsigned IPA
         run: |
           set -e
+
+          flutter build ios --release --no-codesign
+
+          mkdir Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+
           mkdir -p build/ios/ipa
 
-          if flutter build ipa --release --no-codesign; then
-            echo "IPA built successfully"
-          else
-            echo "Fallback build..."
-            flutter build ios --release --no-codesign
+          zip -qry build/ios/ipa/Runner.ipa Payload
 
-            mkdir -p Payload
-            cp -R build/ios/iphoneos/Runner.app Payload/
-
-            zip -qry build/ios/ipa/Runner.ipa Payload
-
-            rm -rf Payload
-          fi
+          ls -lah build/ios/ipa
 
       - uses: actions/upload-artifact@v4
         with:
