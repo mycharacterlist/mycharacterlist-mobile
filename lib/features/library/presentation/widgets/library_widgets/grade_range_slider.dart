@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/text/text_editing_utils.dart';
+
 class GradeRangeSlider extends StatefulWidget {
   const GradeRangeSlider({
     super.key,
@@ -150,9 +152,15 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
               setState(() {
                 values = newValues;
 
-                minController.text = newValues.start.round().toString();
+                setCollapsedControllerText(
+                  minController,
+                  newValues.start.round().toString(),
+                );
 
-                maxController.text = newValues.end.round().toString();
+                setCollapsedControllerText(
+                  maxController,
+                  newValues.end.round().toString(),
+                );
               });
               widget.onChanged(newValues);
             },

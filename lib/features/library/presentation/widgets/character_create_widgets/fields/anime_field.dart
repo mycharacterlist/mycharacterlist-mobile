@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/text/text_editing_utils.dart';
+
 class AnimeField extends StatelessWidget {
   const AnimeField({
     super.key,
@@ -33,7 +35,8 @@ class AnimeField extends StatelessWidget {
         return TextField(
           controller: controller,
           focusNode: focusNode,
-          onChanged: (value) => this.controller.text = value,
+          onChanged: (_) =>
+              syncControllerValue(this.controller, controller.value),
 
           decoration: InputDecoration(
             labelText: 'Anime',

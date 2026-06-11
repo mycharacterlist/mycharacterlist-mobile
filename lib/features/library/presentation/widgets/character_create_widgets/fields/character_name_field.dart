@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/text/text_editing_utils.dart';
+
 class CharacterNameField extends StatelessWidget {
   const CharacterNameField({
     super.key,
@@ -16,7 +18,7 @@ class CharacterNameField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Autocomplete<String>(
       initialValue: controller.value,
-      onSelected: (value) => controller.text = value,
+      onSelected: (value) => setCollapsedControllerText(controller, value),
       optionsBuilder: (value) {
         final query = value.text.trim().toLowerCase();
         if (query.isEmpty) {
@@ -29,7 +31,7 @@ class CharacterNameField extends StatelessWidget {
         return TextField(
           controller: fieldController,
           focusNode: focusNode,
-          onChanged: (value) => controller.text = value,
+          onChanged: (_) => syncControllerValue(controller, fieldController.value),
           decoration: InputDecoration(
             labelText: 'Name (Name, Surname)',
             filled: true,
