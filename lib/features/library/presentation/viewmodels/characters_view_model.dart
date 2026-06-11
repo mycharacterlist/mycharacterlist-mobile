@@ -77,6 +77,13 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
     await _apply();
   }
 
+  Future<void> resetInBackground() async {
+    _query = '';
+    _filters = const CharacterFilters();
+    _nextOffset = 0;
+    await _loadNextPage(reset: true, silent: true);
+  }
+
   Future<void> applyFilters(CharacterFilters filters) async {
     _filters = filters;
     await _apply();
@@ -146,18 +153,24 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
     await _loadNextPage(reset: true);
   }
 
-  Future<void> _loadNextPage({required bool reset}) async {
+  Future<void> _loadNextPage({
+    required bool reset,
+    bool silent = false,
+  }) async {
     final requestId = reset ? ++_requestId : _requestId;
-    state = CharactersState(
-      characters: reset ? const [] : state.characters,
-      isLoading: reset,
-      isLoadingMore: !reset,
-      hasMore: state.hasMore,
-      isImporting: state.isImporting,
-      isExporting: state.isExporting,
-    );
+    if (!silent) {
+      state = CharactersState(
+        characters: reset ? const [] : state.characters,
+        isLoading: reset,
+        isLoadingMore: !reset,
+        hasMore: state.hasMore,
+        isImporting: state.isImporting,
+        isExporting: state.isExporting,
+      );
+    }
 
     try {
+      final useSummaries = !_filters.hasActiveFilters;
       final definitions = _filters.hasGradeFilter
           ? await _referenceRepository.getGradeDefinitions()
           : const <GradeDefinition>[];
@@ -166,28 +179,34 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
       var hasMore = true;
 
       while (filteredCharacters.length < _pageSize && hasMore) {
-        final characters = _query.isEmpty
-            ? await _repository.getCharactersPage(
-                offset: _nextOffset,
-                limit: _pageSize,
-              )
-            : await _repository.searchCharactersPage(
-                _query,
-                offset: _nextOffset,
-                limit: _pageSize,
+        final characters = _loadCharactersPage(useSummaries: useSummaries);
+
+        if (requestId != _requestId) {
+          return;
+        }
+
+        final pageCharacters = await characters;
+
+        if (requestId != _requestId) {
+          return;
+        }
+
+        _nextOffset += pageCharacters.length;
+        hasMore = pageCharacters.length == _pageSize;
+
+        final rankingsByCharacterId = _filters.positions.isEmpty
+            ? const <String, List<RankedCharacter>>{}
+            : await _rankingListRepository.getCharacterRankingsBatch(
+                pageCharacters.map((character) => character.id).toList(),
               );
 
         if (requestId != _requestId) {
           return;
         }
 
-        _nextOffset += characters.length;
-        hasMore = characters.length == _pageSize;
-
-        for (final character in characters) {
-          final rankings = _filters.positions.isEmpty
-              ? const <RankedCharacter>[]
-              : await _rankingListRepository.getCharacterRankings(character.id);
+        for (final character in pageCharacters) {
+          final rankings =
+              rankingsByCharacterId[character.id] ?? const <RankedCharacter>[];
 
           if (CharacterFilterService.matches(
             character: character,
@@ -202,7 +221,9 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
 
       if (requestId == _requestId) {
         state = CharactersState(
-          characters: [...state.characters, ...filteredCharacters],
+          characters: reset
+              ? filteredCharacters
+              : [...state.characters, ...filteredCharacters],
           hasMore: hasMore,
         );
       }
@@ -215,5 +236,33 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
         );
       }
     }
+  }
+
+  Future<List<Character>> _loadCharactersPage({
+    required bool useSummaries,
+  }) {
+    if (useSummaries) {
+      return _query.isEmpty
+          ? _repository.getCharacterSummariesPage(
+              offset: _nextOffset,
+              limit: _pageSize,
+            )
+          : _repository.searchCharacterSummariesPage(
+              _query,
+              offset: _nextOffset,
+              limit: _pageSize,
+            );
+    }
+
+    return _query.isEmpty
+        ? _repository.getCharacterListItemsPage(
+            offset: _nextOffset,
+            limit: _pageSize,
+          )
+        : _repository.searchCharacterListItemsPage(
+            _query,
+            offset: _nextOffset,
+            limit: _pageSize,
+          );
   }
 }

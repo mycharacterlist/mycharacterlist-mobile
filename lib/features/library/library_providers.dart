@@ -28,7 +28,7 @@ final characterNameSuggestionsProvider = FutureProvider<List<String>>((
 ) async {
   final characters = await ref
       .watch(characterRepositoryProvider)
-      .getCharacters();
+      .getCharacterSummaries();
   final names = characters.map((character) => character.name).toSet().toList();
   names.sort(
     (left, right) => left.toLowerCase().compareTo(right.toLowerCase()),
@@ -38,13 +38,17 @@ final characterNameSuggestionsProvider = FutureProvider<List<String>>((
 
 final charactersViewModelProvider =
     StateNotifierProvider<CharactersViewModel, CharactersState>(
-      (ref) => CharactersViewModel(
-        repository: ref.watch(characterRepositoryProvider),
-        referenceRepository: ref.watch(characterReferenceRepositoryProvider),
-        rankingListRepository: ref.watch(rankingListRepositoryProvider),
-        importService: ref.watch(characterJsonImportServiceProvider),
-        exportService: ref.watch(characterJsonExportServiceProvider),
-      ),
+      (ref) {
+        ref.keepAlive();
+
+        return CharactersViewModel(
+          repository: ref.watch(characterRepositoryProvider),
+          referenceRepository: ref.watch(characterReferenceRepositoryProvider),
+          rankingListRepository: ref.watch(rankingListRepositoryProvider),
+          importService: ref.watch(characterJsonImportServiceProvider),
+          exportService: ref.watch(characterJsonExportServiceProvider),
+        );
+      },
     );
 
 final createCharacterViewModelProvider =

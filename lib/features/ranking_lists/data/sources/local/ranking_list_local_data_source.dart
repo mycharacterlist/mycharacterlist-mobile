@@ -73,15 +73,36 @@ class RankingListLocalDataSource {
   Future<List<RankedCharacterModel>> getCharacterRankings(
     String characterId,
   ) async {
+    final rankingsByCharacterId = await getCharacterRankingsBatch([characterId]);
+    return rankingsByCharacterId[characterId] ?? const [];
+  }
+
+  Future<Map<String, List<RankedCharacterModel>>> getCharacterRankingsBatch(
+    List<String> characterIds,
+  ) async {
+    if (characterIds.isEmpty) {
+      return const {};
+    }
+
     final database = await _appDatabase.database;
+    final placeholders = List.filled(characterIds.length, '?').join(', ');
     final rankedCharacters = await database.query(
       'ranked_characters',
-      where: 'character_id = ?',
-      whereArgs: [characterId],
-      orderBy: 'position ASC',
+      where: 'character_id IN ($placeholders)',
+      whereArgs: characterIds,
+      orderBy: 'character_id ASC, position ASC',
     );
 
-    return rankedCharacters.map(RankedCharacterModel.fromDatabase).toList();
+    final rankingsByCharacterId = <String, List<RankedCharacterModel>>{};
+
+    for (final rankedCharacter in rankedCharacters) {
+      final characterId = rankedCharacter['character_id']! as String;
+      rankingsByCharacterId
+          .putIfAbsent(characterId, () => [])
+          .add(RankedCharacterModel.fromDatabase(rankedCharacter));
+    }
+
+    return rankingsByCharacterId;
   }
 
   Future<List<RankedCharacterModel>> getAllRankedCharacters() async {

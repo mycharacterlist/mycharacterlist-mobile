@@ -5,6 +5,28 @@ abstract interface class CharacterRepository {
 
   Future<List<Character>> getCharacterSummaries();
 
+  Future<List<Character>> getCharacterSummariesPage({
+    required int offset,
+    required int limit,
+  });
+
+  Future<List<Character>> getCharacterListItemsPage({
+    required int offset,
+    required int limit,
+  });
+
+  Future<List<Character>> searchCharacterSummariesPage(
+    String query, {
+    required int offset,
+    required int limit,
+  });
+
+  Future<List<Character>> searchCharacterListItemsPage(
+    String query, {
+    required int offset,
+    required int limit,
+  });
+
   Future<List<Character>> getCharactersPage({
     required int offset,
     required int limit,

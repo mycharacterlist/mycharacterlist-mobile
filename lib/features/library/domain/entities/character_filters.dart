@@ -16,4 +16,11 @@ class CharacterFilters {
   final double maxOverallGrade;
 
   bool get hasGradeFilter => minOverallGrade > 0 || maxOverallGrade < 10;
+
+  bool get hasActiveFilters =>
+      animeTitles.isNotEmpty ||
+      archetypes.isNotEmpty ||
+      genders.isNotEmpty ||
+      positions.isNotEmpty ||
+      hasGradeFilter;
 }

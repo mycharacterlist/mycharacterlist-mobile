@@ -54,6 +54,13 @@ class RankingListRepositoryImpl implements RankingListRepository {
   }
 
   @override
+  Future<Map<String, List<RankedCharacter>>> getCharacterRankingsBatch(
+    List<String> characterIds,
+  ) {
+    return _localDataSource.getCharacterRankingsBatch(characterIds);
+  }
+
+  @override
   Future<void> addCharacterToList({
     required String listId,
     required String characterId,

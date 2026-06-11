@@ -14,6 +14,10 @@ abstract interface class RankingListRepository {
 
   Future<List<RankedCharacter>> getCharacterRankings(String characterId);
 
+  Future<Map<String, List<RankedCharacter>>> getCharacterRankingsBatch(
+    List<String> characterIds,
+  );
+
   Future<void> addCharacterToList({
     required String listId,
     required String characterId,
