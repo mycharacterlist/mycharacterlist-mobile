@@ -23,6 +23,13 @@ class RankingListController {
     });
   }
 
+  void exitEditMode() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel.exitEditMode();
+    });
+  }
+
   Future<void> openAddCharacterFlow(BuildContext context) async {
     while (true) {
       final selectedCharacter = await showDialog<Character>(

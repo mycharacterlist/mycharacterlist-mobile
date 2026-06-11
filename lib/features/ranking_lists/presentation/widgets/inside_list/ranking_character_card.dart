@@ -16,6 +16,7 @@ class RankingCharacterCard extends StatelessWidget {
     this.isDragProxy = false,
     this.maxPosition,
     this.onPositionSubmitted,
+    this.onTap,
   });
 
   final String itemId;
@@ -28,6 +29,7 @@ class RankingCharacterCard extends StatelessWidget {
   final bool isDragProxy;
   final int? maxPosition;
   final ValueChanged<int>? onPositionSubmitted;
+  final VoidCallback? onTap;
 
   Color _getBadgeColor() {
     switch (index) {
@@ -202,11 +204,13 @@ class RankingCharacterCard extends StatelessWidget {
       child: RepaintBoundary(
         child: Material(
           color: Colors.transparent,
-          child: isEditMode ? card : InkWell(
-            borderRadius: BorderRadius.circular(30),
-            onTap: () {},
-            child: card,
-          ),
+          child: isEditMode
+              ? card
+              : InkWell(
+                  borderRadius: BorderRadius.circular(30),
+                  onTap: onTap,
+                  child: card,
+                ),
         ),
       ),
     );

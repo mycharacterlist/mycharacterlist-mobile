@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:mycharacterlist/core/text/text_editing_utils.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/lists_page/create_list_dialog.dart';
@@ -30,7 +31,7 @@ class ListsPageController {
 
   void showEditDialog(BuildContext context, RankingList list) {
     _viewModel.exitEditMode();
-    nameController.text = list.name;
+    setCollapsedControllerText(nameController, list.name);
 
     CreateListDialog.show(
       context: context,

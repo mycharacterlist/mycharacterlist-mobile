@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:mycharacterlist/core/text/text_editing_utils.dart';
+
 class RankingPositionField extends StatefulWidget {
   const RankingPositionField({
     super.key,
@@ -42,7 +44,7 @@ class _RankingPositionFieldState extends State<RankingPositionField> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.position != widget.position && !_focusNode.hasFocus) {
-      _controller.text = '${widget.position}';
+      setCollapsedControllerText(_controller, '${widget.position}');
     }
   }
 
@@ -56,12 +58,12 @@ class _RankingPositionFieldState extends State<RankingPositionField> {
     final parsed = int.tryParse(_controller.text.trim());
 
     if (parsed == null) {
-      _controller.text = '${widget.position}';
+      setCollapsedControllerText(_controller, '${widget.position}');
       return;
     }
 
     final targetPosition = parsed.clamp(1, widget.maxPosition);
-    _controller.text = '$targetPosition';
+    setCollapsedControllerText(_controller, '$targetPosition');
 
     if (targetPosition != widget.position) {
       widget.onSubmitted(targetPosition);

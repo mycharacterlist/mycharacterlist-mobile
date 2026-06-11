@@ -50,6 +50,10 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
     state = state.copyWith(isEditMode: !state.isEditMode);
   }
 
+  void exitEditMode() {
+    state = state.copyWith(isEditMode: false);
+  }
+
   Future<void> loadCharacters() async {
     final isInitialLoad = state.characters.isEmpty;
 

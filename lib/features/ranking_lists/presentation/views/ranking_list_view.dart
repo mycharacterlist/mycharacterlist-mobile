@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:mycharacterlist/app/assets/app_background_assets.dart';
+import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
@@ -43,13 +45,21 @@ class RankingListView extends ConsumerWidget {
       );
     }
 
-    return Scaffold(
+    return PopScope(
+      canPop: !charactersState.isEditMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && charactersState.isEditMode) {
+          controller.exitEditMode();
+        }
+      },
+      child: Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: CustomAppBar(
         title: currentList.name,
         backgroundColor: const Color(0xFF091E7A),
         backButtonColor: Colors.purple,
         titleColor: Colors.limeAccent,
+        onBackPressed: charactersState.isEditMode ? controller.exitEditMode : null,
         actionWidget: IconButton(
           icon: Icon(
             charactersState.isEditMode ? Icons.check : Icons.edit_note,
@@ -83,6 +93,7 @@ class RankingListView extends ConsumerWidget {
               ),
             ),
         ],
+      ),
       ),
     );
   }
@@ -373,6 +384,11 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
                         ),
                       )
                     : null,
+                onTap: widget.isEditMode
+                    ? null
+                    : () => context.push(
+                          AppRoutes.characterById(item.characterId),
+                        ),
               );
             },
           ),

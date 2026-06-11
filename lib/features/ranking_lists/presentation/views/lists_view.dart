@@ -63,7 +63,7 @@ class ListsView extends ConsumerWidget {
                         vertical: 10,
                       ),
                       child: Container(
-                        height: 70,
+                        height: 92,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -92,6 +92,10 @@ class ListsView extends ConsumerWidget {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                           ),
                           onPressed: () {
                             if (state.isEditMode) {
@@ -105,14 +109,24 @@ class ListsView extends ConsumerWidget {
                             children: [
                               const SizedBox(width: 40),
                               Expanded(
-                                child: Text(
-                                  list.name,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontFamily: 'JpAnimeFont',
-                                    color: Color(0xFFBEB53E),
-                                  ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      list.name,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: true,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        height: 1.05,
+                                        fontFamily: 'JpAnimeFont',
+                                        color: Color(0xFFBEB53E),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               SizedBox(
