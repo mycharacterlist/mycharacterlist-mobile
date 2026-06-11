@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
+import 'package:mycharacterlist/features/characters/domain/services/character_grade_service.dart';
 
 class CharacterPersonalGrades extends StatelessWidget {
   const CharacterPersonalGrades({
@@ -44,7 +45,7 @@ class CharacterPersonalGrades extends StatelessWidget {
                 fontFamily: 'Joan',
               ),
             )
-          else
+          else ...[
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -58,6 +59,62 @@ class CharacterPersonalGrades extends StatelessWidget {
                 ],
               ],
             ),
+            const SizedBox(height: 10),
+            _OverallRow(
+              grade: CharacterGradeService.formatOverall(
+                CharacterGradeService.calculateOverall(
+                      definitions: sortedDefinitions,
+                      grades: grades,
+                    ) ??
+                    0,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OverallRow extends StatelessWidget {
+  const _OverallRow({required this.grade});
+
+  final String grade;
+
+  static const _underline = TextDecoration.underline;
+
+  @override
+  Widget build(BuildContext context) {
+    return RichText(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: 'Overall',
+            style: const TextStyle(
+              fontSize: 24,
+              color: Colors.black,
+              fontFamily: 'JockeyOne',
+              fontWeight: FontWeight.bold,
+              decoration: _underline,
+            ),
+          ),
+          TextSpan(
+            text: ': ',
+            style: const TextStyle(
+              fontSize: 24,
+              color: Colors.black,
+              fontFamily: 'JockeyOne',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          TextSpan(
+            text: grade,
+            style: const TextStyle(
+              fontSize: 24,
+              color: Colors.black,
+              fontFamily: 'JimNightshade',
+            ),
+          ),
         ],
       ),
     );

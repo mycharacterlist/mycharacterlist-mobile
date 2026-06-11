@@ -1,5 +1,6 @@
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
+import 'package:mycharacterlist/features/characters/domain/services/character_grade_service.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranked_character.dart';
 
@@ -40,21 +41,14 @@ class CharacterFilterService {
     CharacterFilters filters,
     List<GradeDefinition> definitions,
   ) {
-    final validDefinitions = definitions.where(
-      (definition) => definition.maxValue > 0,
+    final overallGrade = CharacterGradeService.calculateOverall(
+      definitions: definitions,
+      grades: character.grades,
     );
-    if (validDefinitions.isEmpty) {
+
+    if (overallGrade == null) {
       return false;
     }
-
-    final normalizedGradeSum = validDefinitions.fold<double>(0, (
-      sum,
-      definition,
-    ) {
-      final value = character.grades[definition.id] ?? 0;
-      return sum + value / definition.maxValue * 10;
-    });
-    final overallGrade = normalizedGradeSum / validDefinitions.length;
 
     return overallGrade >= filters.minOverallGrade &&
         overallGrade <= filters.maxOverallGrade;
