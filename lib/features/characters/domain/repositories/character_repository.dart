@@ -10,6 +10,8 @@ abstract interface class CharacterRepository {
 
   Future<Character?> getCharacterById(String id);
 
+  Future<List<Character>> getCharactersByIds(List<String> ids);
+
   Future<List<Character>> searchCharacters(String query);
 
   Future<List<Character>> searchCharactersPage(

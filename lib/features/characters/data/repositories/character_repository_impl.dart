@@ -4,16 +4,20 @@ import 'package:mycharacterlist/features/characters/domain/entities/character_fa
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/characters/data/models/character_model.dart';
 import 'package:mycharacterlist/features/characters/data/sources/local/character_local_data_source.dart';
+import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
 
 class CharacterRepositoryImpl implements CharacterRepository {
   const CharacterRepositoryImpl({
     required CharacterLocalDataSource localDataSource,
     required LocalFileStorage localFileStorage,
+    required RankingListRepository rankingListRepository,
   }) : _localDataSource = localDataSource,
-       _localFileStorage = localFileStorage;
+       _localFileStorage = localFileStorage,
+       _rankingListRepository = rankingListRepository;
 
   final CharacterLocalDataSource _localDataSource;
   final LocalFileStorage _localFileStorage;
+  final RankingListRepository _rankingListRepository;
 
   @override
   Future<List<Character>> getCharacters() {
@@ -31,6 +35,11 @@ class CharacterRepositoryImpl implements CharacterRepository {
   @override
   Future<Character?> getCharacterById(String id) {
     return _localDataSource.getCharacterById(id);
+  }
+
+  @override
+  Future<List<Character>> getCharactersByIds(List<String> ids) {
+    return _localDataSource.getCharactersByIds(ids);
   }
 
   @override
@@ -151,6 +160,7 @@ class CharacterRepositoryImpl implements CharacterRepository {
   Future<void> deleteCharacter(String id) async {
     final character = await _localDataSource.getCharacterById(id);
 
+    await _rankingListRepository.removeCharacterFromAllLists(id);
     await _localDataSource.deleteCharacter(id);
 
     if (character == null) {

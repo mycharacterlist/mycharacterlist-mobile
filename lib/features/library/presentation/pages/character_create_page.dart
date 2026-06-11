@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
+import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/library/presentation/controllers/character_form_controller.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/create_character_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/gallery_dropdown.dart';
@@ -175,7 +176,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       builder: (context) => AlertDialog(
         title: const Text('Delete character?'),
         content: const Text(
-          'The character and all saved images will be deleted.',
+          'The character, all saved images, and all list positions will be deleted.',
         ),
         actions: [
           TextButton(
@@ -205,6 +206,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
     await ref.read(characterReferencesViewModelProvider.notifier).load();
     ref.invalidate(characterNameSuggestionsProvider);
+    ref.invalidate(rankingCharactersViewModelProvider);
+    ref.invalidate(rankedListCharacterDetailsProvider);
+    ref.invalidate(libraryCharactersProvider);
 
     if (mounted) {
       await _popWithoutWarning();

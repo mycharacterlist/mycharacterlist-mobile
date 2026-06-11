@@ -59,10 +59,7 @@ class RankingListRepositoryImpl implements RankingListRepository {
     required String characterId,
     int? position,
   }) async {
-    final rankedCharacters = await _localDataSource.getAllRankedCharacters();
-    final listCharacters = rankedCharacters
-        .where((rankedCharacter) => rankedCharacter.listId == listId)
-        .toList();
+    final listCharacters = await _loadListCharacters(listId);
     final alreadyInList = listCharacters.any(
       (rankedCharacter) => rankedCharacter.characterId == characterId,
     );
@@ -75,18 +72,20 @@ class RankingListRepositoryImpl implements RankingListRepository {
       position: position,
       listLength: listCharacters.length,
     );
-    final shiftedCharacters = rankedCharacters.map((rankedCharacter) {
-      if (rankedCharacter.listId != listId ||
-          rankedCharacter.position < insertPosition) {
-        return rankedCharacter;
-      }
 
-      return RankedCharacterModel.fromEntity(
-        rankedCharacter.copyWith(position: rankedCharacter.position + 1),
-      );
-    }).toList();
+    final updatedCharacters = listCharacters
+        .map((rankedCharacter) {
+          if (rankedCharacter.position < insertPosition) {
+            return rankedCharacter;
+          }
 
-    shiftedCharacters.add(
+          return RankedCharacterModel.fromEntity(
+            rankedCharacter.copyWith(position: rankedCharacter.position + 1),
+          );
+        })
+        .toList();
+
+    updatedCharacters.add(
       RankedCharacterModel(
         id: _createRankingId(listId: listId, characterId: characterId),
         listId: listId,
@@ -96,7 +95,10 @@ class RankingListRepositoryImpl implements RankingListRepository {
       ),
     );
 
-    await _localDataSource.saveRankedCharacters(shiftedCharacters);
+    await _localDataSource.replaceRankedCharactersForList(
+      listId,
+      updatedCharacters,
+    );
   }
 
   @override
@@ -104,12 +106,10 @@ class RankingListRepositoryImpl implements RankingListRepository {
     required String listId,
     required String characterId,
   }) async {
-    final rankedCharacters = await _localDataSource.getAllRankedCharacters();
+    final listCharacters = await _loadListCharacters(listId);
     final removingCharacter = _firstOrNull(
-      rankedCharacters.where(
-        (rankedCharacter) =>
-            rankedCharacter.listId == listId &&
-            rankedCharacter.characterId == characterId,
+      listCharacters.where(
+        (rankedCharacter) => rankedCharacter.characterId == characterId,
       ),
     );
 
@@ -117,11 +117,10 @@ class RankingListRepositoryImpl implements RankingListRepository {
       return;
     }
 
-    final updatedCharacters = rankedCharacters
+    final updatedCharacters = listCharacters
         .where((rankedCharacter) => rankedCharacter.id != removingCharacter.id)
         .map((rankedCharacter) {
-          if (rankedCharacter.listId != listId ||
-              rankedCharacter.position <= removingCharacter.position) {
+          if (rankedCharacter.position <= removingCharacter.position) {
             return rankedCharacter;
           }
 
@@ -131,7 +130,22 @@ class RankingListRepositoryImpl implements RankingListRepository {
         })
         .toList();
 
-    await _localDataSource.saveRankedCharacters(updatedCharacters);
+    await _localDataSource.replaceRankedCharactersForList(
+      listId,
+      updatedCharacters,
+    );
+  }
+
+  @override
+  Future<void> removeCharacterFromAllLists(String characterId) async {
+    final rankings = await _localDataSource.getCharacterRankings(characterId);
+
+    for (final ranking in rankings) {
+      await removeCharacterFromList(
+        listId: ranking.listId,
+        characterId: characterId,
+      );
+    }
   }
 
   @override
@@ -140,17 +154,12 @@ class RankingListRepositoryImpl implements RankingListRepository {
     required String characterId,
     required int newPosition,
   }) async {
-    final rankedCharacters = await _localDataSource.getAllRankedCharacters();
-    final listCharacters = rankedCharacters
-        .where((rankedCharacter) => rankedCharacter.listId == listId)
-        .toList();
-    final movingCharacter = _firstOrNull(
-      listCharacters.where(
-        (rankedCharacter) => rankedCharacter.characterId == characterId,
-      ),
+    final listCharacters = await _loadListCharacters(listId);
+    final movingIndex = listCharacters.indexWhere(
+      (rankedCharacter) => rankedCharacter.characterId == characterId,
     );
 
-    if (movingCharacter == null) {
+    if (movingIndex == -1) {
       throw StateError('Character is not in this list.');
     }
 
@@ -158,45 +167,37 @@ class RankingListRepositoryImpl implements RankingListRepository {
       position: newPosition,
       listLength: listCharacters.length,
     );
+    final targetIndex = targetPosition - 1;
 
-    if (targetPosition == movingCharacter.position) {
+    if (movingIndex == targetIndex) {
       return;
     }
 
-    final updatedCharacters = rankedCharacters.map((rankedCharacter) {
-      if (rankedCharacter.listId != listId) {
-        return rankedCharacter;
-      }
+    final reorderedCharacters = List<RankedCharacterModel>.from(listCharacters);
+    final movedCharacter = reorderedCharacters.removeAt(movingIndex);
+    reorderedCharacters.insert(targetIndex, movedCharacter);
 
-      if (rankedCharacter.characterId == characterId) {
-        return RankedCharacterModel.fromEntity(
-          rankedCharacter.copyWith(position: targetPosition),
-        );
-      }
+    final updatedCharacters = reorderedCharacters
+        .asMap()
+        .entries
+        .map(
+          (entry) => RankedCharacterModel.fromEntity(
+            entry.value.copyWith(position: entry.key + 1),
+          ),
+        )
+        .toList();
 
-      final oldPosition = movingCharacter.position;
-      final currentPosition = rankedCharacter.position;
+    await _localDataSource.replaceRankedCharactersForList(
+      listId,
+      updatedCharacters,
+    );
+  }
 
-      if (oldPosition < targetPosition &&
-          currentPosition > oldPosition &&
-          currentPosition <= targetPosition) {
-        return RankedCharacterModel.fromEntity(
-          rankedCharacter.copyWith(position: currentPosition - 1),
-        );
-      }
-
-      if (oldPosition > targetPosition &&
-          currentPosition >= targetPosition &&
-          currentPosition < oldPosition) {
-        return RankedCharacterModel.fromEntity(
-          rankedCharacter.copyWith(position: currentPosition + 1),
-        );
-      }
-
-      return rankedCharacter;
-    }).toList();
-
-    await _localDataSource.saveRankedCharacters(updatedCharacters);
+  Future<List<RankedCharacterModel>> _loadListCharacters(String listId) async {
+    final listCharacters = await _localDataSource.getRankedCharacters(listId);
+    return listCharacters
+        .map(RankedCharacterModel.fromEntity)
+        .toList(growable: true);
   }
 
   int _normalizeInsertPosition({

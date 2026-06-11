@@ -111,4 +111,27 @@ class RankingListLocalDataSource {
       }
     });
   }
+
+  Future<void> replaceRankedCharactersForList(
+    String listId,
+    List<RankedCharacterModel> rankedCharacters,
+  ) async {
+    final database = await _appDatabase.database;
+
+    await database.transaction((transaction) async {
+      await transaction.delete(
+        'ranked_characters',
+        where: 'list_id = ?',
+        whereArgs: [listId],
+      );
+
+      for (final rankedCharacter in rankedCharacters) {
+        await transaction.insert(
+          'ranked_characters',
+          rankedCharacter.toDatabase(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+    });
+  }
 }

@@ -25,6 +25,8 @@ abstract interface class RankingListRepository {
     required String characterId,
   });
 
+  Future<void> removeCharacterFromAllLists(String characterId);
+
   Future<void> moveCharacter({
     required String listId,
     required String characterId,

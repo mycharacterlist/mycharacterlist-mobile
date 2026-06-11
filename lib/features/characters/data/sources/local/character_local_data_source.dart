@@ -55,6 +55,29 @@ class CharacterLocalDataSource {
     return _mapCharacter(database, characters.first);
   }
 
+  Future<List<CharacterModel>> getCharactersByIds(List<String> ids) async {
+    if (ids.isEmpty) {
+      return const [];
+    }
+
+    final database = await _appDatabase.database;
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final characters = await database.query(
+      'characters',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+      orderBy: 'name COLLATE NOCASE ASC',
+    );
+
+    final models = <CharacterModel>[];
+
+    for (final character in characters) {
+      models.add(await _mapCharacter(database, character));
+    }
+
+    return models;
+  }
+
   Future<List<CharacterModel>> searchCharacters(String query) async {
     return _searchCharacters(query);
   }
