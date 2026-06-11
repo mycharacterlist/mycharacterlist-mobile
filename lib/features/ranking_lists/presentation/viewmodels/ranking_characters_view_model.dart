@@ -7,25 +7,25 @@ import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_m
 class RankingCharactersState {
   const RankingCharactersState({
     this.characters = const [],
-    this.isLoading = false,
+    this.isInitialLoading = false,
     this.isEditMode = false,
     this.errorMessage,
   });
 
   final List<RankedCharacter> characters;
-  final bool isLoading;
+  final bool isInitialLoading;
   final bool isEditMode;
   final String? errorMessage;
 
   RankingCharactersState copyWith({
     List<RankedCharacter>? characters,
-    bool? isLoading,
+    bool? isInitialLoading,
     bool? isEditMode,
     String? errorMessage,
   }) {
     return RankingCharactersState(
       characters: characters ?? this.characters,
-      isLoading: isLoading ?? this.isLoading,
+      isInitialLoading: isInitialLoading ?? this.isInitialLoading,
       isEditMode: isEditMode ?? this.isEditMode,
       errorMessage: errorMessage,
     );
@@ -37,22 +37,12 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
     required RankingListRepository repository,
     required this.listId,
   }) : _repository = repository,
-       super(const RankingCharactersState(isLoading: true)) {
+       super(const RankingCharactersState(isInitialLoading: true)) {
     loadCharacters();
   }
 
   final RankingListRepository _repository;
   final String listId;
-
-  bool containsCharacter(String characterId) {
-    return state.characters.any(
-      (rankedCharacter) => rankedCharacter.characterId == characterId,
-    );
-  }
-
-  String duplicateCharacterMessage(String characterName) {
-    return '$characterName is already in this list';
-  }
 
   int maxInsertPosition() => state.characters.length + 1;
 
@@ -61,18 +51,22 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
   }
 
   Future<void> loadCharacters() async {
-    state = state.copyWith(isLoading: true);
+    final isInitialLoad = state.characters.isEmpty;
+
+    if (isInitialLoad) {
+      state = state.copyWith(isInitialLoading: true);
+    }
 
     try {
       final characters = await _repository.getRankedCharacters(listId);
 
       state = state.copyWith(
         characters: characters,
-        isLoading: false,
+        isInitialLoading: false,
       );
     } catch (error) {
       state = state.copyWith(
-        isLoading: false,
+        isInitialLoading: false,
         errorMessage: messageFromViewModelError(error),
       );
     }
@@ -104,37 +98,36 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
       targetIndex--;
     }
 
-    final rankedCharacter = state.characters[oldIndex];
+    final previousCharacters = state.characters;
+    final reorderedCharacters = List<RankedCharacter>.from(previousCharacters);
+    final movedCharacter = reorderedCharacters.removeAt(oldIndex);
+    reorderedCharacters.insert(targetIndex, movedCharacter);
 
-    await moveCharacter(
-      characterId: rankedCharacter.characterId,
-      newPosition: targetIndex + 1,
-    );
-  }
-
-  Future<void> moveCharacter({
-    required String characterId,
-    required int newPosition,
-  }) async {
     try {
       await _repository.moveCharacter(
         listId: listId,
-        characterId: characterId,
-        newPosition: newPosition,
+        characterId: movedCharacter.characterId,
+        newPosition: targetIndex + 1,
       );
 
-      await loadCharacters();
+      final updatedCharacters = reorderedCharacters.asMap().entries.map((entry) {
+        return entry.value.copyWith(position: entry.key + 1);
+      }).toList();
+
+      state = state.copyWith(characters: updatedCharacters);
     } catch (error) {
       state = state.copyWith(
+        characters: previousCharacters,
         errorMessage: messageFromViewModelError(error),
       );
+      rethrow;
     }
   }
 
   void clearError() {
     state = RankingCharactersState(
       characters: state.characters,
-      isLoading: state.isLoading,
+      isInitialLoading: state.isInitialLoading,
       isEditMode: state.isEditMode,
     );
   }

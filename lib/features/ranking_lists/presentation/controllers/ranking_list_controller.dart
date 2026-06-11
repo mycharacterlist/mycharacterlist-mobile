@@ -18,34 +18,44 @@ class RankingListController {
 
   void toggleEditMode() => _viewModel.toggleEditMode();
 
-  Future<void> reorderCharacters(int oldIndex, int newIndex) {
-    return _viewModel.reorderAtIndices(oldIndex, newIndex);
-  }
-
   Future<void> openAddCharacterFlow(
     BuildContext context,
     List<Character> libraryCharacters,
   ) async {
     while (true) {
+      final rankedCharacterIds = _ref
+          .read(rankingCharactersViewModelProvider(listId))
+          .characters
+          .map((rankedCharacter) => rankedCharacter.characterId)
+          .toSet();
+
+      final availableCharacters = libraryCharacters
+          .where((character) => !rankedCharacterIds.contains(character.id))
+          .toList();
+
+      if (availableCharacters.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'All library characters are already in this list',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       final selectedCharacter = await showDialog<Character>(
         context: context,
-        builder: (context) => SelectCharacterDialog(characters: libraryCharacters),
+        builder: (context) => SelectCharacterDialog(
+          characters: availableCharacters,
+        ),
       );
 
       if (selectedCharacter == null || !context.mounted) {
         return;
-      }
-
-      if (_viewModel.containsCharacter(selectedCharacter.id)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _viewModel.duplicateCharacterMessage(selectedCharacter.name),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
-        continue;
       }
 
       final position = await showDialog<int>(

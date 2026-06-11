@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/app_background_image.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_list_content.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error_listener.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
@@ -59,19 +62,18 @@ class RankingListView extends ConsumerWidget {
       body: Stack(
         children: [
           Positioned.fill(
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/images/InsideListMain_bg.jpg'),
-                  fit: BoxFit.cover,
-                ),
-              ),
+            child: AppBackgroundImage(
+              assetPath: AppBackgroundAssets.rankingList,
             ),
           ),
-          _buildBody(context, ref, content, charactersState.isEditMode),
+          _RankingCharactersList(
+            listId: listId,
+            content: content,
+            isEditMode: charactersState.isEditMode,
+          ),
           if (!charactersState.isEditMode)
             Positioned(
-              bottom: 20,
+              bottom: 12,
               left: 0,
               right: 0,
               child: Center(
@@ -92,18 +94,125 @@ class RankingListView extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildBody(
-    BuildContext context,
-    WidgetRef ref,
+class _RankingCharactersList extends ConsumerStatefulWidget {
+  const _RankingCharactersList({
+    required this.listId,
+    required this.content,
+    required this.isEditMode,
+  });
+
+  final String listId;
+  final RankedListContent content;
+  final bool isEditMode;
+
+  @override
+  ConsumerState<_RankingCharactersList> createState() =>
+      _RankingCharactersListState();
+}
+
+class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> {
+  final ScrollController _scrollController = ScrollController();
+  late List<RankedCharacterDisplayItem> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List<RankedCharacterDisplayItem>.from(widget.content.items);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RankingCharactersList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncItemsFromContent(widget.content, oldWidget);
+  }
+
+  void _syncItemsFromContent(
     RankedListContent content,
-    bool isEditMode,
+    _RankingCharactersList oldWidget,
   ) {
-    if (content.isLoadingCharacters || content.isLoadingLibrary) {
+    if (content.items.isEmpty) {
+      if (_items.isNotEmpty) {
+        setState(() => _items = const []);
+      }
+      return;
+    }
+
+    final currentIds = _items.map((item) => item.id).toSet();
+    final incomingIds = content.items.map((item) => item.id).toSet();
+
+    if (currentIds.length != incomingIds.length ||
+        !currentIds.containsAll(incomingIds)) {
+      setState(() => _items = List<RankedCharacterDisplayItem>.from(content.items));
+      return;
+    }
+
+    if (!widget.isEditMode && oldWidget.isEditMode) {
+      setState(() => _items = List<RankedCharacterDisplayItem>.from(content.items));
+    }
+  }
+
+  List<RankedCharacterDisplayItem> _itemsWithUpdatedPositions(
+    List<RankedCharacterDisplayItem> items,
+  ) {
+    return items.asMap().entries.map((entry) {
+      final item = entry.value;
+
+      return RankedCharacterDisplayItem(
+        id: item.id,
+        characterId: item.characterId,
+        position: entry.key + 1,
+        title: item.title,
+        subtitle: item.subtitle,
+      );
+    }).toList();
+  }
+
+  Future<void> _handleReorder(int oldIndex, int newIndex) async {
+    var targetIndex = newIndex;
+
+    if (targetIndex > oldIndex) {
+      targetIndex--;
+    }
+
+    final previousItems = List<RankedCharacterDisplayItem>.from(_items);
+    final reorderedItems = List<RankedCharacterDisplayItem>.from(_items);
+    final movedItem = reorderedItems.removeAt(oldIndex);
+    reorderedItems.insert(targetIndex, movedItem);
+
+    setState(() {
+      _items = _itemsWithUpdatedPositions(reorderedItems);
+    });
+
+    final viewModel = ref.read(
+      rankingCharactersViewModelProvider(widget.listId).notifier,
+    );
+
+    try {
+      await viewModel.reorderAtIndices(oldIndex, newIndex);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _items = previousItems);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final content = widget.content;
+
+    if (content.isLoadingCharacters && _items.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (content.isEmpty) {
+    if (content.isEmpty || _items.isEmpty) {
       return const Center(
         child: Text(
           'List is empty',
@@ -112,40 +221,29 @@ class RankingListView extends ConsumerWidget {
       );
     }
 
-    if (content.libraryFailed) {
-      return const Center(
-        child: Text(
-          'Failed to load characters',
-          style: TextStyle(fontSize: 18, color: Colors.white),
-        ),
-      );
-    }
-
-    final controller = ref.read(rankingListControllerProvider(listId));
-
     return Scrollbar(
+      controller: _scrollController,
       thumbVisibility: true,
       child: Padding(
-        padding: const EdgeInsets.only(left: 16, top: 16, bottom: 120),
+        padding: const EdgeInsets.only(left: 16, top: 16, bottom: 84),
         child: ReorderableListView.builder(
+          scrollController: _scrollController,
           padding: const EdgeInsets.only(right: 16),
           buildDefaultDragHandles: false,
           proxyDecorator: (child, index, animation) {
             return Material(color: Colors.transparent, child: child);
           },
-          itemCount: content.items.length,
-          onReorder: !isEditMode
-              ? (_, __) {}
-              : controller.reorderCharacters,
+          itemCount: _items.length,
+          onReorder: widget.isEditMode ? _handleReorder : (_, __) {},
           itemBuilder: (context, index) {
-            final item = content.items[index];
+            final item = _items[index];
 
             return RankingCharacterCard(
               key: ValueKey(item.id),
               index: item.position,
               title: item.title,
               subtitle: item.subtitle,
-              dragHandle: isEditMode
+              dragHandle: widget.isEditMode
                   ? ReorderableDragStartListener(
                       index: index,
                       child: const Padding(
