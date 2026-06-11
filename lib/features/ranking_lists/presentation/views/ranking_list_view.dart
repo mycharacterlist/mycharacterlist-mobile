@@ -25,7 +25,6 @@ class RankingListView extends ConsumerWidget {
     final currentList = ref.watch(rankingListByIdProvider(listId));
     final charactersState = ref.watch(rankingCharactersViewModelProvider(listId));
     final content = ref.watch(rankedListContentProvider(listId));
-    final libraryCharactersAsync = ref.watch(libraryCharactersProvider);
     final controller = ref.watch(rankingListControllerProvider(listId));
 
     listenViewModelError(
@@ -77,16 +76,9 @@ class RankingListView extends ConsumerWidget {
               left: 0,
               right: 0,
               child: Center(
-                child: libraryCharactersAsync.when(
-                  data: (libraryCharacters) => GestureDetector(
-                    onTap: () => controller.openAddCharacterFlow(
-                      context,
-                      libraryCharacters,
-                    ),
-                    child: const AddCharacterButton(),
-                  ),
-                  loading: () => const AddCharacterButton(),
-                  error: (_, __) => const AddCharacterButton(),
+                child: GestureDetector(
+                  onTap: () => controller.openAddCharacterFlow(context),
+                  child: const AddCharacterButton(),
                 ),
               ),
             ),
@@ -115,6 +107,7 @@ class _RankingCharactersList extends ConsumerStatefulWidget {
 class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> {
   final ScrollController _scrollController = ScrollController();
   late List<RankedCharacterDisplayItem> _items;
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -134,29 +127,79 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
     _syncItemsFromContent(widget.content, oldWidget);
   }
 
+  void _scheduleItemsUpdate(List<RankedCharacterDisplayItem> items) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _items = items);
+    });
+  }
+
   void _syncItemsFromContent(
     RankedListContent content,
     _RankingCharactersList oldWidget,
   ) {
-    if (content.items.isEmpty) {
+    if (content.isLoadingCharacters) {
+      return;
+    }
+
+    if (content.isEmpty) {
       if (_items.isNotEmpty) {
-        setState(() => _items = const []);
+        _scheduleItemsUpdate(const []);
       }
       return;
     }
 
-    final currentIds = _items.map((item) => item.id).toSet();
-    final incomingIds = content.items.map((item) => item.id).toSet();
-
-    if (currentIds.length != incomingIds.length ||
-        !currentIds.containsAll(incomingIds)) {
-      setState(() => _items = List<RankedCharacterDisplayItem>.from(content.items));
+    if (_items.isEmpty) {
+      _items = List<RankedCharacterDisplayItem>.from(content.items);
       return;
     }
 
-    if (!widget.isEditMode && oldWidget.isEditMode) {
-      setState(() => _items = List<RankedCharacterDisplayItem>.from(content.items));
+    if (widget.isEditMode) {
+      final currentIds = _items.map((item) => item.id).toSet();
+      final incomingIds = content.items.map((item) => item.id).toSet();
+
+      if (currentIds.length != incomingIds.length ||
+          !currentIds.containsAll(incomingIds)) {
+        _scheduleItemsUpdate(
+          List<RankedCharacterDisplayItem>.from(content.items),
+        );
+      }
+      return;
     }
+
+    if (!_hasSameDisplayItems(_items, content.items) ||
+        (!widget.isEditMode && oldWidget.isEditMode)) {
+      _scheduleItemsUpdate(
+        List<RankedCharacterDisplayItem>.from(content.items),
+      );
+    }
+  }
+
+  bool _hasSameDisplayItems(
+    List<RankedCharacterDisplayItem> currentItems,
+    List<RankedCharacterDisplayItem> incomingItems,
+  ) {
+    if (currentItems.length != incomingItems.length) {
+      return false;
+    }
+
+    for (var index = 0; index < currentItems.length; index++) {
+      final currentItem = currentItems[index];
+      final incomingItem = incomingItems[index];
+
+      if (currentItem.id != incomingItem.id ||
+          currentItem.characterId != incomingItem.characterId ||
+          currentItem.position != incomingItem.position ||
+          currentItem.title != incomingItem.title ||
+          currentItem.subtitle != incomingItem.subtitle) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   List<RankedCharacterDisplayItem> _itemsWithUpdatedPositions(
@@ -175,12 +218,52 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
     }).toList();
   }
 
+  void _setDragging(bool isDragging) {
+    if (_isDragging == isDragging) {
+      return;
+    }
+
+    setState(() => _isDragging = isDragging);
+  }
+
   Future<void> _handleReorder(int oldIndex, int newIndex) async {
     var targetIndex = newIndex;
 
     if (targetIndex > oldIndex) {
       targetIndex--;
     }
+
+    try {
+      await _applyReorder(oldIndex, targetIndex);
+    } finally {
+      _setDragging(false);
+    }
+  }
+
+  void _ensureItemsLoaded() {
+    if (_items.isEmpty && widget.content.items.isNotEmpty) {
+      _items = List<RankedCharacterDisplayItem>.from(widget.content.items);
+    }
+  }
+
+  Future<void> _handleMoveToPosition(String itemId, int targetPosition) async {
+    _ensureItemsLoaded();
+
+    final listIndex = _items.indexWhere((item) => item.id == itemId);
+    if (listIndex == -1) {
+      return;
+    }
+
+    final targetIndex = targetPosition - 1;
+    if (targetIndex == listIndex) {
+      return;
+    }
+
+    await _applyReorder(listIndex, targetIndex);
+  }
+
+  Future<void> _applyReorder(int oldIndex, int targetIndex) async {
+    _ensureItemsLoaded();
 
     final previousItems = List<RankedCharacterDisplayItem>.from(_items);
     final reorderedItems = List<RankedCharacterDisplayItem>.from(_items);
@@ -195,6 +278,8 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
       rankingCharactersViewModelProvider(widget.listId).notifier,
     );
 
+    final newIndex = targetIndex < oldIndex ? targetIndex : targetIndex + 1;
+
     try {
       await viewModel.reorderAtIndices(oldIndex, newIndex);
     } catch (_) {
@@ -208,11 +293,11 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
   Widget build(BuildContext context) {
     final content = widget.content;
 
-    if (content.isLoadingCharacters && _items.isEmpty) {
+    if (content.isLoadingCharacters) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (content.isEmpty || _items.isEmpty) {
+    if (content.isEmpty) {
       return const Center(
         child: Text(
           'List is empty',
@@ -221,39 +306,76 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
       );
     }
 
+    final displayItems = _items.isNotEmpty ? _items : content.items;
+
+    if (displayItems.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final animateMarquee = !widget.isEditMode || !_isDragging;
+
     return Scrollbar(
       controller: _scrollController,
       thumbVisibility: true,
       child: Padding(
         padding: const EdgeInsets.only(left: 16, top: 16, bottom: 84),
-        child: ReorderableListView.builder(
-          scrollController: _scrollController,
-          padding: const EdgeInsets.only(right: 16),
-          buildDefaultDragHandles: false,
-          proxyDecorator: (child, index, animation) {
-            return Material(color: Colors.transparent, child: child);
-          },
-          itemCount: _items.length,
-          onReorder: widget.isEditMode ? _handleReorder : (_, __) {},
-          itemBuilder: (context, index) {
-            final item = _items[index];
+        child: Listener(
+          onPointerUp: (_) => _setDragging(false),
+          onPointerCancel: (_) => _setDragging(false),
+          child: ReorderableListView.builder(
+            scrollController: _scrollController,
+            padding: const EdgeInsets.only(right: 16),
+            buildDefaultDragHandles: false,
+            proxyDecorator: (child, index, animation) {
+              final item = displayItems[index];
 
-            return RankingCharacterCard(
-              key: ValueKey(item.id),
-              index: item.position,
-              title: item.title,
-              subtitle: item.subtitle,
-              dragHandle: widget.isEditMode
-                  ? ReorderableDragStartListener(
-                      index: index,
-                      child: const Padding(
-                        padding: EdgeInsets.only(right: 8),
-                        child: Icon(Icons.drag_handle, size: 40),
-                      ),
-                    )
-                  : null,
-            );
-          },
+              return Material(
+                color: Colors.transparent,
+                elevation: 6,
+                shadowColor: Colors.black45,
+                child: RankingCharacterCard(
+                  itemId: item.id,
+                  index: item.position,
+                  title: item.title,
+                  subtitle: item.subtitle,
+                  animateMarquee: false,
+                  isDragProxy: true,
+                ),
+              );
+            },
+            itemCount: displayItems.length,
+            onReorder: widget.isEditMode ? _handleReorder : (_, __) {},
+            itemBuilder: (context, index) {
+              final item = displayItems[index];
+
+              return RankingCharacterCard(
+                key: ValueKey(item.id),
+                itemId: item.id,
+                index: item.position,
+                title: item.title,
+                subtitle: item.subtitle,
+                isEditMode: widget.isEditMode,
+                animateMarquee: animateMarquee,
+                maxPosition: displayItems.length,
+                onPositionSubmitted: widget.isEditMode
+                    ? (targetPosition) =>
+                          _handleMoveToPosition(item.id, targetPosition)
+                    : null,
+                dragHandle: widget.isEditMode
+                    ? Listener(
+                        onPointerDown: (_) => _setDragging(true),
+                        child: ReorderableDragStartListener(
+                          index: index,
+                          child: const Padding(
+                            padding: EdgeInsets.only(right: 8),
+                            child: Icon(Icons.drag_handle, size: 40),
+                          ),
+                        ),
+                      )
+                    : null,
+              );
+            },
+          ),
         ),
       ),
     );
