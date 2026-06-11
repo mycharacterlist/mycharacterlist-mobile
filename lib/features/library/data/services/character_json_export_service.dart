@@ -7,22 +7,75 @@ import 'package:mycharacterlist/features/characters/data/models/character_fact_m
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_export_result.dart';
+import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
+import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
 
 class CharacterJsonExportService {
   const CharacterJsonExportService({
     required CharacterRepository characterRepository,
-  }) : _characterRepository = characterRepository;
+    required RankingListRepository rankingListRepository,
+  }) : _characterRepository = characterRepository,
+       _rankingListRepository = rankingListRepository;
 
   final CharacterRepository _characterRepository;
+  final RankingListRepository _rankingListRepository;
 
   Future<CharacterExportResult> exportToDirectory(String parentPath) async {
     final characters = await _characterRepository.getCharacters();
+    final lists = await _rankingListRepository.getLists();
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
     final exportDirectory = Directory(
       p.join(parentPath, 'mycharacterlist_export_$timestamp'),
     );
     await exportDirectory.create(recursive: true);
 
+    final exportData = await buildCharactersExportData(
+      characters,
+      exportDirectory: exportDirectory,
+    );
+
+    final listJson = <Map<String, dynamic>>[];
+    for (final list in lists) {
+      final rankedCharacters = await _rankingListRepository.getRankedCharacters(
+        list.id,
+      );
+
+      listJson.add({
+        ...RankingListModel.fromEntity(list).toJson(),
+        'characters': rankedCharacters
+            .map(
+              (rankedCharacter) => {
+                'characterId': rankedCharacter.characterId,
+                'position': rankedCharacter.position,
+              },
+            )
+            .toList(),
+      });
+    }
+
+    final jsonFile = File(p.join(exportDirectory.path, 'data.json'));
+    const encoder = JsonEncoder.withIndent('  ');
+    await jsonFile.writeAsString(
+      encoder.convert({
+        'schemaVersion': 1,
+        'characters': exportData.characterJson,
+        'lists': listJson,
+      }),
+    );
+
+    return CharacterExportResult(
+      directoryPath: exportDirectory.path,
+      characters: characters.length,
+      lists: lists.length,
+      images: exportData.exportedImages,
+      missingImages: exportData.missingImages,
+    );
+  }
+
+  Future<CharacterSubsetExportData> buildCharactersExportData(
+    List<Character> characters, {
+    required Directory exportDirectory,
+  }) async {
     var exportedImages = 0;
     var missingImages = 0;
     final characterJson = <Map<String, dynamic>>[];
@@ -71,16 +124,9 @@ class CharacterJsonExportService {
       );
     }
 
-    final jsonFile = File(p.join(exportDirectory.path, 'characters.json'));
-    const encoder = JsonEncoder.withIndent('  ');
-    await jsonFile.writeAsString(
-      encoder.convert({'schemaVersion': 1, 'characters': characterJson}),
-    );
-
-    return CharacterExportResult(
-      directoryPath: exportDirectory.path,
-      characters: characters.length,
-      images: exportedImages,
+    return CharacterSubsetExportData(
+      characterJson: characterJson,
+      exportedImages: exportedImages,
       missingImages: missingImages,
     );
   }
@@ -174,4 +220,16 @@ class CharacterJsonExportService {
   String _safePathSegment(String value) {
     return value.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
   }
+}
+
+class CharacterSubsetExportData {
+  const CharacterSubsetExportData({
+    required this.characterJson,
+    required this.exportedImages,
+    required this.missingImages,
+  });
+
+  final List<Map<String, dynamic>> characterJson;
+  final int exportedImages;
+  final int missingImages;
 }

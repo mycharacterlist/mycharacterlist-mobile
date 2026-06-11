@@ -36,4 +36,9 @@ abstract interface class RankingListRepository {
     required String characterId,
     required int newPosition,
   });
+
+  Future<void> replaceListCharacters({
+    required String listId,
+    required List<({String characterId, int position})> entries,
+  });
 }

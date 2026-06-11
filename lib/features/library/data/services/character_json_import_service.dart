@@ -10,26 +10,35 @@ import 'package:mycharacterlist/features/characters/domain/entities/character_ge
 import 'package:mycharacterlist/features/characters/domain/repositories/character_reference_repository.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_import_result.dart';
+import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
+import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
 
 class CharacterJsonImportService {
   const CharacterJsonImportService({
     required CharacterRepository characterRepository,
     required CharacterReferenceRepository referenceRepository,
+    required RankingListRepository rankingListRepository,
     required LocalFileStorage localFileStorage,
   }) : _characterRepository = characterRepository,
        _referenceRepository = referenceRepository,
+       _rankingListRepository = rankingListRepository,
        _localFileStorage = localFileStorage;
 
   final CharacterRepository _characterRepository;
   final CharacterReferenceRepository _referenceRepository;
+  final RankingListRepository _rankingListRepository;
   final LocalFileStorage _localFileStorage;
 
   Future<CharacterImportResult> importFile(String filePath) async {
     final file = File(filePath);
     final decoded = jsonDecode(await file.readAsString());
 
-    if (decoded is! Map<String, dynamic> || decoded['schemaVersion'] != 1) {
-      throw const FormatException('Unsupported character import format.');
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Unsupported import format.');
+    }
+
+    if (decoded['schemaVersion'] != 1) {
+      throw const FormatException('Unsupported import format.');
     }
 
     final rawCharacters = decoded['characters'];
@@ -37,6 +46,117 @@ class CharacterJsonImportService {
       throw const FormatException('The characters field must be a list.');
     }
 
+    final characterResult = await importCharactersFromList(
+      rawCharacters,
+      jsonFile: file,
+    );
+
+    final rawLists = decoded['lists'];
+    if (rawLists == null) {
+      return characterResult;
+    }
+
+    if (rawLists is! List) {
+      throw const FormatException('The lists field must be a list.');
+    }
+
+    if (rawLists.isEmpty) {
+      return characterResult;
+    }
+
+    final listResult = await _importLists(rawLists);
+    return CharacterImportResult(
+      created: characterResult.created,
+      updated: characterResult.updated,
+      failed: characterResult.failed,
+      listsCreated: listResult.listsCreated,
+      listsUpdated: listResult.listsUpdated,
+      listsFailed: listResult.listsFailed,
+      missingListCharacters: listResult.missingListCharacters,
+    );
+  }
+
+  Future<({
+    int listsCreated,
+    int listsUpdated,
+    int listsFailed,
+    int missingListCharacters,
+  })> _importLists(List<dynamic> rawLists) async {
+    var listsCreated = 0;
+    var listsUpdated = 0;
+    var listsFailed = 0;
+    var missingListCharacters = 0;
+
+    for (final rawList in rawLists) {
+      try {
+        if (rawList is! Map) {
+          throw const FormatException('List must be an object.');
+        }
+
+        final json = Map<String, dynamic>.from(rawList);
+        final list = RankingListModel.fromJson(json);
+        final existing = await _rankingListRepository.getListById(list.id);
+
+        await _rankingListRepository.saveList(list);
+        if (existing == null) {
+          listsCreated++;
+        } else {
+          listsUpdated++;
+        }
+
+        final rawEntries = json['characters'];
+        if (rawEntries is! List) {
+          throw const FormatException('List characters must be an array.');
+        }
+
+        final entries = <({String characterId, int position})>[];
+        for (final rawEntry in rawEntries) {
+          if (rawEntry is! Map) {
+            throw const FormatException('List character entry must be an object.');
+          }
+
+          final entry = Map<String, dynamic>.from(rawEntry);
+          final characterId = entry['characterId']?.toString().trim() ?? '';
+          final position = entry['position'] is int
+              ? entry['position'] as int
+              : int.tryParse(entry['position']?.toString() ?? '');
+
+          if (characterId.isEmpty || position == null || position < 1) {
+            throw const FormatException('Invalid list character entry.');
+          }
+
+          final character = await _characterRepository.getCharacterById(
+            characterId,
+          );
+          if (character == null) {
+            missingListCharacters++;
+            continue;
+          }
+
+          entries.add((characterId: characterId, position: position));
+        }
+
+        await _rankingListRepository.replaceListCharacters(
+          listId: list.id,
+          entries: entries,
+        );
+      } catch (_) {
+        listsFailed++;
+      }
+    }
+
+    return (
+      listsCreated: listsCreated,
+      listsUpdated: listsUpdated,
+      listsFailed: listsFailed,
+      missingListCharacters: missingListCharacters,
+    );
+  }
+
+  Future<CharacterImportResult> importCharactersFromList(
+    List<dynamic> rawCharacters, {
+    required File jsonFile,
+  }) async {
     final gradeDefinitions = await _referenceRepository.getGradeDefinitions();
     final gradeMaximums = {
       for (final definition in gradeDefinitions)
@@ -105,14 +225,14 @@ class CharacterJsonImportService {
           mainImagePath:
               json.containsKey('mainImage') || json.containsKey('mainImageData')
               ? embeddedMainImage ??
-                    _resolveOptionalPath(file, json['mainImage'])
+                    _resolveOptionalPath(jsonFile, json['mainImage'])
               : existing?.mainImagePath,
           galleryImagePaths:
               json.containsKey('galleryImages') ||
                   json.containsKey('galleryImageData')
               ? embeddedGalleryImages.isNotEmpty
                     ? embeddedGalleryImages
-                    : _resolvePaths(file, json['galleryImages'])
+                    : _resolvePaths(jsonFile, json['galleryImages'])
               : existing?.galleryImagePaths ?? const [],
           grades: json.containsKey('grades')
               ? _parseGrades(json['grades'], gradeMaximums)

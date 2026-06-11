@@ -245,6 +245,33 @@ class RankingListRepositoryImpl implements RankingListRepository {
     return '${listId}_${characterId}_${DateTime.now().microsecondsSinceEpoch}';
   }
 
+  @override
+  Future<void> replaceListCharacters({
+    required String listId,
+    required List<({String characterId, int position})> entries,
+  }) async {
+    final now = DateTime.now();
+    final rankedCharacters = entries
+        .asMap()
+        .entries
+        .map(
+          (entry) => RankedCharacterModel(
+            id:
+                '${listId}_${entry.value.characterId}_${now.microsecondsSinceEpoch}_${entry.key}',
+            listId: listId,
+            characterId: entry.value.characterId,
+            position: entry.value.position,
+            addedAt: now,
+          ),
+        )
+        .toList();
+
+    await _localDataSource.replaceRankedCharactersForList(
+      listId,
+      rankedCharacters,
+    );
+  }
+
   T? _firstOrNull<T>(Iterable<T> items) {
     for (final item in items) {
       return item;

@@ -13,6 +13,7 @@ final characterJsonImportServiceProvider = Provider<CharacterJsonImportService>(
   (ref) => CharacterJsonImportService(
     characterRepository: ref.watch(characterRepositoryProvider),
     referenceRepository: ref.watch(characterReferenceRepositoryProvider),
+    rankingListRepository: ref.watch(rankingListRepositoryProvider),
     localFileStorage: ref.watch(localFileStorageProvider),
   ),
 );
@@ -20,6 +21,7 @@ final characterJsonImportServiceProvider = Provider<CharacterJsonImportService>(
 final characterJsonExportServiceProvider = Provider<CharacterJsonExportService>(
   (ref) => CharacterJsonExportService(
     characterRepository: ref.watch(characterRepositoryProvider),
+    rankingListRepository: ref.watch(rankingListRepositoryProvider),
   ),
 );
 

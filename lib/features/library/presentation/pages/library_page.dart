@@ -107,6 +107,8 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         .importFile(path);
     ref.invalidate(characterNameSuggestionsProvider);
     ref.invalidate(libraryCharactersProvider);
+    ref.invalidate(rankingCharactersViewModelProvider);
+    await ref.read(listsViewModelProvider.notifier).loadLists();
     await ref.read(characterReferencesViewModelProvider.notifier).load();
 
     if (mounted && importResult != null) {
@@ -156,7 +158,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
             ),
             ListTile(
               leading: const Icon(Icons.file_upload_outlined),
-              title: const Text('Export library'),
+              title: const Text('Export all'),
               onTap: () =>
                   sheetContext.pop(_LibraryTransferAction.exportCharacters),
             ),
