@@ -16,42 +16,18 @@ class RankingListController {
   RankingCharactersViewModel get _viewModel =>
       _ref.read(rankingCharactersViewModelProvider(listId).notifier);
 
-  void toggleEditMode() => _viewModel.toggleEditMode();
+  void toggleEditMode() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel.toggleEditMode();
+    });
+  }
 
-  Future<void> openAddCharacterFlow(
-    BuildContext context,
-    List<Character> libraryCharacters,
-  ) async {
+  Future<void> openAddCharacterFlow(BuildContext context) async {
     while (true) {
-      final rankedCharacterIds = _ref
-          .read(rankingCharactersViewModelProvider(listId))
-          .characters
-          .map((rankedCharacter) => rankedCharacter.characterId)
-          .toSet();
-
-      final availableCharacters = libraryCharacters
-          .where((character) => !rankedCharacterIds.contains(character.id))
-          .toList();
-
-      if (availableCharacters.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'All library characters are already in this list',
-                textAlign: TextAlign.center,
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
       final selectedCharacter = await showDialog<Character>(
         context: context,
-        builder: (context) => SelectCharacterDialog(
-          characters: availableCharacters,
-        ),
+        builder: (context) => SelectCharacterDialog(listId: listId),
       );
 
       if (selectedCharacter == null || !context.mounted) {

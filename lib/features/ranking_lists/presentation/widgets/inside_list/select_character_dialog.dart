@@ -1,109 +1,140 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
+import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 
-class SelectCharacterDialog extends StatefulWidget {
+class SelectCharacterDialog extends ConsumerStatefulWidget {
   const SelectCharacterDialog({
     super.key,
-    required this.characters,
+    required this.listId,
   });
 
-  final List<Character> characters;
+  final String listId;
 
   @override
-  State<SelectCharacterDialog> createState() => _SelectCharacterDialogState();
+  ConsumerState<SelectCharacterDialog> createState() => _SelectCharacterDialogState();
 }
 
-class _SelectCharacterDialogState extends State<SelectCharacterDialog> {
+class _SelectCharacterDialogState extends ConsumerState<SelectCharacterDialog> {
   final TextEditingController _searchController = TextEditingController();
-  late List<Character> _filteredCharacters;
   Character? _selectedCharacter;
 
   @override
   void initState() {
     super.initState();
-    _filteredCharacters = widget.characters;
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  void _onSearchChanged() {
-    final query = _searchController.text.toLowerCase().trim();
-
-    setState(() {
-      _filteredCharacters = widget.characters.where((character) {
-        if (query.isEmpty) {
-          return true;
-        }
-
-        return character.name.toLowerCase().contains(query) ||
-            character.sourceTitle.toLowerCase().contains(query);
-      }).toList();
-
-      if (_selectedCharacter != null &&
-          !_filteredCharacters.any((character) => character.id == _selectedCharacter!.id)) {
-        _selectedCharacter = null;
-      }
-    });
+    _searchController.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
+  List<Character> _filterCharacters(List<Character> characters) {
+    final query = _searchController.text.toLowerCase().trim();
+
+    if (query.isEmpty) {
+      return characters;
+    }
+
+    return characters.where((character) {
+      return character.name.toLowerCase().contains(query) ||
+          character.sourceTitle.toLowerCase().contains(query);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final libraryAsync = ref.watch(libraryCharactersProvider);
+    final rankedCharacterIds = ref.watch(
+      rankingCharactersViewModelProvider(widget.listId).select(
+        (state) => state.characters
+            .map((rankedCharacter) => rankedCharacter.characterId)
+            .toSet(),
+      ),
+    );
+
     return AlertDialog(
       title: const Text('Add character'),
       content: SizedBox(
         width: 350,
         height: 400,
-        child: Column(
-          children: [
-            TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                hintText: 'Character name',
-                suffixIcon: Icon(Icons.search),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Scrollbar(
-                thumbVisibility: true,
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: _filteredCharacters.length,
-                  itemBuilder: (context, index) {
-                    final character = _filteredCharacters[index];
-                    final isSelected = _selectedCharacter?.id == character.id;
+        child: libraryAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => const Center(
+            child: Text('Failed to load characters'),
+          ),
+          data: (libraryCharacters) {
+            if (libraryCharacters.isEmpty) {
+              return const Center(child: Text('Library is empty'));
+            }
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Material(
-                          color: isSelected
-                              ? Colors.blue.withOpacity(0.25)
-                              : Colors.transparent,
-                          child: ListTile(
-                            title: Text(character.name),
-                            subtitle: Text(character.sourceTitle),
-                            onTap: () {
-                              setState(() => _selectedCharacter = character);
-                              FocusScope.of(context).unfocus();
-                            },
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+            final availableCharacters = libraryCharacters
+                .where((character) => !rankedCharacterIds.contains(character.id))
+                .toList();
+
+            if (availableCharacters.isEmpty) {
+              return const Center(
+                child: Text('All library characters are already in this list'),
+              );
+            }
+
+            final filteredCharacters = _filterCharacters(availableCharacters);
+            final selectedCharacter = _selectedCharacter != null &&
+                    filteredCharacters.any(
+                      (character) => character.id == _selectedCharacter!.id,
+                    )
+                ? _selectedCharacter
+                : null;
+
+            return Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Character name',
+                    suffixIcon: Icon(Icons.search),
+                  ),
                 ),
-              ),
-            ),
-          ],
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: filteredCharacters.length,
+                      itemBuilder: (context, index) {
+                        final character = filteredCharacters[index];
+                        final isSelected = selectedCharacter?.id == character.id;
+
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Material(
+                              color: isSelected
+                                  ? Colors.blue.withOpacity(0.25)
+                                  : Colors.transparent,
+                              child: ListTile(
+                                title: Text(character.name),
+                                subtitle: Text(character.sourceTitle),
+                                onTap: () {
+                                  setState(() => _selectedCharacter = character);
+                                  FocusScope.of(context).unfocus();
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
       actions: [
@@ -111,11 +142,32 @@ class _SelectCharacterDialogState extends State<SelectCharacterDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        ElevatedButton(
-          onPressed: _selectedCharacter == null
-              ? null
-              : () => Navigator.pop(context, _selectedCharacter),
-          child: const Text('Add'),
+        libraryAsync.maybeWhen(
+          data: (libraryCharacters) {
+            final availableCharacters = libraryCharacters
+                .where((character) => !rankedCharacterIds.contains(character.id))
+                .toList();
+
+            if (availableCharacters.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            final filteredCharacters = _filterCharacters(availableCharacters);
+            final selectedCharacter = _selectedCharacter != null &&
+                    filteredCharacters.any(
+                      (character) => character.id == _selectedCharacter!.id,
+                    )
+                ? _selectedCharacter
+                : null;
+
+            return ElevatedButton(
+              onPressed: selectedCharacter == null
+                  ? null
+                  : () => Navigator.pop(context, selectedCharacter),
+              child: const Text('Add'),
+            );
+          },
+          orElse: () => const SizedBox.shrink(),
         ),
       ],
     );

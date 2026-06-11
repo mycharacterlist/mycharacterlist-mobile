@@ -13,7 +13,7 @@ import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_p
 
 final libraryCharactersProvider = FutureProvider<List<Character>>((ref) {
   ref.keepAlive();
-  return ref.watch(characterRepositoryProvider).getCharacters();
+  return ref.watch(characterRepositoryProvider).getCharacterSummaries();
 });
 
 final listsViewModelProvider = StateNotifierProvider<ListsViewModel, ListsState>(
@@ -37,6 +37,8 @@ final rankingListByIdProvider = Provider.family<RankingList?, String>((ref, list
 
 final rankedListCharacterDetailsProvider =
     FutureProvider.family<Map<String, Character>, String>((ref, listId) async {
+  ref.keepAlive();
+
   final characterIds = ref
       .watch(
         rankingCharactersViewModelProvider(listId).select(
@@ -58,9 +60,40 @@ final rankedListCharacterDetailsProvider =
   return {for (final character in characters) character.id: character};
 });
 
+bool _hasResolvedCharacterDetails(
+  Set<String> requiredCharacterIds,
+  Map<String, Character> charactersById,
+) {
+  if (requiredCharacterIds.isEmpty) {
+    return true;
+  }
+
+  return requiredCharacterIds.every(charactersById.containsKey);
+}
+
+Map<String, Character> _mergeCharacterDetails(
+  Map<String, Character>? rankedCharactersById,
+  List<Character>? libraryCharacters,
+) {
+  final mergedCharacters = <String, Character>{};
+
+  if (libraryCharacters != null) {
+    for (final character in libraryCharacters) {
+      mergedCharacters[character.id] = character;
+    }
+  }
+
+  if (rankedCharactersById != null) {
+    mergedCharacters.addAll(rankedCharactersById);
+  }
+
+  return mergedCharacters;
+}
+
 final rankedListContentProvider = Provider.family<RankedListContent, String>((ref, listId) {
   final charactersState = ref.watch(rankingCharactersViewModelProvider(listId));
   final characterDetailsAsync = ref.watch(rankedListCharacterDetailsProvider(listId));
+  final libraryCharacters = ref.watch(libraryCharactersProvider).valueOrNull;
 
   if (charactersState.isInitialLoading && charactersState.characters.isEmpty) {
     return const RankedListContent(isLoadingCharacters: true);
@@ -70,8 +103,26 @@ final rankedListContentProvider = Provider.family<RankedListContent, String>((re
     return const RankedListContent(isEmpty: true);
   }
 
-  final charactersById = characterDetailsAsync.valueOrNull;
-  if (charactersById == null) {
+  final requiredCharacterIds = charactersState.characters
+      .map((rankedCharacter) => rankedCharacter.characterId)
+      .toSet();
+  final rankedCharactersById = characterDetailsAsync.valueOrNull;
+  final charactersById = _mergeCharacterDetails(
+    rankedCharactersById,
+    libraryCharacters,
+  );
+
+  final isWaitingForDetails =
+      characterDetailsAsync.isLoading &&
+      !_hasResolvedCharacterDetails(requiredCharacterIds, charactersById);
+
+  if (isWaitingForDetails) {
+    return const RankedListContent(isLoadingCharacters: true);
+  }
+
+  if (!_hasResolvedCharacterDetails(requiredCharacterIds, charactersById) &&
+      libraryCharacters == null &&
+      rankedCharactersById == null) {
     return const RankedListContent(isLoadingCharacters: true);
   }
 

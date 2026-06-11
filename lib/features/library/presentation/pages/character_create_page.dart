@@ -136,6 +136,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
     await ref.read(characterReferencesViewModelProvider.notifier).load();
     ref.invalidate(characterNameSuggestionsProvider);
+    ref.invalidate(libraryCharactersProvider);
 
     if (mounted) {
       await _popWithoutWarning();
@@ -159,6 +160,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     await ref.read(charactersViewModelProvider.notifier).loadCharacters();
     await ref.read(characterReferencesViewModelProvider.notifier).load();
     ref.invalidate(characterNameSuggestionsProvider);
+    ref.invalidate(libraryCharactersProvider);
 
     if (mounted) {
       await _popWithoutWarning();

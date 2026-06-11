@@ -9,6 +9,7 @@ import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
 import 'package:mycharacterlist/core/platform/platform_file_helper.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
+import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/Plus_button.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/library_card.dart';
@@ -96,6 +97,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         .read(charactersViewModelProvider.notifier)
         .importFile(path);
     ref.invalidate(characterNameSuggestionsProvider);
+    ref.invalidate(libraryCharactersProvider);
     await ref.read(characterReferencesViewModelProvider.notifier).load();
 
     if (mounted && importResult != null) {
