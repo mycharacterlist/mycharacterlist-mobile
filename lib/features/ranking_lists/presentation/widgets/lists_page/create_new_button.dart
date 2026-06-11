@@ -41,7 +41,7 @@ class CreateNewButton extends StatelessWidget {
           text,
           style: const TextStyle(
             color: Color(0xFFBEB53E),
-            fontFamily: 'JPAnimeFont',
+            fontFamily: 'JpAnimeFont',
             fontSize: 30,
           ),
         ),

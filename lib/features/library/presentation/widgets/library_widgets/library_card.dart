@@ -79,9 +79,10 @@ class LibraryCard extends StatelessWidget {
                     '${index + 1}.',
 
                     style: const TextStyle(
-                      fontSize: 42,
+                      fontSize: 34,
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
+                      height: 1.0,
                       fontFamily: 'JosefinSlab',
                     ),
                   ),
@@ -101,7 +102,7 @@ class LibraryCard extends StatelessWidget {
                   children: [
                     Flexible(
                       child: SizedBox(
-                        height: 35,
+                        height: 38,
 
                         child: MarqueeText(
                           key: ValueKey('main_$mainText'),
@@ -110,7 +111,8 @@ class LibraryCard extends StatelessWidget {
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 28,
+                            fontSize: 26,
+                            height: 1.1,
                             fontFamily: 'JosefinSlab',
                           ),
                         ),
@@ -119,7 +121,7 @@ class LibraryCard extends StatelessWidget {
 
                     Flexible(
                       child: SizedBox(
-                        height: 28,
+                        height: 30,
 
                         child: MarqueeText(
                           key: ValueKey('side_$sideText'),
@@ -128,7 +130,8 @@ class LibraryCard extends StatelessWidget {
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
-                            fontSize: 22,
+                            fontSize: 20,
+                            height: 1.1,
                             fontFamily: 'JosefinSlab',
                           ),
                         ),

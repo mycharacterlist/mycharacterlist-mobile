@@ -58,7 +58,7 @@ class FilterBottomButtons extends StatelessWidget {
                   TextStyle(
                     color: Colors.black,
                     fontSize: 23,
-                    fontFamily: 'JosefineSlab',
+                    fontFamily: 'JosefinSlab',
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -97,7 +97,7 @@ class FilterBottomButtons extends StatelessWidget {
                   TextStyle(
                     color: Colors.white,
                     fontSize: 23,
-                    fontFamily: 'JosefineSlab',
+                    fontFamily: 'JosefinSlab',
                     fontWeight: FontWeight.bold,
                   ),
                 ),
