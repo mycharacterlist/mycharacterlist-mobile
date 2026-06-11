@@ -13,5 +13,5 @@ class CharacterExportResult {
 
   String get message =>
       'Exported: $characters characters, $images images, '
-      'missing images: $missingImages.';
+      'missing images: $missingImages. Saved to: $directoryPath';
 }

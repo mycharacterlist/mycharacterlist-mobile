@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/app_background_image.dart';
+import 'package:mycharacterlist/core/platform/platform_file_helper.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/Plus_button.dart';
@@ -74,8 +77,17 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json'],
+      withData: true,
     );
-    final path = result?.files.single.path;
+
+    if (result == null || result.files.isEmpty || !mounted) {
+      return;
+    }
+
+    final path = await PlatformFileHelper.resolvePickedFilePath(
+      result.files.single,
+    );
+
     if (path == null || !mounted) {
       return;
     }
@@ -97,7 +109,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 
   Future<void> _exportCharacters() async {
     _unfocusSearch();
-    final directoryPath = await FilePicker.getDirectoryPath(
+    final directoryPath = await PlatformFileHelper.pickExportDirectory(
       dialogTitle: 'Select export folder',
     );
     if (directoryPath == null || !mounted) {
@@ -219,9 +231,8 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         child: Stack(
           children: [
             Positioned.fill(
-              child: Image.asset(
-                'assets/images/Library_bg.jpg',
-                fit: BoxFit.cover,
+              child: AppBackgroundImage(
+                assetPath: AppBackgroundAssets.library,
               ),
             ),
             SafeArea(
