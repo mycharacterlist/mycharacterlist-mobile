@@ -72,6 +72,16 @@ class CharacterModel extends Character {
     );
   }
 
+  factory CharacterModel.summaryFromDatabase(Map<String, Object?> data) {
+    return CharacterModel(
+      id: data['id']! as String,
+      name: data['name']! as String,
+      sourceTitle: data['source_title']! as String,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
+
   factory CharacterModel.fromDatabase(
     Map<String, Object?> data, {
     List<String> galleryImagePaths = const [],

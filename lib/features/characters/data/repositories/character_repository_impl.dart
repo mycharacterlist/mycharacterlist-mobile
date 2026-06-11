@@ -25,6 +25,11 @@ class CharacterRepositoryImpl implements CharacterRepository {
   }
 
   @override
+  Future<List<Character>> getCharacterSummaries() {
+    return _localDataSource.getCharacterSummaries();
+  }
+
+  @override
   Future<List<Character>> getCharactersPage({
     required int offset,
     required int limit,

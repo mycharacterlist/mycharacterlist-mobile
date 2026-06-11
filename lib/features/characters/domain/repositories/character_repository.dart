@@ -3,6 +3,8 @@ import 'package:mycharacterlist/features/characters/domain/entities/character.da
 abstract interface class CharacterRepository {
   Future<List<Character>> getCharacters();
 
+  Future<List<Character>> getCharacterSummaries();
+
   Future<List<Character>> getCharactersPage({
     required int offset,
     required int limit,

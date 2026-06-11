@@ -14,6 +14,17 @@ class CharacterLocalDataSource {
     return _getCharacters();
   }
 
+  Future<List<CharacterModel>> getCharacterSummaries() async {
+    final database = await _appDatabase.database;
+    final characters = await database.query(
+      'characters',
+      columns: ['id', 'name', 'source_title'],
+      orderBy: 'name COLLATE NOCASE ASC',
+    );
+
+    return characters.map(CharacterModel.summaryFromDatabase).toList();
+  }
+
   Future<List<CharacterModel>> getCharactersPage({
     required int offset,
     required int limit,
