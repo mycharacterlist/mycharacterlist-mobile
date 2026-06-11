@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/app_background_image.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error_listener.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/lists_page/create_new_button.dart';
@@ -43,9 +45,8 @@ class ListsView extends ConsumerWidget {
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/ListsPage_bg.png',
-              fit: BoxFit.cover,
+            child: AppBackgroundImage(
+              assetPath: AppBackgroundAssets.lists,
             ),
           ),
           SafeArea(
@@ -109,7 +110,7 @@ class ListsView extends ConsumerWidget {
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     fontSize: 24,
-                                    fontFamily: 'JPAnimeFont',
+                                    fontFamily: 'JpAnimeFont',
                                     color: Color(0xFFBEB53E),
                                   ),
                                 ),

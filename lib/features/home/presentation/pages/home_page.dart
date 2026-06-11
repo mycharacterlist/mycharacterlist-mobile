@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
+import 'package:mycharacterlist/app/widgets/app_background_image.dart';
 import '../widgets/home_button.dart';
 
 class HomePage extends StatelessWidget {
@@ -9,22 +11,17 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/HomePage_bg.jpeg'),
-            fit: BoxFit.cover,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const AppBackgroundImage(
+            assetPath: AppBackgroundAssets.home,
           ),
-        ),
+          Column(
+            children: [
+              const Spacer(),
 
-        child: Column(
-          children: [
-            const Spacer(),
-
-            const Text(
+              const Text(
               'My anime\nCharacter List',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -57,8 +54,9 @@ class HomePage extends StatelessWidget {
             ),
 
             const Spacer(),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }

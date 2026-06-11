@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/router/app_page.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/features/characters/presentation/pages/character_page.dart';
 import 'package:mycharacterlist/features/home/presentation/pages/home_page.dart';
@@ -14,38 +15,62 @@ final GoRouter appRouter = GoRouter(
 );
 
 final List<RouteBase> appRoutes = [
-  GoRoute(path: AppRoutes.home, builder: (context, state) => const HomePage()),
+  GoRoute(
+    path: AppRoutes.home,
+    pageBuilder: (context, state) => buildAppPage(
+      state: state,
+      child: const HomePage(),
+    ),
+  ),
   GoRoute(
     path: AppRoutes.lists,
-    builder: (context, state) => const ListsPage(),
+    pageBuilder: (context, state) => buildAppPage(
+      state: state,
+      child: const ListsPage(),
+    ),
   ),
   GoRoute(
     path: AppRoutes.rankingList,
-    builder: (context, state) {
+    pageBuilder: (context, state) {
       final id = state.pathParameters['id']!;
-      return RankingListPage(listId: id);
+      return buildAppPage(
+        state: state,
+        child: RankingListPage(listId: id),
+      );
     },
   ),
   GoRoute(
     path: AppRoutes.characterCreate,
-    builder: (context, state) => const CharacterCreatePage(),
+    pageBuilder: (context, state) => buildAppPage(
+      state: state,
+      child: const CharacterCreatePage(),
+    ),
   ),
   GoRoute(
     path: AppRoutes.characterEdit,
-    builder: (context, state) {
+    pageBuilder: (context, state) {
       final id = state.pathParameters['id']!;
-      return CharacterCreatePage(characterId: id);
+      return buildAppPage(
+        state: state,
+        child: CharacterCreatePage(characterId: id),
+      );
     },
   ),
   GoRoute(
     path: AppRoutes.character,
-    builder: (context, state) {
+    pageBuilder: (context, state) {
       final id = state.pathParameters['id']!;
-      return CharacterPage(characterId: id);
+      return buildAppPage(
+        state: state,
+        child: CharacterPage(characterId: id),
+      );
     },
   ),
   GoRoute(
     path: AppRoutes.library,
-    builder: (context, state) => const LibraryPage(),
+    pageBuilder: (context, state) => buildAppPage(
+      state: state,
+      child: const LibraryPage(),
+    ),
   ),
 ];
