@@ -4,7 +4,7 @@ import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/core/storage/storage_providers.dart';
 import 'package:mycharacterlist/features/library/data/services/character_json_export_service.dart';
 import 'package:mycharacterlist/features/library/data/services/character_json_import_service.dart';
-import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
+import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_providers.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/characters_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/character_references_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/create_character_view_model.dart';

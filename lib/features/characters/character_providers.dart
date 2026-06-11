@@ -8,6 +8,7 @@ import 'package:mycharacterlist/features/characters/data/sources/local/character
 import 'package:mycharacterlist/features/characters/data/sources/local/character_reference_local_data_source.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_reference_repository.dart';
+import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_providers.dart';
 
 final characterLocalDataSourceProvider = Provider<CharacterLocalDataSource>(
   (ref) =>
@@ -18,6 +19,7 @@ final characterRepositoryProvider = Provider<CharacterRepository>(
   (ref) => CharacterRepositoryImpl(
     localDataSource: ref.watch(characterLocalDataSourceProvider),
     localFileStorage: ref.watch(localFileStorageProvider),
+    rankingListRepository: ref.watch(rankingListRepositoryProvider),
   ),
 );
 

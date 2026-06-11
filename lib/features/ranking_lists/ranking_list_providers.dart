@@ -1,32 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:mycharacterlist/core/database/database_providers.dart';
 import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
-import 'package:mycharacterlist/features/ranking_lists/data/repositories/ranking_list_repository_impl.dart';
-import 'package:mycharacterlist/features/ranking_lists/data/sources/local/ranking_list_local_data_source.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
-import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/controllers/lists_page_controller.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/controllers/ranking_list_controller.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_list_content.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
-
-final rankingListLocalDataSourceProvider = Provider<RankingListLocalDataSource>(
-  (ref) => RankingListLocalDataSource(
-    appDatabase: ref.watch(appDatabaseProvider),
-  ),
-);
-
-final rankingListRepositoryProvider = Provider<RankingListRepository>(
-  (ref) => RankingListRepositoryImpl(
-    localDataSource: ref.watch(rankingListLocalDataSourceProvider),
-  ),
-);
+import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_providers.dart';
 
 final libraryCharactersProvider = FutureProvider<List<Character>>((ref) {
+  ref.keepAlive();
   return ref.watch(characterRepositoryProvider).getCharacters();
 });
 
@@ -49,11 +35,34 @@ final rankingListByIdProvider = Provider.family<RankingList?, String>((ref, list
   return ref.watch(listsViewModelProvider).findById(listId);
 });
 
+final rankedListCharacterDetailsProvider =
+    FutureProvider.family<Map<String, Character>, String>((ref, listId) async {
+  final characterIds = ref
+      .watch(
+        rankingCharactersViewModelProvider(listId).select(
+          (state) => state.characters
+              .map((rankedCharacter) => rankedCharacter.characterId)
+              .toSet(),
+        ),
+      )
+      .toList();
+
+  if (characterIds.isEmpty) {
+    return const {};
+  }
+
+  final characters = await ref
+      .read(characterRepositoryProvider)
+      .getCharactersByIds(characterIds);
+
+  return {for (final character in characters) character.id: character};
+});
+
 final rankedListContentProvider = Provider.family<RankedListContent, String>((ref, listId) {
   final charactersState = ref.watch(rankingCharactersViewModelProvider(listId));
-  final libraryAsync = ref.watch(libraryCharactersProvider);
+  final characterDetailsAsync = ref.watch(rankedListCharacterDetailsProvider(listId));
 
-  if (charactersState.isLoading) {
+  if (charactersState.isInitialLoading && charactersState.characters.isEmpty) {
     return const RankedListContent(isLoadingCharacters: true);
   }
 
@@ -61,30 +70,25 @@ final rankedListContentProvider = Provider.family<RankedListContent, String>((re
     return const RankedListContent(isEmpty: true);
   }
 
-  return libraryAsync.when(
-    loading: () => const RankedListContent(isLoadingLibrary: true),
-    error: (_, __) => const RankedListContent(libraryFailed: true),
-    data: (libraryCharacters) {
-      final charactersById = {
-        for (final character in libraryCharacters) character.id: character,
-      };
+  final charactersById = characterDetailsAsync.valueOrNull;
+  if (charactersById == null) {
+    return const RankedListContent(isLoadingCharacters: true);
+  }
 
-      final items = charactersState.characters.asMap().entries.map((entry) {
-        final rankedCharacter = entry.value;
-        final character = charactersById[rankedCharacter.characterId];
+  final items = charactersState.characters.asMap().entries.map((entry) {
+    final rankedCharacter = entry.value;
+    final character = charactersById[rankedCharacter.characterId];
 
-        return RankedCharacterDisplayItem(
-          id: rankedCharacter.id,
-          characterId: rankedCharacter.characterId,
-          position: entry.key + 1,
-          title: character?.name ?? rankedCharacter.characterId,
-          subtitle: character?.sourceTitle ?? '',
-        );
-      }).toList();
+    return RankedCharacterDisplayItem(
+      id: rankedCharacter.id,
+      characterId: rankedCharacter.characterId,
+      position: entry.key + 1,
+      title: character?.name ?? 'Unknown character',
+      subtitle: character?.sourceTitle ?? '',
+    );
+  }).toList();
 
-      return RankedListContent(items: items);
-    },
-  );
+  return RankedListContent(items: items);
 });
 
 final rankingListControllerProvider = Provider.autoDispose.family<RankingListController, String>(
