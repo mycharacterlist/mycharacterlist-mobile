@@ -30,6 +30,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   final formScrollController = ScrollController();
   int formVersion = 0;
   bool allowPop = false;
+  bool isProcessing = false;
 
   bool get isEditing => widget.characterId != null;
 
@@ -124,23 +125,37 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     }
   }
 
-  Future<void> _createCharacter(List<GradeDefinition> definitions) async {
-    final created = await ref
-        .read(createCharacterViewModelProvider.notifier)
-        .create(form.toInput(definitions));
-
-    if (!mounted || !created) {
+  Future<void> _runWithProcessing(
+    Future<bool> Function() action, {
+    bool includeRanking = false,
+  }) async {
+    if (isProcessing) {
       return;
     }
 
-    await ref.read(charactersViewModelProvider.notifier).loadCharacters();
-    await ref.read(characterReferencesViewModelProvider.notifier).load();
-    ref.invalidate(characterNameSuggestionsProvider);
-    ref.invalidate(libraryCharactersProvider);
+    setState(() => isProcessing = true);
 
-    if (mounted) {
-      await _popWithoutWarning();
+    final succeeded = await action();
+
+    if (!mounted) {
+      return;
     }
+
+    if (!succeeded) {
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    await _popWithoutWarning();
+    _refreshLibraryAfterMutation(includeRanking: includeRanking);
+  }
+
+  Future<void> _createCharacter(List<GradeDefinition> definitions) async {
+    await _runWithProcessing(
+      () => ref
+          .read(createCharacterViewModelProvider.notifier)
+          .create(form.toInput(definitions)),
+    );
   }
 
   Future<void> _saveCharacter(List<GradeDefinition> definitions) async {
@@ -149,22 +164,11 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       return;
     }
 
-    final updated = await ref
-        .read(createCharacterViewModelProvider.notifier)
-        .update(character, form.toInput(definitions));
-
-    if (!mounted || !updated) {
-      return;
-    }
-
-    await ref.read(charactersViewModelProvider.notifier).loadCharacters();
-    await ref.read(characterReferencesViewModelProvider.notifier).load();
-    ref.invalidate(characterNameSuggestionsProvider);
-    ref.invalidate(libraryCharactersProvider);
-
-    if (mounted) {
-      await _popWithoutWarning();
-    }
+    await _runWithProcessing(
+      () => ref
+          .read(createCharacterViewModelProvider.notifier)
+          .update(character, form.toInput(definitions)),
+    );
   }
 
   Future<void> _deleteCharacter() async {
@@ -197,24 +201,27 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       return;
     }
 
-    final deleted = await ref
-        .read(createCharacterViewModelProvider.notifier)
-        .delete(character.id);
+    await _runWithProcessing(
+      () => ref
+          .read(createCharacterViewModelProvider.notifier)
+          .delete(character.id),
+      includeRanking: true,
+    );
+  }
 
-    if (!mounted || !deleted) {
-      return;
-    }
-
-    await ref.read(charactersViewModelProvider.notifier).loadCharacters();
-    await ref.read(characterReferencesViewModelProvider.notifier).load();
-    ref.invalidate(characterNameSuggestionsProvider);
-    ref.invalidate(rankingCharactersViewModelProvider);
-    ref.invalidate(rankedListCharacterDetailsProvider);
+  void _refreshLibraryAfterMutation({bool includeRanking = false}) {
     ref.invalidate(libraryCharactersProvider);
+    ref.invalidate(characterNameSuggestionsProvider);
 
-    if (mounted) {
-      await _popWithoutWarning();
+    if (includeRanking) {
+      ref.invalidate(rankingCharactersViewModelProvider);
+      ref.invalidate(rankedListCharacterDetailsProvider);
     }
+
+    Future.microtask(() {
+      ref.read(charactersViewModelProvider.notifier).loadCharacters();
+      ref.read(characterReferencesViewModelProvider.notifier).load();
+    });
   }
 
   void _clearAll() {
@@ -236,7 +243,12 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
 
   @override
   Widget build(BuildContext context) {
-    final createState = ref.watch(createCharacterViewModelProvider);
+    final isLoading = ref.watch(
+      createCharacterViewModelProvider.select((state) => state.isLoading),
+    );
+    final invalidFields = ref.watch(
+      createCharacterViewModelProvider.select((state) => state.invalidFields),
+    );
     final referencesState = ref.watch(characterReferencesViewModelProvider);
     final characterNames =
         ref.watch(characterNameSuggestionsProvider).value ?? const <String>[];
@@ -265,9 +277,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     });
 
     return PopScope(
-      canPop: allowPop,
+      canPop: allowPop && !isProcessing,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
+        if (!didPop && !isProcessing) {
           _requestExit();
         }
       },
@@ -278,7 +290,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
           backgroundColor: const Color(0xFF1A4043),
           backButtonColor: const Color(0xFF009768),
           titleColor: const Color(0xFF4CB897),
-          onBackPressed: _requestExit,
+          onBackPressed: isProcessing ? () {} : _requestExit,
         ),
         body: Stack(
           children: [
@@ -288,7 +300,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                 fit: BoxFit.cover,
               ),
             ),
-            if (createState.isLoading)
+            if (isLoading)
               const Center(child: CircularProgressIndicator())
             else
               Center(
@@ -351,11 +363,11 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                   selectedGender: form.gender,
                                   onGenderChanged: (value) =>
                                       setState(() => form.gender = value),
-                                  nameHasError: createState.invalidFields
+                                  nameHasError: invalidFields
                                       .contains(CreateCharacterField.name),
-                                  animeHasError: createState.invalidFields
+                                  animeHasError: invalidFields
                                       .contains(CreateCharacterField.anime),
-                                  archetypeHasError: createState.invalidFields
+                                  archetypeHasError: invalidFields
                                       .contains(CreateCharacterField.archetype),
                                 ),
                                 const SizedBox(height: 15),
@@ -384,14 +396,10 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                       : () => _createCharacter(
                                           referencesState.gradeDefinitions,
                                         ),
-                                  isClearLoading: createState.isDeleting,
-                                  isCreateLoading: createState.isSaving,
                                   clearLabel: isEditing
                                       ? 'Delete character'
                                       : 'Clear all',
                                   createLabel: isEditing ? 'Save' : 'Create',
-                                  clearLoadingLabel: 'Deleting...',
-                                  createLoadingLabel: 'Saving...',
                                 ),
                                 const SizedBox(height: 20),
                               ],
@@ -400,6 +408,14 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+            if (isProcessing)
+              const Positioned.fill(
+                child: AbsorbPointer(
+                  child: Center(
+                    child: CircularProgressIndicator(),
                   ),
                 ),
               ),

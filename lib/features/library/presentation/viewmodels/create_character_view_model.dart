@@ -123,7 +123,6 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
     try {
       await _repository.deleteCharacter(id);
       await _referenceRepository.deleteUnusedAnimeTitles();
-      state = const CreateCharacterState();
       return true;
     } catch (_) {
       state = const CreateCharacterState(
@@ -137,8 +136,6 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
     CreateCharacterInput input,
     Character existingCharacter,
   ) async {
-    state = const CreateCharacterState();
-
     final name = input.name.trim();
     final sourceTitle = input.sourceTitle.trim();
 
@@ -236,7 +233,6 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
 
       await _repository.saveCharacter(character);
       await _referenceRepository.deleteUnusedAnimeTitles();
-      state = const CreateCharacterState();
       return true;
     } on StateError catch (error) {
       state = CreateCharacterState(errorMessage: error.message);

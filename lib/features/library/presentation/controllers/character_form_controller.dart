@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/text/text_editing_utils.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character_gender.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
@@ -39,21 +40,22 @@ class CharacterFormController {
 
   void populate(Character value) {
     character = value;
-    name.text = value.name;
-    age.text = value.age;
-    height.text = value.height;
-    japaneseName.text = value.japaneseName;
-    anime.text = value.sourceTitle;
-    archetype.text = value.archetype;
-    notes.text = value.personalNotes;
+    setCollapsedControllerText(name, value.name);
+    setCollapsedControllerText(age, value.age);
+    setCollapsedControllerText(height, value.height);
+    setCollapsedControllerText(japaneseName, value.japaneseName);
+    setCollapsedControllerText(anime, value.sourceTitle);
+    setCollapsedControllerText(archetype, value.archetype);
+    setCollapsedControllerText(notes, value.personalNotes);
     gender = value.gender;
     mainImagePath = value.mainImagePath;
     galleryImagePaths = [...value.galleryImagePaths];
 
     for (final entry in value.grades.entries) {
-      grades.putIfAbsent(entry.key, TextEditingController.new).text = entry
-          .value
-          .toString();
+      setCollapsedControllerText(
+        grades.putIfAbsent(entry.key, TextEditingController.new),
+        entry.value.toString(),
+      );
     }
   }
 
