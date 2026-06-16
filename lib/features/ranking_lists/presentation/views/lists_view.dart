@@ -51,6 +51,7 @@ class ListsView extends ConsumerWidget {
             ),
           ),
           SafeArea(
+            maintainBottomViewPadding: true,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 120),
               child: state.isLoading && state.lists.isEmpty
