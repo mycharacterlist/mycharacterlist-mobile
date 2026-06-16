@@ -7,6 +7,9 @@ import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
+import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
+import 'package:mycharacterlist/app/widgets/bottom_sheet_padding.dart';
+import 'package:mycharacterlist/app/widgets/empty_state_message.dart';
 import 'package:mycharacterlist/core/platform/platform_file_helper.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
@@ -48,6 +51,15 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
   void _search(String query) {
     _resetListPosition();
     ref.read(charactersViewModelProvider.notifier).search(query);
+  }
+
+  void _clearSearch() {
+    if (searchController.text.isEmpty) {
+      return;
+    }
+
+    searchController.clear();
+    _search('');
   }
 
   void _unfocusSearch() {
@@ -146,7 +158,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     _unfocusSearch();
     final action = await showModalBottomSheet<_LibraryTransferAction>(
       context: context,
-      builder: (sheetContext) => SafeArea(
+      useSafeArea: false,
+      builder: (sheetContext) => BottomSheetPadding(
+        bottomMargin: 8,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -190,30 +204,41 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFFD9D4D9),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+      useSafeArea: false,
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (context, scrollController) => DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFFD9D4D9),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+          ),
+          child: LibraryFilterSheet(
+            scrollController: scrollController,
+            filters: filters,
+            animeTitles: references.animeTitles,
+            archetypes: references.archetypes,
+            onClear: () {
+              filters = const CharacterFilters();
+              _resetListPosition();
+              ref.read(charactersViewModelProvider.notifier).clearFilters();
+              sheetContext.pop();
+            },
+            onApply: (value) {
+              filters = value;
+              _resetListPosition();
+              ref.read(charactersViewModelProvider.notifier).applyFilters(value);
+              sheetContext.pop();
+            },
+          ),
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      builder: (sheetContext) => LibraryFilterSheet(
-        filters: filters,
-        animeTitles: references.animeTitles,
-        archetypes: references.archetypes,
-        onClear: () {
-          filters = const CharacterFilters();
-          _resetListPosition();
-          ref.read(charactersViewModelProvider.notifier).clearFilters();
-          sheetContext.pop();
-        },
-        onApply: (value) {
-          filters = value;
-          _resetListPosition();
-          ref.read(charactersViewModelProvider.notifier).applyFilters(value);
-          sheetContext.pop();
-        },
       ),
     );
   }
@@ -229,6 +254,10 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(charactersViewModelProvider);
     ref.watch(characterReferencesViewModelProvider);
+    final hasSearchOrFilter =
+        searchController.text.trim().isNotEmpty || filters.hasActiveFilters;
+    final emptyMessage =
+        hasSearchOrFilter ? 'No results found' : 'Library is empty';
 
     return PopScope(
       canPop: false,
@@ -262,14 +291,20 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                   SearchBarWidget(
                     controller: searchController,
                     onChanged: _search,
+                    onClearPressed: _clearSearch,
                     onFilterPressed: showFilterSheet,
                   ),
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 110),
-                      child: state.isLoading && state.characters.isEmpty
-                          ? const Center(child: CircularProgressIndicator())
-                          : Scrollbar(
+                    child: state.isLoading && state.characters.isEmpty
+                        ? const Center(child: CircularProgressIndicator())
+                        : state.characters.isEmpty
+                        ? EmptyStateMessage(message: emptyMessage)
+                        : Padding(
+                            padding: EdgeInsets.only(
+                              bottom:
+                                  84 + MediaQuery.viewPaddingOf(context).bottom,
+                            ),
+                            child: Scrollbar(
                               thumbVisibility: true,
                               controller: charactersScrollController,
                               child: ListView.builder(
@@ -299,6 +334,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                                     ),
                                     onEditPressed: () => _openPage(
                                       AppRoutes.characterEditById(character.id),
+                                      resetSearch: false,
                                     ),
                                   );
                                 },
@@ -309,20 +345,58 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                 ],
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 20,
-              child: Center(
-                child: PlusButton(
-                  icon: const Icon(Icons.add, color: Colors.black, size: 45),
-                  onPressed: () => _openPage(AppRoutes.characterCreate),
-                  onLongPress: state.isImporting || state.isExporting
-                      ? null
-                      : _showTransferActions,
-                ),
+            BottomActionSlot(
+              bottomMargin: 20,
+              child: PlusButton(
+                icon: const Icon(Icons.add, color: Colors.black, size: 45),
+                onPressed: () => _openPage(AppRoutes.characterCreate),
+                onLongPress: state.isImporting || state.isExporting
+                    ? null
+                    : _showTransferActions,
               ),
             ),
+            if (state.isImporting || state.isExporting)
+              Positioned.fill(
+                child: AbsorbPointer(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.72),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            state.importProgress?.title ??
+                                (state.isExporting
+                                    ? 'Exporting characters...'
+                                    : 'Importing characters...'),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontFamily: 'FrancoisOne',
+                            ),
+                          ),
+                          if (state.importProgress != null &&
+                              state.importProgress!.total > 0) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              '${state.importProgress!.completed} / ${state.importProgress!.total}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

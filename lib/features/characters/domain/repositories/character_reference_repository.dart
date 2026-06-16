@@ -11,6 +11,8 @@ abstract interface class CharacterReferenceRepository {
 
   Future<String> ensureAnimeTitle(String name);
 
+  Future<String?> findAnimeTitle(String name);
+
   Future<void> deleteUnusedAnimeTitles();
 
   Future<void> addArchetype(String name);

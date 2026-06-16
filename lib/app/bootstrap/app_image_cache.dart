@@ -1,45 +1,56 @@
-import 'dart:ui' as ui;
+import 'dart:io';
 
 import 'package:flutter/painting.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
-import 'package:mycharacterlist/app/assets/app_background_assets.dart';
-
+/// Central place for Flutter [ImageCache] cleanup helpers.
 class AppImageCache {
   AppImageCache._();
 
-  static final List<ui.Image> _pinnedImages = [];
-  static bool _isWarmedUp = false;
-  static Future<void>? _warmUpFuture;
-
-  static Future<void> warmUp() {
-    return _warmUpFuture ??= _warmUp();
-  }
-
-  static Future<void> _warmUp() async {
-    final imageCache = PaintingBinding.instance.imageCache;
-    imageCache.maximumSize = 200;
-    imageCache.maximumSizeBytes = 256 * 1024 * 1024;
-
-    await Future.wait(
-      AppBackgroundAssets.all.map(_pinAsset),
+  static int decodeCacheDimension(double logicalPixels, BuildContext context) {
+    return decodeCacheDimensionWithDpr(
+      logicalPixels,
+      MediaQuery.devicePixelRatioOf(context),
     );
-
-    _isWarmedUp = true;
   }
 
-  static Future<void> _pinAsset(String assetPath) async {
-    final data = await rootBundle.load(assetPath);
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-    final frame = await codec.getNextFrame();
-    _pinnedImages.add(frame.image);
+  static int decodeCacheDimensionWithDpr(
+    double logicalPixels,
+    double devicePixelRatio,
+  ) {
+    return (logicalPixels * devicePixelRatio).round().clamp(1, 4096);
   }
 
-  static Future<void> refreshAfterMemoryPressure() async {
-    _isWarmedUp = false;
-    _warmUpFuture = null;
-    await warmUp();
+  static void evictFile(String? path) {
+    if (path == null || path.trim().isEmpty) {
+      return;
+    }
+
+    final file = File(path);
+    if (!file.existsSync()) {
+      return;
+    }
+
+    PaintingBinding.instance.imageCache.evict(FileImage(file));
   }
 
-  static bool get isWarmedUp => _isWarmedUp;
+  /// Drops decoded images that are no longer shown on screen.
+  static void trimUnused() {
+    PaintingBinding.instance.imageCache.clearLiveImages();
+  }
+
+  /// Clears all decoded images. Optionally reload pinned backgrounds.
+  static Future<void> clearAll({
+    Future<void> Function()? restoreBackgrounds,
+  }) async {
+    PaintingBinding.instance.imageCache.clear();
+    if (restoreBackgrounds != null) {
+      await restoreBackgrounds();
+    }
+  }
+
+  /// Call when leaving screens that decode many user photos.
+  static void trimAfterHeavyScreen() {
+    trimUnused();
+  }
 }

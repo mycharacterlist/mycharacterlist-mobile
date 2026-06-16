@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:mycharacterlist/app/widgets/bottom_sheet_padding.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/position_dialog.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/select_character_dialog.dart';
@@ -28,6 +30,78 @@ class RankingListController {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewModel.exitEditMode();
     });
+  }
+
+  Future<void> showRemoveCharacterSheet(
+    BuildContext context,
+    RankedCharacterDisplayItem item,
+  ) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final shouldRemove = await showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: false,
+      builder: (sheetContext) => BottomSheetPadding(
+        bottomMargin: 8,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.person_remove_outlined,
+                color: Color(0xFFB71C1C),
+              ),
+              title: Text('Remove "${item.title}" from list'),
+              onTap: () => Navigator.pop(sheetContext, true),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancel'),
+              onTap: () => Navigator.pop(sheetContext, false),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (shouldRemove != true || !context.mounted) {
+      return;
+    }
+
+    await confirmRemoveCharacter(context, item);
+  }
+
+  Future<void> confirmRemoveCharacter(
+    BuildContext context,
+    RankedCharacterDisplayItem item,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove from list?'),
+        content: Text(
+          '"${item.title}" will be removed from this list. '
+          'The character will stay in your library.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    await _viewModel.removeCharacter(characterId: item.characterId);
   }
 
   Future<void> openAddCharacterFlow(BuildContext context) async {

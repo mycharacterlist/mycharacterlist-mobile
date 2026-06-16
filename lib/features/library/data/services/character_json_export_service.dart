@@ -3,10 +3,13 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:mycharacterlist/core/storage/compressed_images_manifest.dart';
+import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 import 'package:mycharacterlist/features/characters/data/models/character_fact_model.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_export_result.dart';
+import 'package:mycharacterlist/features/library/domain/entities/character_import_progress.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
 
@@ -14,13 +17,19 @@ class CharacterJsonExportService {
   const CharacterJsonExportService({
     required CharacterRepository characterRepository,
     required RankingListRepository rankingListRepository,
+    required LocalFileStorage localFileStorage,
   }) : _characterRepository = characterRepository,
-       _rankingListRepository = rankingListRepository;
+       _rankingListRepository = rankingListRepository,
+       _localFileStorage = localFileStorage;
 
   final CharacterRepository _characterRepository;
   final RankingListRepository _rankingListRepository;
+  final LocalFileStorage _localFileStorage;
 
-  Future<CharacterExportResult> exportToDirectory(String parentPath) async {
+  Future<CharacterExportResult> exportToDirectory(
+    String parentPath, {
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
     final characters = await _characterRepository.getCharacters();
     final lists = await _rankingListRepository.getLists();
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
@@ -32,10 +41,20 @@ class CharacterJsonExportService {
     final exportData = await buildCharactersExportData(
       characters,
       exportDirectory: exportDirectory,
+      onProgress: onProgress,
     );
 
     final listJson = <Map<String, dynamic>>[];
-    for (final list in lists) {
+    for (var index = 0; index < lists.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: lists.length,
+          phase: CharacterImportPhase.exportLists,
+        ),
+      );
+
+      final list = lists[index];
       final rankedCharacters = await _rankingListRepository.getRankedCharacters(
         list.id,
       );
@@ -51,6 +70,14 @@ class CharacterJsonExportService {
             )
             .toList(),
       });
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: lists.length,
+          phase: CharacterImportPhase.exportLists,
+        ),
+      );
     }
 
     final jsonFile = File(p.join(exportDirectory.path, 'data.json'));
@@ -75,12 +102,23 @@ class CharacterJsonExportService {
   Future<CharacterSubsetExportData> buildCharactersExportData(
     List<Character> characters, {
     required Directory exportDirectory,
+    void Function(CharacterImportProgress progress)? onProgress,
   }) async {
     var exportedImages = 0;
     var missingImages = 0;
     final characterJson = <Map<String, dynamic>>[];
+    final total = characters.length;
 
-    for (final character in characters) {
+    for (var index = 0; index < characters.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: total,
+          phase: CharacterImportPhase.exportCharacters,
+        ),
+      );
+
+      final character = characters[index];
       final mainImage = await _copyImage(
         sourcePath: character.mainImagePath,
         exportDirectory: exportDirectory,
@@ -115,11 +153,28 @@ class CharacterJsonExportService {
         _characterToJson(
           character,
           mainImage: mainImage,
-          mainImageData: await _imageData(character.mainImagePath),
+          mainImageData: await _imageData(
+            character.mainImagePath,
+            characterId: character.id,
+          ),
           galleryImages: galleryImages,
           galleryImageData: await _galleryImageData(
             character.galleryImagePaths,
+            characterId: character.id,
           ),
+        ),
+      );
+
+      await _exportCompressedManifest(
+        characterId: character.id,
+        exportDirectory: exportDirectory,
+      );
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: total,
+          phase: CharacterImportPhase.exportCharacters,
         ),
       );
     }
@@ -134,9 +189,9 @@ class CharacterJsonExportService {
   Map<String, dynamic> _characterToJson(
     Character character, {
     required String? mainImage,
-    required Map<String, String>? mainImageData,
+    required Map<String, dynamic>? mainImageData,
     required List<String> galleryImages,
-    required List<Map<String, String>> galleryImageData,
+    required List<Map<String, dynamic>> galleryImageData,
   }) {
     return {
       'id': character.id,
@@ -160,12 +215,13 @@ class CharacterJsonExportService {
     };
   }
 
-  Future<List<Map<String, String>>> _galleryImageData(
-    List<String> paths,
-  ) async {
-    final images = <Map<String, String>>[];
+  Future<List<Map<String, dynamic>>> _galleryImageData(
+    List<String> paths, {
+    required String characterId,
+  }) async {
+    final images = <Map<String, dynamic>>[];
     for (final path in paths) {
-      final data = await _imageData(path);
+      final data = await _imageData(path, characterId: characterId);
       if (data != null) {
         images.add(data);
       }
@@ -173,7 +229,10 @@ class CharacterJsonExportService {
     return images;
   }
 
-  Future<Map<String, String>?> _imageData(String? path) async {
+  Future<Map<String, dynamic>?> _imageData(
+    String? path, {
+    required String characterId,
+  }) async {
     if (path == null || path.trim().isEmpty) {
       return null;
     }
@@ -183,9 +242,15 @@ class CharacterJsonExportService {
       return null;
     }
 
+    final isCompressed = await _localFileStorage.isImageCompressed(
+      characterId,
+      path,
+    );
+
     return {
       'extension': p.extension(file.path),
       'base64': base64Encode(await file.readAsBytes()),
+      if (isCompressed) 'compressed': true,
     };
   }
 
@@ -215,6 +280,46 @@ class CharacterJsonExportService {
     await source.copy(destination.path);
 
     return relativePath.replaceAll(r'\', '/');
+  }
+
+  Future<void> _exportCompressedManifest({
+    required String characterId,
+    required Directory exportDirectory,
+  }) async {
+    final character = await _characterRepository.getCharacterById(characterId);
+    if (character == null) {
+      return;
+    }
+
+    final exportCompressed = <String>{};
+
+    if (character.mainImagePath != null &&
+        await _localFileStorage.isImageCompressed(
+          characterId,
+          character.mainImagePath,
+        )) {
+      exportCompressed.add('main${p.extension(character.mainImagePath!)}');
+    }
+
+    for (var index = 0; index < character.galleryImagePaths.length; index++) {
+      final path = character.galleryImagePaths[index];
+      if (await _localFileStorage.isImageCompressed(characterId, path)) {
+        exportCompressed.add('gallery_$index${p.extension(path)}');
+      }
+    }
+
+    if (exportCompressed.isEmpty) {
+      return;
+    }
+
+    final destinationDirectory = Directory(
+      p.join(
+        exportDirectory.path,
+        'images',
+        _safePathSegment(characterId),
+      ),
+    );
+    await CompressedImagesManifest.write(destinationDirectory, exportCompressed);
   }
 
   String _safePathSegment(String value) {

@@ -184,8 +184,19 @@ class CharacterRepositoryImpl implements CharacterRepository {
 
       await _localFileStorage.deleteFiles(
         previousPaths.difference(savedPaths).toList(),
+        characterFolder: character.id,
       );
     }
+
+    await _localFileStorage.syncCompressedManifest(
+      character.id,
+      [
+        mainImagePath,
+        ...galleryImagePaths,
+      ].whereType<String>(),
+    );
+
+    await _localFileStorage.clearDraftsFolder();
   }
 
   void _validateFacts(Character character) {
@@ -237,5 +248,27 @@ class CharacterRepositoryImpl implements CharacterRepository {
     await _localFileStorage.deleteFile(character.mainImagePath);
     await _localFileStorage.deleteFiles(character.galleryImagePaths);
     await _localFileStorage.deleteFolder(character.id);
+  }
+
+  @override
+  Future<int> countCharactersWithSourceTitle(
+    String sourceTitle, {
+    String? excludeCharacterId,
+  }) {
+    return _localDataSource.countCharactersWithSourceTitle(
+      sourceTitle,
+      excludeCharacterId: excludeCharacterId,
+    );
+  }
+
+  @override
+  Future<void> renameSourceTitleForAll(
+    String oldSourceTitle,
+    String newSourceTitle,
+  ) {
+    return _localDataSource.renameSourceTitleForAll(
+      oldSourceTitle,
+      newSourceTitle,
+    );
   }
 }

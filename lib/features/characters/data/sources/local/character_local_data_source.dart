@@ -8,6 +8,9 @@ class CharacterLocalDataSource {
   const CharacterLocalDataSource({required AppDatabase appDatabase})
     : _appDatabase = appDatabase;
 
+  static const _nameOrderBy =
+      "REPLACE(REPLACE(name, 'Ё', 'Е'), 'ё', 'е') COLLATE NOCASE ASC";
+
   final AppDatabase _appDatabase;
 
   Future<List<CharacterModel>> getCharacters() async {
@@ -19,7 +22,7 @@ class CharacterLocalDataSource {
     final characters = await database.query(
       'characters',
       columns: ['id', 'name', 'source_title'],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
     );
 
     return characters.map(CharacterModel.summaryFromDatabase).toList();
@@ -33,7 +36,7 @@ class CharacterLocalDataSource {
     final characters = await database.query(
       'characters',
       columns: ['id', 'name', 'source_title'],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -53,7 +56,7 @@ class CharacterLocalDataSource {
       columns: ['id', 'name', 'source_title'],
       where: 'name LIKE ? COLLATE NOCASE OR source_title LIKE ? COLLATE NOCASE',
       whereArgs: [normalizedQuery, normalizedQuery],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -68,7 +71,7 @@ class CharacterLocalDataSource {
     final database = await _appDatabase.database;
     final characters = await database.query(
       'characters',
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -87,7 +90,7 @@ class CharacterLocalDataSource {
       'characters',
       where: 'name LIKE ? COLLATE NOCASE OR source_title LIKE ? COLLATE NOCASE',
       whereArgs: [normalizedQuery, normalizedQuery],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -106,7 +109,7 @@ class CharacterLocalDataSource {
     final database = await _appDatabase.database;
     final characters = await database.query(
       'characters',
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -147,7 +150,7 @@ class CharacterLocalDataSource {
       'characters',
       where: 'id IN ($placeholders)',
       whereArgs: ids,
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
     );
 
     final models = <CharacterModel>[];
@@ -182,7 +185,7 @@ class CharacterLocalDataSource {
       'characters',
       where: 'name LIKE ? COLLATE NOCASE OR source_title LIKE ? COLLATE NOCASE',
       whereArgs: [normalizedQuery, normalizedQuery],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -260,6 +263,48 @@ class CharacterLocalDataSource {
     final database = await _appDatabase.database;
 
     await database.delete('characters', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<int> countCharactersWithSourceTitle(
+    String sourceTitle, {
+    String? excludeCharacterId,
+  }) async {
+    final database = await _appDatabase.database;
+    final trimmedTitle = sourceTitle.trim();
+
+    if (excludeCharacterId == null) {
+      final result = await database.rawQuery(
+        'SELECT COUNT(*) AS count FROM characters '
+        'WHERE source_title = ? COLLATE NOCASE',
+        [trimmedTitle],
+      );
+      return Sqflite.firstIntValue(result) ?? 0;
+    }
+
+    final result = await database.rawQuery(
+      'SELECT COUNT(*) AS count FROM characters '
+      'WHERE source_title = ? COLLATE NOCASE AND id != ?',
+      [trimmedTitle, excludeCharacterId],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  Future<void> renameSourceTitleForAll(
+    String oldSourceTitle,
+    String newSourceTitle,
+  ) async {
+    final database = await _appDatabase.database;
+    final now = DateTime.now().toIso8601String();
+
+    await database.update(
+      'characters',
+      {
+        'source_title': newSourceTitle.trim(),
+        'updated_at': now,
+      },
+      where: 'source_title = ? COLLATE NOCASE',
+      whereArgs: [oldSourceTitle.trim()],
+    );
   }
 
   Future<List<CharacterModel>> _mapCharactersLight(

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
+import 'package:mycharacterlist/core/storage/storage_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
@@ -14,6 +16,8 @@ import 'package:mycharacterlist/features/library/presentation/widgets/character_
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/main_photo_picker.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/personal_grades_dropdown.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/personal_notes_dropdown.dart';
+
+enum _AnimeRenameChoice { skip, cancel, onlyHere, all }
 
 class CharacterCreatePage extends ConsumerStatefulWidget {
   const CharacterCreatePage({super.key, this.characterId});
@@ -31,6 +35,10 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   int formVersion = 0;
   bool allowPop = false;
   bool isProcessing = false;
+  bool isGalleryCompressing = false;
+  int galleryCompressCompleted = 0;
+  int galleryCompressTotal = 0;
+  String? _animeRenameSource;
 
   bool get isEditing => widget.characterId != null;
 
@@ -57,6 +65,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
 
     setState(() {
       form.populate(character);
+      _animeRenameSource = character.sourceTitle.trim();
       formVersion++;
     });
   }
@@ -73,10 +82,26 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
         .clearFieldError(CreateCharacterField.anime);
   }
 
+  void _rememberExistingAnimeTitle(String title) {
+    _animeRenameSource = title;
+  }
+
   void _clearArchetypeError() {
     ref
         .read(createCharacterViewModelProvider.notifier)
         .clearFieldError(CreateCharacterField.archetype);
+  }
+
+  void _onGalleryCompressionState(
+    bool isCompressing, {
+    int completed = 0,
+    int total = 0,
+  }) {
+    setState(() {
+      isGalleryCompressing = isCompressing;
+      galleryCompressCompleted = completed;
+      galleryCompressTotal = total;
+    });
   }
 
   SnackBar _centeredSnackBar(String message) {
@@ -113,8 +138,15 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     );
 
     if (confirmed == true && mounted) {
+      await _discardFormDrafts();
       await _popWithoutWarning();
     }
+  }
+
+  Future<void> _discardFormDrafts() async {
+    final fileStorage = ref.read(localFileStorageProvider);
+    await fileStorage.deleteDraftFile(form.mainImagePath);
+    await fileStorage.deleteDraftFiles(form.galleryImagePaths);
   }
 
   Future<void> _popWithoutWarning() async {
@@ -150,24 +182,176 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     _refreshLibraryAfterMutation(includeRanking: includeRanking);
   }
 
-  Future<void> _createCharacter(List<GradeDefinition> definitions) async {
-    await _runWithProcessing(
-      () => ref
-          .read(createCharacterViewModelProvider.notifier)
-          .create(form.toInput(definitions)),
+  Future<_AnimeRenameChoice> _resolveAnimeRenameChoice(String newAnime) async {
+    final viewModel = ref.read(createCharacterViewModelProvider.notifier);
+    final oldAnime = isEditing
+        ? form.character?.sourceTitle.trim()
+        : _animeRenameSource;
+
+    if (oldAnime == null || oldAnime.isEmpty) {
+      return _AnimeRenameChoice.skip;
+    }
+
+    if (oldAnime.toLowerCase() == newAnime.toLowerCase()) {
+      return _AnimeRenameChoice.skip;
+    }
+
+    final existingNewAnime = await viewModel.findAnimeTitle(newAnime);
+    if (existingNewAnime != null) {
+      return _AnimeRenameChoice.skip;
+    }
+
+    final othersCount = isEditing
+        ? await viewModel.countOtherCharactersWithSourceTitle(
+            oldAnime,
+            form.character!.id,
+          )
+        : await viewModel.countCharactersWithSourceTitle(oldAnime);
+
+    if (othersCount <= 0) {
+      return _AnimeRenameChoice.skip;
+    }
+
+    final applyToAll = await _showAnimeRenameDialog(
+      oldAnime: oldAnime,
+      otherCharactersCount: othersCount,
     );
+
+    if (!mounted) {
+      return _AnimeRenameChoice.cancel;
+    }
+
+    if (applyToAll == null) {
+      return _AnimeRenameChoice.cancel;
+    }
+
+    return applyToAll ? _AnimeRenameChoice.all : _AnimeRenameChoice.onlyHere;
+  }
+
+  Future<void> _createCharacter(List<GradeDefinition> definitions) async {
+    if (isProcessing) {
+      return;
+    }
+
+    final newAnime = form.anime.text.trim();
+    final oldAnime = _animeRenameSource;
+    final renameChoice = await _resolveAnimeRenameChoice(newAnime);
+
+    if (!mounted || renameChoice == _AnimeRenameChoice.cancel) {
+      return;
+    }
+
+    final viewModel = ref.read(createCharacterViewModelProvider.notifier);
+
+    setState(() => isProcessing = true);
+
+    final succeeded = await viewModel.create(form.toInput(definitions));
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!succeeded) {
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    if (renameChoice == _AnimeRenameChoice.all && oldAnime != null) {
+      final renamed = await viewModel.renameAnimeTitleForAllCharacters(
+        oldSourceTitle: oldAnime,
+        newSourceTitle: newAnime,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (!renamed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          _centeredSnackBar('Could not update anime for all characters.'),
+        );
+      }
+    }
+
+    await _popWithoutWarning();
+    _refreshLibraryAfterMutation();
   }
 
   Future<void> _saveCharacter(List<GradeDefinition> definitions) async {
     final character = form.character;
-    if (character == null) {
+    if (character == null || isProcessing) {
       return;
     }
 
-    await _runWithProcessing(
-      () => ref
-          .read(createCharacterViewModelProvider.notifier)
-          .update(character, form.toInput(definitions)),
+    final newAnime = form.anime.text.trim();
+    final oldAnime = character.sourceTitle.trim();
+    final renameChoice = await _resolveAnimeRenameChoice(newAnime);
+
+    if (!mounted || renameChoice == _AnimeRenameChoice.cancel) {
+      return;
+    }
+
+    final viewModel = ref.read(createCharacterViewModelProvider.notifier);
+
+    setState(() => isProcessing = true);
+
+    final succeeded = await viewModel.update(character, form.toInput(definitions));
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!succeeded) {
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    if (renameChoice == _AnimeRenameChoice.all) {
+      final renamed = await viewModel.renameAnimeTitleForAllCharacters(
+        oldSourceTitle: oldAnime,
+        newSourceTitle: newAnime,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (!renamed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          _centeredSnackBar('Could not update anime for all characters.'),
+        );
+      }
+    }
+
+    await _popWithoutWarning();
+    _refreshLibraryAfterMutation();
+  }
+
+  Future<bool?> _showAnimeRenameDialog({
+    required String oldAnime,
+    required int otherCharactersCount,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Update anime?'),
+        content: Text('$otherCharactersCount more use "$oldAnime".'),
+        actions: [
+          TextButton(
+            onPressed: () => dialogContext.pop(null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => dialogContext.pop(false),
+            child: const Text('Only here'),
+          ),
+          TextButton(
+            onPressed: () => dialogContext.pop(true),
+            child: const Text('All'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -212,6 +396,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   void _refreshLibraryAfterMutation({bool includeRanking = false}) {
     ref.invalidate(libraryCharactersProvider);
     ref.invalidate(characterNameSuggestionsProvider);
+    ref.read(characterReferencesViewModelProvider.notifier).load();
 
     if (includeRanking) {
       ref.invalidate(rankingCharactersViewModelProvider);
@@ -224,15 +409,22 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     });
   }
 
-  void _clearAll() {
+  Future<void> _clearAll() async {
+    await _discardFormDrafts();
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       form.clear();
+      _animeRenameSource = null;
       formVersion++;
     });
   }
 
   @override
   void dispose() {
+    AppImageCache.trimAfterHeavyScreen();
     form.name.removeListener(_clearNameError);
     form.anime.removeListener(_clearAnimeError);
     form.archetype.removeListener(_clearArchetypeError);
@@ -250,9 +442,12 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       createCharacterViewModelProvider.select((state) => state.invalidFields),
     );
     final referencesState = ref.watch(characterReferencesViewModelProvider);
+    final fileStorage = ref.read(localFileStorageProvider);
     final characterNames =
         ref.watch(characterNameSuggestionsProvider).value ?? const <String>[];
     form.syncGradeControllers(referencesState.gradeDefinitions);
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final pageSize = MediaQuery.sizeOf(context);
 
     ref.listen(createCharacterViewModelProvider, (previous, next) {
       if (next.errorMessage == null ||
@@ -277,9 +472,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     });
 
     return PopScope(
-      canPop: allowPop && !isProcessing,
+      canPop: allowPop && !isProcessing && !isGalleryCompressing,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && !isProcessing) {
+        if (!didPop && !isProcessing && !isGalleryCompressing) {
           _requestExit();
         }
       },
@@ -290,7 +485,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
           backgroundColor: const Color(0xFF1A4043),
           backButtonColor: const Color(0xFF009768),
           titleColor: const Color(0xFF4CB897),
-          onBackPressed: isProcessing ? () {} : _requestExit,
+          onBackPressed: isProcessing || isGalleryCompressing
+              ? () {}
+              : _requestExit,
         ),
         body: Stack(
           children: [
@@ -305,8 +502,8 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
             else
               Center(
                 child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.90,
-                  height: MediaQuery.of(context).size.height * 0.87,
+                  width: pageSize.width * 0.90,
+                  height: pageSize.height * 0.87,
                   child: Stack(
                     children: [
                       Positioned.fill(
@@ -343,6 +540,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                 Center(
                                   child: MainPhotoPicker(
                                     imagePath: form.mainImagePath,
+                                    fileStorage: fileStorage,
                                     onChanged: (path) => setState(
                                       () => form.mainImagePath = path,
                                     ),
@@ -369,6 +567,8 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                       .contains(CreateCharacterField.anime),
                                   archetypeHasError: invalidFields
                                       .contains(CreateCharacterField.archetype),
+                                  onExistingAnimeSelected:
+                                      _rememberExistingAnimeTitle,
                                 ),
                                 const SizedBox(height: 15),
                                 PersonalGradesDropdown(
@@ -378,6 +578,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                 const SizedBox(height: 15),
                                 GalleryDropdown(
                                   imagePaths: form.galleryImagePaths,
+                                  fileStorage: fileStorage,
+                                  onCompressionStateChanged:
+                                      _onGalleryCompressionState,
                                   onChanged: (paths) => setState(
                                     () => form.galleryImagePaths = paths,
                                   ),
@@ -401,7 +604,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                       : 'Clear all',
                                   createLabel: isEditing ? 'Save' : 'Create',
                                 ),
-                                const SizedBox(height: 20),
+                                SizedBox(height: 20 + bottomInset),
                               ],
                             ),
                           ),
@@ -416,6 +619,43 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                 child: AbsorbPointer(
                   child: Center(
                     child: CircularProgressIndicator(),
+                  ),
+                ),
+              ),
+            if (isGalleryCompressing)
+              Positioned.fill(
+                child: AbsorbPointer(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.72),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Preparing photos...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontFamily: 'FrancoisOne',
+                            ),
+                          ),
+                          if (galleryCompressTotal > 0) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              '$galleryCompressCompleted / $galleryCompressTotal',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

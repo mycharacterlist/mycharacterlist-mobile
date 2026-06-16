@@ -20,6 +20,9 @@ jobs:
         run: |
           set -e
 
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION_NAME="${VERSION%%+*}"
+
           flutter build ios --release --no-codesign
 
           mkdir Payload
@@ -27,7 +30,7 @@ jobs:
 
           mkdir -p build/ios/ipa
 
-          zip -qry build/ios/ipa/Runner.ipa Payload
+          zip -qry "build/ios/ipa/MyCharacterList-v${VERSION_NAME}.ipa" Payload
 
           ls -lah build/ios/ipa
 

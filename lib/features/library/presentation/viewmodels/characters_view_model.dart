@@ -6,6 +6,7 @@ import 'package:mycharacterlist/features/characters/domain/repositories/characte
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_export_result.dart';
+import 'package:mycharacterlist/features/library/domain/entities/character_import_progress.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_import_result.dart';
 import 'package:mycharacterlist/features/library/domain/services/character_filter_service.dart';
 import 'package:mycharacterlist/features/library/data/services/character_json_import_service.dart';
@@ -21,6 +22,7 @@ class CharactersState {
     this.hasMore = true,
     this.isImporting = false,
     this.isExporting = false,
+    this.importProgress,
     this.errorMessage,
   });
 
@@ -30,6 +32,7 @@ class CharactersState {
   final bool hasMore;
   final bool isImporting;
   final bool isExporting;
+  final CharacterImportProgress? importProgress;
   final String? errorMessage;
 }
 
@@ -108,10 +111,25 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
       characters: state.characters,
       hasMore: state.hasMore,
       isImporting: true,
+      importProgress: const CharacterImportProgress(
+        completed: 0,
+        total: 0,
+        phase: CharacterImportPhase.characters,
+      ),
     );
 
     try {
-      final result = await _importService.importFile(filePath);
+      final result = await _importService.importFile(
+        filePath,
+        onProgress: (progress) {
+          state = CharactersState(
+            characters: state.characters,
+            hasMore: state.hasMore,
+            isImporting: true,
+            importProgress: progress,
+          );
+        },
+      );
       await _apply();
       return result;
     } catch (_) {
@@ -129,10 +147,25 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
       characters: state.characters,
       hasMore: state.hasMore,
       isExporting: true,
+      importProgress: const CharacterImportProgress(
+        completed: 0,
+        total: 0,
+        phase: CharacterImportPhase.exportCharacters,
+      ),
     );
 
     try {
-      final result = await _exportService.exportToDirectory(directoryPath);
+      final result = await _exportService.exportToDirectory(
+        directoryPath,
+        onProgress: (progress) {
+          state = CharactersState(
+            characters: state.characters,
+            hasMore: state.hasMore,
+            isExporting: true,
+            importProgress: progress,
+          );
+        },
+      );
       state = CharactersState(
         characters: state.characters,
         hasMore: state.hasMore,
@@ -166,6 +199,7 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
         hasMore: state.hasMore,
         isImporting: state.isImporting,
         isExporting: state.isExporting,
+        importProgress: state.importProgress,
       );
     }
 

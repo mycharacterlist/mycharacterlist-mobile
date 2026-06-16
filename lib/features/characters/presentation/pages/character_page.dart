@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
+import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
@@ -13,7 +16,7 @@ import 'package:mycharacterlist/features/characters/presentation/widgets/charact
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_personal_notes.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_ranks_standing.dart';
 
-class CharacterPage extends ConsumerWidget {
+class CharacterPage extends ConsumerStatefulWidget {
   const CharacterPage({
     super.key,
     required this.characterId,
@@ -22,10 +25,22 @@ class CharacterPage extends ConsumerWidget {
   final String characterId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final characterAsync = ref.watch(characterByIdProvider(characterId));
+  ConsumerState<CharacterPage> createState() => _CharacterPageState();
+}
+
+class _CharacterPageState extends ConsumerState<CharacterPage> {
+  @override
+  void dispose() {
+    AppImageCache.trimAfterHeavyScreen();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final characterAsync = ref.watch(characterByIdProvider(widget.characterId));
     final gradeDefinitionsAsync = ref.watch(gradeDefinitionsProvider);
-    final rankingsAsync = ref.watch(characterRankingDisplaysProvider(characterId));
+    final rankingsAsync =
+        ref.watch(characterRankingDisplaysProvider(widget.characterId));
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -33,6 +48,14 @@ class CharacterPage extends ConsumerWidget {
         backgroundColor: const Color(0xFF315B8B),
         backButtonColor: Colors.black,
         titleColor: Colors.black,
+        actionWidget: IconButton(
+          icon: const Icon(Icons.edit, color: Colors.black),
+          onPressed: () async {
+            await context.push(AppRoutes.characterEditById(widget.characterId));
+            ref.invalidate(characterByIdProvider(widget.characterId));
+            ref.invalidate(characterRankingDisplaysProvider(widget.characterId));
+          },
+        ),
       ),
       body: Stack(
         children: [

@@ -204,13 +204,13 @@ class RankingCharacterCard extends StatelessWidget {
       child: RepaintBoundary(
         child: Material(
           color: Colors.transparent,
-          child: isEditMode
-              ? card
-              : InkWell(
+          child: onTap != null
+              ? InkWell(
                   borderRadius: BorderRadius.circular(30),
                   onTap: onTap,
                   child: card,
-                ),
+                )
+              : card,
         ),
       ),
     );

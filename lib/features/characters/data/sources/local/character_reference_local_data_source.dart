@@ -38,6 +38,10 @@ class CharacterReferenceLocalDataSource {
     return normalizedName;
   }
 
+  Future<String?> findAnimeTitle(String name) {
+    return _findName('anime_titles', name);
+  }
+
   Future<void> deleteUnusedAnimeTitles() async {
     final database = await _appDatabase.database;
     await database.rawDelete('''
@@ -83,9 +87,15 @@ class CharacterReferenceLocalDataSource {
     final rows = await database.query(
       table,
       columns: ['name'],
-      orderBy: 'name',
+      orderBy: 'name COLLATE NOCASE ASC',
     );
-    return rows.map((row) => row['name']! as String).toList();
+    final names = rows.map((row) => row['name']! as String).toList();
+    names.sort((a, b) => _normalizedSortKey(a).compareTo(_normalizedSortKey(b)));
+    return names;
+  }
+
+  String _normalizedSortKey(String value) {
+    return value.toLowerCase().replaceAll('ё', 'е');
   }
 
   Future<void> _addName(String table, String name) async {

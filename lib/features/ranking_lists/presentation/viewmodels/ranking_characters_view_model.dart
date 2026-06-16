@@ -95,6 +95,21 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
     }
   }
 
+  Future<void> removeCharacter({required String characterId}) async {
+    try {
+      await _repository.removeCharacterFromList(
+        listId: listId,
+        characterId: characterId,
+      );
+
+      await loadCharacters();
+    } catch (error) {
+      state = state.copyWith(
+        errorMessage: messageFromViewModelError(error),
+      );
+    }
+  }
+
   Future<void> reorderAtIndices(int oldIndex, int newIndex) async {
     var targetIndex = newIndex;
 

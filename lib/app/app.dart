@@ -34,12 +34,17 @@ class _MyCharacterListAppState extends State<MyCharacterListApp>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      AppImageCache.trimUnused();
+    }
+  }
+
+  @override
   void didHaveMemoryPressure() {
-    AppImageCache.refreshAfterMemoryPressure().then((_) {
-      if (mounted) {
-        precacheAppBackgrounds(context);
-      }
-    });
+    AppImageCache.clearAll(
+      restoreBackgrounds: () => precacheAppBackgrounds(context),
+    );
   }
 
   @override

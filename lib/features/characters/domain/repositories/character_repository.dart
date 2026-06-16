@@ -47,4 +47,14 @@ abstract interface class CharacterRepository {
   Future<void> saveCharacter(Character character);
 
   Future<void> deleteCharacter(String id);
+
+  Future<int> countCharactersWithSourceTitle(
+    String sourceTitle, {
+    String? excludeCharacterId,
+  });
+
+  Future<void> renameSourceTitleForAll(
+    String oldSourceTitle,
+    String newSourceTitle,
+  );
 }

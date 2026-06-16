@@ -6,6 +6,7 @@ import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
+import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error_listener.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/lists_page/create_new_button.dart';
@@ -50,9 +51,23 @@ class ListsView extends ConsumerWidget {
             ),
           ),
           SafeArea(
+            maintainBottomViewPadding: true,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 120),
-              child: Scrollbar(
+              child: state.isLoading && state.lists.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.lists.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No lists yet',
+                        style: TextStyle(
+                          fontSize: 24,
+                          color: Color(0xFFBEB53E),
+                          fontFamily: 'JpAnimeFont',
+                        ),
+                      ),
+                    )
+                  : Scrollbar(
                 thumbVisibility: true,
                 child: ListView(
                   padding: const EdgeInsets.only(top: 20),
@@ -149,15 +164,11 @@ class ListsView extends ConsumerWidget {
             ),
           ),
           if (!state.isEditMode)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 40,
-              child: Center(
-                child: CreateNewButton(
-                  text: 'Create new',
-                  onPressed: () => controller.showCreateDialog(context),
-                ),
+            BottomActionSlot(
+              bottomMargin: 40,
+              child: CreateNewButton(
+                text: 'Create new',
+                onPressed: () => controller.showCreateDialog(context),
               ),
             ),
         ],

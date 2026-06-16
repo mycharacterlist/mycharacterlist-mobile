@@ -3,12 +3,14 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:mycharacterlist/core/storage/compressed_images_manifest.dart';
 import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 import 'package:mycharacterlist/features/characters/data/models/character_fact_model.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character_gender.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_reference_repository.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
+import 'package:mycharacterlist/features/library/domain/entities/character_import_progress.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_import_result.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
@@ -29,7 +31,10 @@ class CharacterJsonImportService {
   final RankingListRepository _rankingListRepository;
   final LocalFileStorage _localFileStorage;
 
-  Future<CharacterImportResult> importFile(String filePath) async {
+  Future<CharacterImportResult> importFile(
+    String filePath, {
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
     final file = File(filePath);
     final decoded = jsonDecode(await file.readAsString());
 
@@ -49,6 +54,7 @@ class CharacterJsonImportService {
     final characterResult = await importCharactersFromList(
       rawCharacters,
       jsonFile: file,
+      onProgress: onProgress,
     );
 
     final rawLists = decoded['lists'];
@@ -64,7 +70,10 @@ class CharacterJsonImportService {
       return characterResult;
     }
 
-    final listResult = await _importLists(rawLists);
+    final listResult = await _importLists(
+      rawLists,
+      onProgress: onProgress,
+    );
     return CharacterImportResult(
       created: characterResult.created,
       updated: characterResult.updated,
@@ -81,13 +90,25 @@ class CharacterJsonImportService {
     int listsUpdated,
     int listsFailed,
     int missingListCharacters,
-  })> _importLists(List<dynamic> rawLists) async {
+  })> _importLists(
+    List<dynamic> rawLists, {
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
     var listsCreated = 0;
     var listsUpdated = 0;
     var listsFailed = 0;
     var missingListCharacters = 0;
 
-    for (final rawList in rawLists) {
+    for (var index = 0; index < rawLists.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: rawLists.length,
+          phase: CharacterImportPhase.lists,
+        ),
+      );
+
+      final rawList = rawLists[index];
       try {
         if (rawList is! Map) {
           throw const FormatException('List must be an object.');
@@ -143,6 +164,14 @@ class CharacterJsonImportService {
       } catch (_) {
         listsFailed++;
       }
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: rawLists.length,
+          phase: CharacterImportPhase.lists,
+        ),
+      );
     }
 
     return (
@@ -156,6 +185,7 @@ class CharacterJsonImportService {
   Future<CharacterImportResult> importCharactersFromList(
     List<dynamic> rawCharacters, {
     required File jsonFile,
+    void Function(CharacterImportProgress progress)? onProgress,
   }) async {
     final gradeDefinitions = await _referenceRepository.getGradeDefinitions();
     final gradeMaximums = {
@@ -165,8 +195,18 @@ class CharacterJsonImportService {
     var created = 0;
     var updated = 0;
     var failed = 0;
+    final total = rawCharacters.length;
 
-    for (final rawCharacter in rawCharacters) {
+    for (var index = 0; index < rawCharacters.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: total,
+          phase: CharacterImportPhase.characters,
+        ),
+      );
+
+      final rawCharacter = rawCharacters[index];
       try {
         if (rawCharacter is! Map) {
           throw const FormatException('Character must be an object.');
@@ -187,6 +227,10 @@ class CharacterJsonImportService {
         }
 
         final now = DateTime.now();
+        final exportCompressedFiles = await _readExportCompressedManifest(
+          jsonFile,
+          id,
+        );
         final embeddedMainImage = await _restoreEmbeddedImage(
           json['mainImageData'],
           folder: id,
@@ -225,14 +269,24 @@ class CharacterJsonImportService {
           mainImagePath:
               json.containsKey('mainImage') || json.containsKey('mainImageData')
               ? embeddedMainImage ??
-                    _resolveOptionalPath(jsonFile, json['mainImage'])
+                    await _importImageFromJsonPath(
+                      jsonFile,
+                      json['mainImage'],
+                      folder: id,
+                      compressedFiles: exportCompressedFiles,
+                    )
               : existing?.mainImagePath,
           galleryImagePaths:
               json.containsKey('galleryImages') ||
                   json.containsKey('galleryImageData')
               ? embeddedGalleryImages.isNotEmpty
                     ? embeddedGalleryImages
-                    : _resolvePaths(jsonFile, json['galleryImages'])
+                    : await _importGalleryPathsFromJson(
+                        jsonFile,
+                        json['galleryImages'],
+                        folder: id,
+                        compressedFiles: exportCompressedFiles,
+                      )
               : existing?.galleryImagePaths ?? const [],
           grades: json.containsKey('grades')
               ? _parseGrades(json['grades'], gradeMaximums)
@@ -253,6 +307,14 @@ class CharacterJsonImportService {
       } catch (_) {
         failed++;
       }
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: total,
+          phase: CharacterImportPhase.characters,
+        ),
+      );
     }
 
     await _referenceRepository.deleteUnusedAnimeTitles();
@@ -278,10 +340,11 @@ class CharacterJsonImportService {
       return null;
     }
 
-    return _localFileStorage.saveBytes(
+    return _localFileStorage.saveImportedImageBytes(
       base64Decode(encoded),
       folder: folder,
       extension: image['extension']?.toString() ?? '',
+      alreadyCompressed: image['compressed'] == true,
     );
   }
 
@@ -301,6 +364,82 @@ class CharacterJsonImportService {
       }
     }
     return paths;
+  }
+
+  Future<String?> _importImageFromJsonPath(
+    File jsonFile,
+    Object? rawPath, {
+    required String folder,
+    Set<String> compressedFiles = const {},
+  }) async {
+    final resolvedPath = _resolveOptionalPath(jsonFile, rawPath);
+    if (resolvedPath == null) {
+      return null;
+    }
+
+    final file = File(resolvedPath);
+    if (!await file.exists()) {
+      return null;
+    }
+
+    return _localFileStorage.saveImportedImageBytes(
+      await file.readAsBytes(),
+      folder: folder,
+      sourcePath: file.path,
+      extension: p.extension(file.path),
+      alreadyCompressed: compressedFiles.contains(p.basename(file.path)),
+    );
+  }
+
+  Future<List<String>> _importGalleryPathsFromJson(
+    File jsonFile,
+    Object? rawPaths, {
+    required String folder,
+    Set<String> compressedFiles = const {},
+  }) async {
+    if (rawPaths is! List) {
+      return const [];
+    }
+
+    final paths = <String>[];
+    for (final rawPath in rawPaths) {
+      final path = rawPath.toString().trim();
+      if (path.isEmpty) {
+        continue;
+      }
+
+      final importedPath = await _importImageFromJsonPath(
+        jsonFile,
+        path,
+        folder: folder,
+        compressedFiles: compressedFiles,
+      );
+      if (importedPath != null) {
+        paths.add(importedPath);
+      }
+    }
+
+    return paths;
+  }
+
+  Future<Set<String>> _readExportCompressedManifest(
+    File jsonFile,
+    String characterId,
+  ) async {
+    final manifestFile = File(
+      p.join(
+        jsonFile.parent.path,
+        'images',
+        _safePathSegment(characterId),
+        CompressedImagesManifest.fileName,
+      ),
+    );
+
+    return CompressedImagesManifest.readFromFile(manifestFile);
+  }
+
+  String _safePathSegment(String value) {
+    return value.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
   }
 
   String _requiredString(Map<String, dynamic> json, String key) {
@@ -326,18 +465,6 @@ class CharacterJsonImportService {
   String? _resolveOptionalPath(File jsonFile, Object? rawPath) {
     final path = rawPath?.toString().trim() ?? '';
     return path.isEmpty ? null : _resolvePath(jsonFile, path);
-  }
-
-  List<String> _resolvePaths(File jsonFile, Object? rawPaths) {
-    if (rawPaths is! List) {
-      return const [];
-    }
-
-    return rawPaths
-        .map((path) => path.toString().trim())
-        .where((path) => path.isNotEmpty)
-        .map((path) => _resolvePath(jsonFile, path))
-        .toList();
   }
 
   String _resolvePath(File jsonFile, String path) {
