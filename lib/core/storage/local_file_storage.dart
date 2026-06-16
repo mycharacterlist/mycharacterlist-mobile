@@ -137,6 +137,20 @@ class LocalFileStorage {
     await CompressedImagesManifest.syncWithImages(directory, imagePaths);
   }
 
+  /// Marks every image path as processed after one-time migration.
+  Future<void> markMigrationProcessedImages(
+    String characterFolder,
+    Iterable<String> imagePaths,
+  ) async {
+    final directory = await _characterDirectory(characterFolder);
+    final compressedFiles = imagePaths
+        .where((path) => path.trim().isNotEmpty)
+        .map((path) => p.basename(path))
+        .toSet();
+
+    await CompressedImagesManifest.write(directory, compressedFiles);
+  }
+
   /// Marks images processed during one-time migration. Files that are already
   /// as small as the compressor can make them are treated as compressed too.
   Future<void> markMigratedImagesAsCompressed(
