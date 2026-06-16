@@ -7,6 +7,7 @@ import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
 import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
+import 'package:mycharacterlist/app/widgets/empty_state_message.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_list_content.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error_listener.dart';
@@ -306,12 +307,7 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
     }
 
     if (content.isEmpty) {
-      return const Center(
-        child: Text(
-          'List is empty',
-          style: TextStyle(fontSize: 24, color: Colors.white),
-        ),
-      );
+      return const EmptyStateMessage(message: 'List is empty');
     }
 
     final displayItems = _items.isNotEmpty ? _items : content.items;

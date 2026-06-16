@@ -9,6 +9,7 @@ import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
 import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
 import 'package:mycharacterlist/app/widgets/bottom_sheet_padding.dart';
+import 'package:mycharacterlist/app/widgets/empty_state_message.dart';
 import 'package:mycharacterlist/core/platform/platform_file_helper.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
@@ -243,6 +244,10 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(charactersViewModelProvider);
     ref.watch(characterReferencesViewModelProvider);
+    final hasSearchOrFilter =
+        searchController.text.trim().isNotEmpty || filters.hasActiveFilters;
+    final emptyMessage =
+        hasSearchOrFilter ? 'No results found' : 'Library is empty';
 
     return PopScope(
       canPop: false,
@@ -280,11 +285,16 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                     onFilterPressed: showFilterSheet,
                   ),
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 110),
-                      child: state.isLoading && state.characters.isEmpty
-                          ? const Center(child: CircularProgressIndicator())
-                          : Scrollbar(
+                    child: state.isLoading && state.characters.isEmpty
+                        ? const Center(child: CircularProgressIndicator())
+                        : state.characters.isEmpty
+                        ? EmptyStateMessage(message: emptyMessage)
+                        : Padding(
+                            padding: EdgeInsets.only(
+                              bottom:
+                                  84 + MediaQuery.viewPaddingOf(context).bottom,
+                            ),
+                            child: Scrollbar(
                               thumbVisibility: true,
                               controller: charactersScrollController,
                               child: ListView.builder(

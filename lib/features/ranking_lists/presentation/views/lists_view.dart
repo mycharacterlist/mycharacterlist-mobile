@@ -53,7 +53,16 @@ class ListsView extends ConsumerWidget {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 120),
-              child: Scrollbar(
+              child: state.isLoading && state.lists.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.lists.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No lists yet',
+                        style: TextStyle(fontSize: 24, color: Colors.white),
+                      ),
+                    )
+                  : Scrollbar(
                 thumbVisibility: true,
                 child: ListView(
                   padding: const EdgeInsets.only(top: 20),
