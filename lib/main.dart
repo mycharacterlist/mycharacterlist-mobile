@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:mycharacterlist/app/app.dart';
-import 'package:mycharacterlist/app/bootstrap/image_compression_migration.dart';
+import 'package:mycharacterlist/app/bootstrap/app_bootstrap.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ImageCompressionMigration.runIfNeeded();
 
   runApp(
     const ProviderScope(
-      child: MyCharacterListApp(),
+      child: AppBootstrap(),
     ),
   );
 }
