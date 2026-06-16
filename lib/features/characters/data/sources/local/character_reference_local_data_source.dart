@@ -86,8 +86,12 @@ class CharacterReferenceLocalDataSource {
       orderBy: 'name COLLATE NOCASE ASC',
     );
     final names = rows.map((row) => row['name']! as String).toList();
-    names.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    names.sort((a, b) => _normalizedSortKey(a).compareTo(_normalizedSortKey(b)));
     return names;
+  }
+
+  String _normalizedSortKey(String value) {
+    return value.toLowerCase().replaceAll('ё', 'е');
   }
 
   Future<void> _addName(String table, String name) async {

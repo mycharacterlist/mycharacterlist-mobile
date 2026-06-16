@@ -8,6 +8,9 @@ class CharacterLocalDataSource {
   const CharacterLocalDataSource({required AppDatabase appDatabase})
     : _appDatabase = appDatabase;
 
+  static const _nameOrderBy =
+      "REPLACE(REPLACE(name, 'Ё', 'Е'), 'ё', 'е') COLLATE NOCASE ASC";
+
   final AppDatabase _appDatabase;
 
   Future<List<CharacterModel>> getCharacters() async {
@@ -19,7 +22,7 @@ class CharacterLocalDataSource {
     final characters = await database.query(
       'characters',
       columns: ['id', 'name', 'source_title'],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
     );
 
     return characters.map(CharacterModel.summaryFromDatabase).toList();
@@ -33,7 +36,7 @@ class CharacterLocalDataSource {
     final characters = await database.query(
       'characters',
       columns: ['id', 'name', 'source_title'],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -53,7 +56,7 @@ class CharacterLocalDataSource {
       columns: ['id', 'name', 'source_title'],
       where: 'name LIKE ? COLLATE NOCASE OR source_title LIKE ? COLLATE NOCASE',
       whereArgs: [normalizedQuery, normalizedQuery],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -68,7 +71,7 @@ class CharacterLocalDataSource {
     final database = await _appDatabase.database;
     final characters = await database.query(
       'characters',
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -87,7 +90,7 @@ class CharacterLocalDataSource {
       'characters',
       where: 'name LIKE ? COLLATE NOCASE OR source_title LIKE ? COLLATE NOCASE',
       whereArgs: [normalizedQuery, normalizedQuery],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -106,7 +109,7 @@ class CharacterLocalDataSource {
     final database = await _appDatabase.database;
     final characters = await database.query(
       'characters',
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );
@@ -147,7 +150,7 @@ class CharacterLocalDataSource {
       'characters',
       where: 'id IN ($placeholders)',
       whereArgs: ids,
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
     );
 
     final models = <CharacterModel>[];
@@ -182,7 +185,7 @@ class CharacterLocalDataSource {
       'characters',
       where: 'name LIKE ? COLLATE NOCASE OR source_title LIKE ? COLLATE NOCASE',
       whereArgs: [normalizedQuery, normalizedQuery],
-      orderBy: 'name COLLATE NOCASE ASC',
+      orderBy: _nameOrderBy,
       offset: offset,
       limit: limit,
     );

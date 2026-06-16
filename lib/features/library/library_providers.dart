@@ -32,11 +32,13 @@ final characterNameSuggestionsProvider = FutureProvider<List<String>>((
       .watch(characterRepositoryProvider)
       .getCharacterSummaries();
   final names = characters.map((character) => character.name).toSet().toList();
-  names.sort(
-    (left, right) => left.toLowerCase().compareTo(right.toLowerCase()),
-  );
+  names.sort((left, right) => _normalizedSortKey(left).compareTo(_normalizedSortKey(right)));
   return names;
 });
+
+String _normalizedSortKey(String value) {
+  return value.toLowerCase().replaceAll('ё', 'е');
+}
 
 final charactersViewModelProvider =
     StateNotifierProvider<CharactersViewModel, CharactersState>(
