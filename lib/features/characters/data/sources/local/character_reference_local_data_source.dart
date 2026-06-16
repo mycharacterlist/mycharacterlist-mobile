@@ -83,9 +83,11 @@ class CharacterReferenceLocalDataSource {
     final rows = await database.query(
       table,
       columns: ['name'],
-      orderBy: 'name',
+      orderBy: 'name COLLATE NOCASE ASC',
     );
-    return rows.map((row) => row['name']! as String).toList();
+    final names = rows.map((row) => row['name']! as String).toList();
+    names.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return names;
   }
 
   Future<void> _addName(String table, String name) async {
