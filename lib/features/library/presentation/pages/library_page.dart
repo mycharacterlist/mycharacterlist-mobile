@@ -205,30 +205,40 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: false,
-      backgroundColor: const Color(0xFFD9D4D9),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+      enableDrag: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (context, scrollController) => DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xFFD9D4D9),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(30),
+              topRight: Radius.circular(30),
+            ),
+          ),
+          child: LibraryFilterSheet(
+            scrollController: scrollController,
+            filters: filters,
+            animeTitles: references.animeTitles,
+            archetypes: references.archetypes,
+            onClear: () {
+              filters = const CharacterFilters();
+              _resetListPosition();
+              ref.read(charactersViewModelProvider.notifier).clearFilters();
+              sheetContext.pop();
+            },
+            onApply: (value) {
+              filters = value;
+              _resetListPosition();
+              ref.read(charactersViewModelProvider.notifier).applyFilters(value);
+              sheetContext.pop();
+            },
+          ),
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      builder: (sheetContext) => LibraryFilterSheet(
-        filters: filters,
-        animeTitles: references.animeTitles,
-        archetypes: references.archetypes,
-        onClear: () {
-          filters = const CharacterFilters();
-          _resetListPosition();
-          ref.read(charactersViewModelProvider.notifier).clearFilters();
-          sheetContext.pop();
-        },
-        onApply: (value) {
-          filters = value;
-          _resetListPosition();
-          ref.read(charactersViewModelProvider.notifier).applyFilters(value);
-          sheetContext.pop();
-        },
       ),
     );
   }
