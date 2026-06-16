@@ -10,10 +10,12 @@ class EmptyStateMessage extends StatelessWidget {
     super.key,
     required this.message,
     this.bottomPadding = 84,
+    this.color = Colors.white,
   });
 
   final String message;
   final double bottomPadding;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,7 @@ class EmptyStateMessage extends StatelessWidget {
       child: Center(
         child: Text(
           message,
-          style: emptyStateTextStyle,
+          style: emptyStateTextStyle.copyWith(color: color),
         ),
       ),
     );

@@ -60,7 +60,11 @@ class ListsView extends ConsumerWidget {
                   ? const Center(
                       child: Text(
                         'No lists yet',
-                        style: TextStyle(fontSize: 24, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 24,
+                          color: Color(0xFFBEB53E),
+                          fontFamily: 'JpAnimeFont',
+                        ),
                       ),
                     )
                   : Scrollbar(

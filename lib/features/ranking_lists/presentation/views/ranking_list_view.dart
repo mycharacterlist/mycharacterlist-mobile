@@ -307,7 +307,10 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
     }
 
     if (content.isEmpty) {
-      return const EmptyStateMessage(message: 'List is empty');
+      return const EmptyStateMessage(
+        message: 'List is empty',
+        color: Colors.limeAccent,
+      );
     }
 
     final displayItems = _items.isNotEmpty ? _items : content.items;
