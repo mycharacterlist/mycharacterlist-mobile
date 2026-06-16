@@ -6,6 +6,7 @@ import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
+import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_list_content.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error_listener.dart';
@@ -81,15 +82,11 @@ class RankingListView extends ConsumerWidget {
             isEditMode: charactersState.isEditMode,
           ),
           if (!charactersState.isEditMode)
-            Positioned(
-              bottom: 12,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTap: () => controller.openAddCharacterFlow(context),
-                  child: const AddCharacterButton(),
-                ),
+            BottomActionSlot(
+              bottomMargin: 12,
+              child: GestureDetector(
+                onTap: () => controller.openAddCharacterFlow(context),
+                child: const AddCharacterButton(),
               ),
             ),
         ],
@@ -325,11 +322,13 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
 
     final animateMarquee = !widget.isEditMode || !_isDragging;
 
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
     return Scrollbar(
       controller: _scrollController,
       thumbVisibility: true,
       child: Padding(
-        padding: const EdgeInsets.only(left: 16, top: 16, bottom: 84),
+        padding: EdgeInsets.only(left: 16, top: 16, bottom: 84 + bottomInset),
         child: Listener(
           onPointerUp: (_) => _setDragging(false),
           onPointerCancel: (_) => _setDragging(false),
@@ -385,7 +384,9 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
                       )
                     : null,
                 onTap: widget.isEditMode
-                    ? null
+                    ? () => ref
+                          .read(rankingListControllerProvider(widget.listId))
+                          .showRemoveCharacterSheet(context, item)
                     : () => context.push(
                           AppRoutes.characterById(item.characterId),
                         ),
