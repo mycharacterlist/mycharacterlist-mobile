@@ -355,6 +355,46 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                     : _showTransferActions,
               ),
             ),
+            if (state.isImporting)
+              Positioned.fill(
+                child: AbsorbPointer(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.72),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            state.importProgress?.title ??
+                                'Importing characters...',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontFamily: 'FrancoisOne',
+                            ),
+                          ),
+                          if (state.importProgress != null &&
+                              state.importProgress!.total > 0) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              '${state.importProgress!.completed} / ${state.importProgress!.total}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

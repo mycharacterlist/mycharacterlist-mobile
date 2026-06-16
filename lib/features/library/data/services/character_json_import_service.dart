@@ -10,6 +10,7 @@ import 'package:mycharacterlist/features/characters/domain/entities/character.da
 import 'package:mycharacterlist/features/characters/domain/entities/character_gender.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_reference_repository.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
+import 'package:mycharacterlist/features/library/domain/entities/character_import_progress.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_import_result.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
@@ -30,7 +31,10 @@ class CharacterJsonImportService {
   final RankingListRepository _rankingListRepository;
   final LocalFileStorage _localFileStorage;
 
-  Future<CharacterImportResult> importFile(String filePath) async {
+  Future<CharacterImportResult> importFile(
+    String filePath, {
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
     final file = File(filePath);
     final decoded = jsonDecode(await file.readAsString());
 
@@ -50,6 +54,7 @@ class CharacterJsonImportService {
     final characterResult = await importCharactersFromList(
       rawCharacters,
       jsonFile: file,
+      onProgress: onProgress,
     );
 
     final rawLists = decoded['lists'];
@@ -65,7 +70,10 @@ class CharacterJsonImportService {
       return characterResult;
     }
 
-    final listResult = await _importLists(rawLists);
+    final listResult = await _importLists(
+      rawLists,
+      onProgress: onProgress,
+    );
     return CharacterImportResult(
       created: characterResult.created,
       updated: characterResult.updated,
@@ -82,13 +90,25 @@ class CharacterJsonImportService {
     int listsUpdated,
     int listsFailed,
     int missingListCharacters,
-  })> _importLists(List<dynamic> rawLists) async {
+  })> _importLists(
+    List<dynamic> rawLists, {
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
     var listsCreated = 0;
     var listsUpdated = 0;
     var listsFailed = 0;
     var missingListCharacters = 0;
 
-    for (final rawList in rawLists) {
+    for (var index = 0; index < rawLists.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: rawLists.length,
+          phase: CharacterImportPhase.lists,
+        ),
+      );
+
+      final rawList = rawLists[index];
       try {
         if (rawList is! Map) {
           throw const FormatException('List must be an object.');
@@ -144,6 +164,14 @@ class CharacterJsonImportService {
       } catch (_) {
         listsFailed++;
       }
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: rawLists.length,
+          phase: CharacterImportPhase.lists,
+        ),
+      );
     }
 
     return (
@@ -157,6 +185,7 @@ class CharacterJsonImportService {
   Future<CharacterImportResult> importCharactersFromList(
     List<dynamic> rawCharacters, {
     required File jsonFile,
+    void Function(CharacterImportProgress progress)? onProgress,
   }) async {
     final gradeDefinitions = await _referenceRepository.getGradeDefinitions();
     final gradeMaximums = {
@@ -166,8 +195,18 @@ class CharacterJsonImportService {
     var created = 0;
     var updated = 0;
     var failed = 0;
+    final total = rawCharacters.length;
 
-    for (final rawCharacter in rawCharacters) {
+    for (var index = 0; index < rawCharacters.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: total,
+          phase: CharacterImportPhase.characters,
+        ),
+      );
+
+      final rawCharacter = rawCharacters[index];
       try {
         if (rawCharacter is! Map) {
           throw const FormatException('Character must be an object.');
@@ -268,6 +307,14 @@ class CharacterJsonImportService {
       } catch (_) {
         failed++;
       }
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: total,
+          phase: CharacterImportPhase.characters,
+        ),
+      );
     }
 
     await _referenceRepository.deleteUnusedAnimeTitles();
