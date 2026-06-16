@@ -8,6 +8,7 @@ import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
 import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
+import 'package:mycharacterlist/app/widgets/bottom_sheet_padding.dart';
 import 'package:mycharacterlist/core/platform/platform_file_helper.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
@@ -156,7 +157,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     _unfocusSearch();
     final action = await showModalBottomSheet<_LibraryTransferAction>(
       context: context,
-      builder: (sheetContext) => SafeArea(
+      useSafeArea: false,
+      builder: (sheetContext) => BottomSheetPadding(
+        bottomMargin: 8,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -200,6 +203,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: false,
       backgroundColor: const Color(0xFFD9D4D9),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(

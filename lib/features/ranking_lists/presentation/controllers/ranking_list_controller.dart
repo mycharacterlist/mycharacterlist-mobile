@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:mycharacterlist/app/widgets/bottom_sheet_padding.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
@@ -39,7 +40,9 @@ class RankingListController {
 
     final shouldRemove = await showModalBottomSheet<bool>(
       context: context,
-      builder: (sheetContext) => SafeArea(
+      useSafeArea: false,
+      builder: (sheetContext) => BottomSheetPadding(
+        bottomMargin: 8,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
