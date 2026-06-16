@@ -310,6 +310,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                                     ),
                                     onEditPressed: () => _openPage(
                                       AppRoutes.characterEditById(character.id),
+                                      resetSearch: false,
                                     ),
                                   );
                                 },
