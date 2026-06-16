@@ -40,10 +40,17 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
       bytes,
       sourcePath: 'crop.jpg',
     );
+    final outputBytes = compressed.bytes.length < bytes.length
+        ? compressed.bytes
+        : bytes;
+    final extension = compressed.bytes.length < bytes.length
+        ? compressed.extension
+        : '.jpg';
+
     return LocalFileStorage().saveBytes(
-      compressed.bytes,
+      outputBytes,
       folder: LocalFileStorage.draftsFolder,
-      extension: compressed.extension,
+      extension: extension,
       compress: false,
     );
   }

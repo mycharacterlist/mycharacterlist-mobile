@@ -18,10 +18,12 @@ class CompressedImageResult {
 ///
 /// Uses the Dart [image] package to decode common formats (JPEG, PNG, WebP,
 /// GIF, BMP, ...) and [flutter_image_compress] for native formats like HEIC.
-/// Output is JPEG at quality 100 for regular photos, or PNG when transparency
-/// is required. If nothing ends up smaller, the original bytes are kept.
+/// Output is JPEG at quality 90 for regular photos, or PNG when transparency
+/// is required. The original bytes are kept whenever nothing ends up smaller.
 class ImageCompressor {
   const ImageCompressor();
+
+  static const jpegQuality = 90;
 
   Future<CompressedImageResult> compress(
     Uint8List input, {
@@ -31,7 +33,11 @@ class ImageCompressor {
     final decoded = img.decodeImage(input);
 
     if (decoded == null) {
-      return _compressUndecodable(input, fallbackExtension);
+      return _preferSmaller(
+        input,
+        await _compressUndecodable(input, fallbackExtension),
+        fallbackExtension,
+      );
     }
 
     final candidates = <CompressedImageResult>[];
@@ -55,7 +61,22 @@ class ImageCompressor {
     candidates.sort(
       (left, right) => left.bytes.length.compareTo(right.bytes.length),
     );
-    return candidates.first;
+    return _preferSmaller(input, candidates.first, fallbackExtension);
+  }
+
+  CompressedImageResult _preferSmaller(
+    Uint8List input,
+    CompressedImageResult candidate,
+    String fallbackExtension,
+  ) {
+    if (candidate.bytes.length >= input.length) {
+      return CompressedImageResult(
+        bytes: input,
+        extension: fallbackExtension,
+      );
+    }
+
+    return candidate;
   }
 
   Future<List<CompressedImageResult>> _buildJpegCandidates(
@@ -66,7 +87,7 @@ class ImageCompressor {
 
     final nativeJpeg = await FlutterImageCompress.compressWithList(
       input,
-      quality: 100,
+      quality: jpegQuality,
       format: CompressFormat.jpeg,
     );
     if (nativeJpeg != null && nativeJpeg.length < input.length) {
@@ -75,7 +96,9 @@ class ImageCompressor {
       );
     }
 
-    final dartJpeg = Uint8List.fromList(img.encodeJpg(decoded, quality: 100));
+    final dartJpeg = Uint8List.fromList(
+      img.encodeJpg(decoded, quality: jpegQuality),
+    );
     if (dartJpeg.length < input.length) {
       candidates.add(CompressedImageResult(bytes: dartJpeg, extension: '.jpg'));
     }
@@ -89,7 +112,7 @@ class ImageCompressor {
   ) async {
     final nativeJpeg = await FlutterImageCompress.compressWithList(
       input,
-      quality: 100,
+      quality: jpegQuality,
       format: CompressFormat.jpeg,
     );
     if (nativeJpeg != null && nativeJpeg.length < input.length) {
@@ -98,7 +121,7 @@ class ImageCompressor {
 
     final nativePng = await FlutterImageCompress.compressWithList(
       input,
-      quality: 100,
+      quality: jpegQuality,
       format: CompressFormat.png,
     );
     if (nativePng != null && nativePng.length < input.length) {

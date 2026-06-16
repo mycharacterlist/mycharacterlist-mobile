@@ -28,8 +28,13 @@ class LocalFileStorage {
     final String preferredExtension;
     if (compress) {
       final compressed = await _imageCompressor.compress(bytes);
-      outputBytes = compressed.bytes;
-      preferredExtension = compressed.extension;
+      if (compressed.bytes.length < bytes.length) {
+        outputBytes = compressed.bytes;
+        preferredExtension = compressed.extension;
+      } else {
+        outputBytes = bytes;
+        preferredExtension = extension;
+      }
     } else {
       outputBytes = bytes;
       preferredExtension = extension;
@@ -154,7 +159,7 @@ class LocalFileStorage {
         sourcePath: file.path,
       );
 
-      if (compressed.bytes.length <= bytes.length) {
+      if (compressed.bytes.length < bytes.length) {
         await markImageAsCompressed(characterFolder, path);
       }
     }
@@ -187,6 +192,15 @@ class LocalFileStorage {
       bytes,
       sourcePath: sourceFile.path,
     );
+
+    if (compressed.bytes.length >= bytes.length) {
+      return saveBytes(
+        bytes,
+        folder: draftsFolder,
+        extension: p.extension(sourceFile.path),
+        compress: false,
+      );
+    }
 
     return saveBytes(
       compressed.bytes,
@@ -299,13 +313,19 @@ class LocalFileStorage {
       bytes,
       sourcePath: sourceFile.path,
     );
+    final outputBytes = compressed.bytes.length < bytes.length
+        ? compressed.bytes
+        : bytes;
+    final outputExtension = compressed.bytes.length < bytes.length
+        ? compressed.extension
+        : p.extension(sourceFile.path);
     final destinationPath = p.join(
       destinationDirectory.path,
-      '${DateTime.now().microsecondsSinceEpoch}${compressed.extension}',
+      '${DateTime.now().microsecondsSinceEpoch}$outputExtension',
     );
 
-    await File(destinationPath).writeAsBytes(compressed.bytes);
-    if (compressed.bytes.length < bytes.length) {
+    await File(destinationPath).writeAsBytes(outputBytes);
+    if (outputBytes.length < bytes.length) {
       await markImageAsCompressed(folder, destinationPath);
     }
     return destinationPath;
