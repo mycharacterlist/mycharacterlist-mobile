@@ -34,6 +34,7 @@ class MainPhotoCropPage extends StatefulWidget {
 class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
   final _cropController = CropController();
   bool _isCropping = false;
+  bool _skipInitialCoverScale = true;
 
   Future<String> _saveCroppedImage(Uint8List bytes) async {
     final compressed = await const ImageCompressor().compress(
@@ -116,6 +117,15 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
               baseColor: Colors.black,
               maskColor: Colors.black.withOpacity(0.62),
               radius: 0,
+              willUpdateScale: (newScale) {
+                // crop_your_image auto-zooms to cover the crop rect on open;
+                // keep the full photo visible so the user can pinch to zoom in.
+                if (_skipInitialCoverScale) {
+                  _skipInitialCoverScale = false;
+                  return false;
+                }
+                return newScale <= 8;
+              },
               onCropped: (result) async {
                 switch (result) {
                   case CropSuccess(:final croppedImage):
@@ -150,7 +160,7 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
           Padding(
             padding: EdgeInsets.fromLTRB(20, 8, 20, 12 + bottomInset),
             child: const Text(
-              'Move and zoom the photo to choose the area for your avatar.',
+              'Move and zoom the photo.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
