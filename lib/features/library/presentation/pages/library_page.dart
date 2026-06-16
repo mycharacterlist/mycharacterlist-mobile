@@ -7,6 +7,7 @@ import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
+import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
 import 'package:mycharacterlist/core/platform/platform_file_helper.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
@@ -309,18 +310,14 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                 ],
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 20,
-              child: Center(
-                child: PlusButton(
-                  icon: const Icon(Icons.add, color: Colors.black, size: 45),
-                  onPressed: () => _openPage(AppRoutes.characterCreate),
-                  onLongPress: state.isImporting || state.isExporting
-                      ? null
-                      : _showTransferActions,
-                ),
+            BottomActionSlot(
+              bottomMargin: 20,
+              child: PlusButton(
+                icon: const Icon(Icons.add, color: Colors.black, size: 45),
+                onPressed: () => _openPage(AppRoutes.characterCreate),
+                onLongPress: state.isImporting || state.isExporting
+                    ? null
+                    : _showTransferActions,
               ),
             ),
           ],

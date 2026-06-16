@@ -6,6 +6,7 @@ import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/app_background_image.dart';
+import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error_listener.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/lists_page/create_new_button.dart';
@@ -149,15 +150,11 @@ class ListsView extends ConsumerWidget {
             ),
           ),
           if (!state.isEditMode)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 40,
-              child: Center(
-                child: CreateNewButton(
-                  text: 'Create new',
-                  onPressed: () => controller.showCreateDialog(context),
-                ),
+            BottomActionSlot(
+              bottomMargin: 40,
+              child: CreateNewButton(
+                text: 'Create new',
+                onPressed: () => controller.showCreateDialog(context),
               ),
             ),
         ],

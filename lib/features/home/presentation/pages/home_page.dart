@@ -10,6 +10,8 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final viewPadding = MediaQuery.viewPaddingOf(context);
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -17,7 +19,9 @@ class HomePage extends StatelessWidget {
           const AppBackgroundImage(
             assetPath: AppBackgroundAssets.home,
           ),
-          Column(
+          Padding(
+            padding: viewPadding,
+            child: Column(
             children: [
               const Spacer(),
 
@@ -55,6 +59,7 @@ class HomePage extends StatelessWidget {
 
             const Spacer(),
             ],
+            ),
           ),
         ],
       ),
