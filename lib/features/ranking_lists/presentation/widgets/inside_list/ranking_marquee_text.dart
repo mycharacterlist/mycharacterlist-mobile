@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/widgets/viewport_visibility.dart';
+
 class RankingMarqueeText extends StatefulWidget {
   const RankingMarqueeText({
     super.key,
@@ -18,15 +20,21 @@ class RankingMarqueeText extends StatefulWidget {
   State<RankingMarqueeText> createState() => _RankingMarqueeTextState();
 }
 
-class _RankingMarqueeTextState extends State<RankingMarqueeText> {
+class _RankingMarqueeTextState extends State<RankingMarqueeText>
+    with ParentScrollVisibilityMixin<RankingMarqueeText> {
+  static const _startDelay = Duration(milliseconds: 500);
+
   late final ScrollController _controller;
   int _animationId = 0;
+  bool _isInViewport = false;
 
   @override
   void initState() {
     super.initState();
     _controller = ScrollController();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _resetAnimation());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateViewportVisibility();
+    });
   }
 
   @override
@@ -48,6 +56,13 @@ class _RankingMarqueeTextState extends State<RankingMarqueeText> {
     }
   }
 
+  @override
+  void onParentScrollVisibilityChanged() {
+    _updateViewportVisibility();
+  }
+
+  bool get _shouldAnimate => widget.enabled && _isInViewport;
+
   void _pauseAnimation() {
     _animationId++;
 
@@ -63,12 +78,12 @@ class _RankingMarqueeTextState extends State<RankingMarqueeText> {
       _controller.jumpTo(0);
     }
 
-    if (!widget.enabled) {
+    if (!_shouldAnimate) {
       return;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !widget.enabled) {
+      if (!mounted || !_shouldAnimate) {
         return;
       }
 
@@ -76,16 +91,51 @@ class _RankingMarqueeTextState extends State<RankingMarqueeText> {
     });
   }
 
+  void _updateViewportVisibility() {
+    if (!mounted) {
+      return;
+    }
+
+    final visible = isWidgetVisibleInViewport(context);
+    if (visible == _isInViewport) {
+      return;
+    }
+
+    _isInViewport = visible;
+
+    if (_shouldAnimate) {
+      _resetAnimation();
+    } else {
+      _pauseAnimation();
+    }
+  }
+
   Future<void> _startAnimation() async {
     final currentAnimationId = ++_animationId;
 
-    if (!_controller.hasClients || !widget.enabled) {
+    if (!_controller.hasClients || !_shouldAnimate) {
       return;
     }
 
     final maxScroll = _controller.position.maxScrollExtent;
 
     if (maxScroll <= 0) {
+      if (_isInViewport && _controller.hasClients) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted ||
+              !_shouldAnimate ||
+              currentAnimationId != _animationId ||
+              !_controller.hasClients) {
+            return;
+          }
+
+          if (_controller.position.maxScrollExtent <= 0) {
+            return;
+          }
+
+          _startAnimation();
+        });
+      }
       return;
     }
 
@@ -94,7 +144,15 @@ class _RankingMarqueeTextState extends State<RankingMarqueeText> {
     final speed = (minSpeed + (maxScroll / 10)).clamp(minSpeed, maxSpeed);
     final durationMs = (maxScroll / speed * 1000).round();
 
-    while (mounted && currentAnimationId == _animationId && widget.enabled) {
+    await Future<void>.delayed(_startDelay);
+
+    if (!mounted ||
+        currentAnimationId != _animationId ||
+        !_shouldAnimate) {
+      return;
+    }
+
+    while (mounted && currentAnimationId == _animationId && _shouldAnimate) {
       await _controller.animateTo(
         maxScroll,
         duration: Duration(milliseconds: durationMs),
@@ -106,7 +164,7 @@ class _RankingMarqueeTextState extends State<RankingMarqueeText> {
       if (!mounted ||
           !_controller.hasClients ||
           currentAnimationId != _animationId ||
-          !widget.enabled) {
+          !_shouldAnimate) {
         return;
       }
 
@@ -121,7 +179,7 @@ class _RankingMarqueeTextState extends State<RankingMarqueeText> {
       if (!mounted ||
           !_controller.hasClients ||
           currentAnimationId != _animationId ||
-          !widget.enabled) {
+          !_shouldAnimate) {
         return;
       }
     }
