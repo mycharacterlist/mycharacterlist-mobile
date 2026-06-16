@@ -265,6 +265,48 @@ class CharacterLocalDataSource {
     await database.delete('characters', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<int> countCharactersWithSourceTitle(
+    String sourceTitle, {
+    String? excludeCharacterId,
+  }) async {
+    final database = await _appDatabase.database;
+    final trimmedTitle = sourceTitle.trim();
+
+    if (excludeCharacterId == null) {
+      final result = await database.rawQuery(
+        'SELECT COUNT(*) AS count FROM characters '
+        'WHERE source_title = ? COLLATE NOCASE',
+        [trimmedTitle],
+      );
+      return Sqflite.firstIntValue(result) ?? 0;
+    }
+
+    final result = await database.rawQuery(
+      'SELECT COUNT(*) AS count FROM characters '
+      'WHERE source_title = ? COLLATE NOCASE AND id != ?',
+      [trimmedTitle, excludeCharacterId],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  Future<void> renameSourceTitleForAll(
+    String oldSourceTitle,
+    String newSourceTitle,
+  ) async {
+    final database = await _appDatabase.database;
+    final now = DateTime.now().toIso8601String();
+
+    await database.update(
+      'characters',
+      {
+        'source_title': newSourceTitle.trim(),
+        'updated_at': now,
+      },
+      where: 'source_title = ? COLLATE NOCASE',
+      whereArgs: [oldSourceTitle.trim()],
+    );
+  }
+
   Future<List<CharacterModel>> _mapCharactersLight(
     DatabaseExecutor database,
     List<Map<String, Object?>> characters,

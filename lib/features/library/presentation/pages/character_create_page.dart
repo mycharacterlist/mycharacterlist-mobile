@@ -15,6 +15,8 @@ import 'package:mycharacterlist/features/library/presentation/widgets/character_
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/personal_grades_dropdown.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/personal_notes_dropdown.dart';
 
+enum _AnimeRenameChoice { skip, cancel, onlyHere, all }
+
 class CharacterCreatePage extends ConsumerStatefulWidget {
   const CharacterCreatePage({super.key, this.characterId});
 
@@ -31,6 +33,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   int formVersion = 0;
   bool allowPop = false;
   bool isProcessing = false;
+  String? _animeRenameSource;
 
   bool get isEditing => widget.characterId != null;
 
@@ -57,6 +60,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
 
     setState(() {
       form.populate(character);
+      _animeRenameSource = character.sourceTitle.trim();
       formVersion++;
     });
   }
@@ -71,6 +75,10 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     ref
         .read(createCharacterViewModelProvider.notifier)
         .clearFieldError(CreateCharacterField.anime);
+  }
+
+  void _rememberExistingAnimeTitle(String title) {
+    _animeRenameSource = title;
   }
 
   void _clearArchetypeError() {
@@ -150,24 +158,176 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     _refreshLibraryAfterMutation(includeRanking: includeRanking);
   }
 
-  Future<void> _createCharacter(List<GradeDefinition> definitions) async {
-    await _runWithProcessing(
-      () => ref
-          .read(createCharacterViewModelProvider.notifier)
-          .create(form.toInput(definitions)),
+  Future<_AnimeRenameChoice> _resolveAnimeRenameChoice(String newAnime) async {
+    final viewModel = ref.read(createCharacterViewModelProvider.notifier);
+    final oldAnime = isEditing
+        ? form.character?.sourceTitle.trim()
+        : _animeRenameSource;
+
+    if (oldAnime == null || oldAnime.isEmpty) {
+      return _AnimeRenameChoice.skip;
+    }
+
+    if (oldAnime.toLowerCase() == newAnime.toLowerCase()) {
+      return _AnimeRenameChoice.skip;
+    }
+
+    final existingNewAnime = await viewModel.findAnimeTitle(newAnime);
+    if (existingNewAnime != null) {
+      return _AnimeRenameChoice.skip;
+    }
+
+    final othersCount = isEditing
+        ? await viewModel.countOtherCharactersWithSourceTitle(
+            oldAnime,
+            form.character!.id,
+          )
+        : await viewModel.countCharactersWithSourceTitle(oldAnime);
+
+    if (othersCount <= 0) {
+      return _AnimeRenameChoice.skip;
+    }
+
+    final applyToAll = await _showAnimeRenameDialog(
+      oldAnime: oldAnime,
+      otherCharactersCount: othersCount,
     );
+
+    if (!mounted) {
+      return _AnimeRenameChoice.cancel;
+    }
+
+    if (applyToAll == null) {
+      return _AnimeRenameChoice.cancel;
+    }
+
+    return applyToAll ? _AnimeRenameChoice.all : _AnimeRenameChoice.onlyHere;
+  }
+
+  Future<void> _createCharacter(List<GradeDefinition> definitions) async {
+    if (isProcessing) {
+      return;
+    }
+
+    final newAnime = form.anime.text.trim();
+    final oldAnime = _animeRenameSource;
+    final renameChoice = await _resolveAnimeRenameChoice(newAnime);
+
+    if (!mounted || renameChoice == _AnimeRenameChoice.cancel) {
+      return;
+    }
+
+    final viewModel = ref.read(createCharacterViewModelProvider.notifier);
+
+    setState(() => isProcessing = true);
+
+    final succeeded = await viewModel.create(form.toInput(definitions));
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!succeeded) {
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    if (renameChoice == _AnimeRenameChoice.all && oldAnime != null) {
+      final renamed = await viewModel.renameAnimeTitleForAllCharacters(
+        oldSourceTitle: oldAnime,
+        newSourceTitle: newAnime,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (!renamed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          _centeredSnackBar('Could not update anime for all characters.'),
+        );
+      }
+    }
+
+    await _popWithoutWarning();
+    _refreshLibraryAfterMutation();
   }
 
   Future<void> _saveCharacter(List<GradeDefinition> definitions) async {
     final character = form.character;
-    if (character == null) {
+    if (character == null || isProcessing) {
       return;
     }
 
-    await _runWithProcessing(
-      () => ref
-          .read(createCharacterViewModelProvider.notifier)
-          .update(character, form.toInput(definitions)),
+    final newAnime = form.anime.text.trim();
+    final oldAnime = character.sourceTitle.trim();
+    final renameChoice = await _resolveAnimeRenameChoice(newAnime);
+
+    if (!mounted || renameChoice == _AnimeRenameChoice.cancel) {
+      return;
+    }
+
+    final viewModel = ref.read(createCharacterViewModelProvider.notifier);
+
+    setState(() => isProcessing = true);
+
+    final succeeded = await viewModel.update(character, form.toInput(definitions));
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!succeeded) {
+      setState(() => isProcessing = false);
+      return;
+    }
+
+    if (renameChoice == _AnimeRenameChoice.all) {
+      final renamed = await viewModel.renameAnimeTitleForAllCharacters(
+        oldSourceTitle: oldAnime,
+        newSourceTitle: newAnime,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (!renamed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          _centeredSnackBar('Could not update anime for all characters.'),
+        );
+      }
+    }
+
+    await _popWithoutWarning();
+    _refreshLibraryAfterMutation();
+  }
+
+  Future<bool?> _showAnimeRenameDialog({
+    required String oldAnime,
+    required int otherCharactersCount,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Update anime?'),
+        content: Text('$otherCharactersCount more use "$oldAnime".'),
+        actions: [
+          TextButton(
+            onPressed: () => dialogContext.pop(null),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => dialogContext.pop(false),
+            child: const Text('Only here'),
+          ),
+          TextButton(
+            onPressed: () => dialogContext.pop(true),
+            child: const Text('All'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -212,6 +372,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   void _refreshLibraryAfterMutation({bool includeRanking = false}) {
     ref.invalidate(libraryCharactersProvider);
     ref.invalidate(characterNameSuggestionsProvider);
+    ref.read(characterReferencesViewModelProvider.notifier).load();
 
     if (includeRanking) {
       ref.invalidate(rankingCharactersViewModelProvider);
@@ -227,6 +388,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   void _clearAll() {
     setState(() {
       form.clear();
+      _animeRenameSource = null;
       formVersion++;
     });
   }
@@ -371,6 +533,8 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                       .contains(CreateCharacterField.anime),
                                   archetypeHasError: invalidFields
                                       .contains(CreateCharacterField.archetype),
+                                  onExistingAnimeSelected:
+                                      _rememberExistingAnimeTitle,
                                 ),
                                 const SizedBox(height: 15),
                                 PersonalGradesDropdown(

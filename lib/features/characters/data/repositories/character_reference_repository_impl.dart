@@ -32,6 +32,14 @@ class CharacterReferenceRepositoryImpl implements CharacterReferenceRepository {
   }
 
   @override
+  Future<String?> findAnimeTitle(String name) {
+    if (name.trim().isEmpty) {
+      return Future.value(null);
+    }
+    return localDataSource.findAnimeTitle(name);
+  }
+
+  @override
   Future<void> deleteUnusedAnimeTitles() {
     return localDataSource.deleteUnusedAnimeTitles();
   }

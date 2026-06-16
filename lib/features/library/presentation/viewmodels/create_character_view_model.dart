@@ -132,6 +132,47 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
     }
   }
 
+  Future<int> countOtherCharactersWithSourceTitle(
+    String sourceTitle,
+    String excludeCharacterId,
+  ) {
+    return _repository.countCharactersWithSourceTitle(
+      sourceTitle,
+      excludeCharacterId: excludeCharacterId,
+    );
+  }
+
+  Future<int> countCharactersWithSourceTitle(String sourceTitle) {
+    return _repository.countCharactersWithSourceTitle(sourceTitle);
+  }
+
+  Future<String?> findAnimeTitle(String name) {
+    return _referenceRepository.findAnimeTitle(name);
+  }
+
+  Future<bool> renameAnimeTitleForAllCharacters({
+    required String oldSourceTitle,
+    required String newSourceTitle,
+  }) async {
+    try {
+      final canonicalNew = await _referenceRepository.ensureAnimeTitle(
+        newSourceTitle,
+      );
+      await _repository.renameSourceTitleForAll(
+        oldSourceTitle,
+        canonicalNew,
+      );
+      await _referenceRepository.deleteUnusedAnimeTitles();
+      state = const CreateCharacterState();
+      return true;
+    } catch (_) {
+      state = const CreateCharacterState(
+        errorMessage: 'Could not update anime for all characters.',
+      );
+      return false;
+    }
+  }
+
   Future<bool> _save(
     CreateCharacterInput input,
     Character existingCharacter,
@@ -233,6 +274,7 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
 
       await _repository.saveCharacter(character);
       await _referenceRepository.deleteUnusedAnimeTitles();
+      state = const CreateCharacterState();
       return true;
     } on StateError catch (error) {
       state = CreateCharacterState(errorMessage: error.message);

@@ -38,6 +38,10 @@ class CharacterReferenceLocalDataSource {
     return normalizedName;
   }
 
+  Future<String?> findAnimeTitle(String name) {
+    return _findName('anime_titles', name);
+  }
+
   Future<void> deleteUnusedAnimeTitles() async {
     final database = await _appDatabase.database;
     await database.rawDelete('''

@@ -21,6 +21,7 @@ class MainInformationDropdown extends StatefulWidget {
     this.nameHasError = false,
     this.animeHasError = false,
     this.archetypeHasError = false,
+    this.onExistingAnimeSelected,
   });
 
   final TextEditingController nameController;
@@ -37,6 +38,7 @@ class MainInformationDropdown extends StatefulWidget {
   final bool nameHasError;
   final bool animeHasError;
   final bool archetypeHasError;
+  final ValueChanged<String>? onExistingAnimeSelected;
 
   @override
   State<MainInformationDropdown> createState() =>
@@ -173,6 +175,7 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
                     controller: widget.animeController,
                     items: widget.animeTitles,
                     hasError: widget.animeHasError,
+                    onExistingTitleSelected: widget.onExistingAnimeSelected,
                   ),
 
                   const SizedBox(height: 12),

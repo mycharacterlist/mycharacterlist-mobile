@@ -8,17 +8,22 @@ class AnimeField extends StatelessWidget {
     required this.controller,
     required this.items,
     this.hasError = false,
+    this.onExistingTitleSelected,
   });
 
   final TextEditingController controller;
   final List<String> items;
   final bool hasError;
+  final ValueChanged<String>? onExistingTitleSelected;
 
   @override
   Widget build(BuildContext context) {
     return Autocomplete<String>(
       initialValue: controller.value,
-      onSelected: (value) => controller.text = value,
+      onSelected: (value) {
+        controller.text = value;
+        onExistingTitleSelected?.call(value);
+      },
       optionsBuilder: (TextEditingValue textEditingValue) {
         if (textEditingValue.text.isEmpty) {
           return const Iterable<String>.empty();
@@ -35,8 +40,10 @@ class AnimeField extends StatelessWidget {
         return TextField(
           controller: controller,
           focusNode: focusNode,
-          onChanged: (_) =>
-              syncControllerValue(this.controller, controller.value),
+          onChanged: (value) {
+            syncControllerValue(this.controller, controller.value);
+            _notifyExistingTitleMatch(value);
+          },
 
           decoration: InputDecoration(
             labelText: 'Anime',
@@ -92,5 +99,15 @@ class AnimeField extends StatelessWidget {
         );
       },
     );
+  }
+
+  void _notifyExistingTitleMatch(String value) {
+    final trimmed = value.trim();
+    for (final title in items) {
+      if (title.toLowerCase() == trimmed.toLowerCase()) {
+        onExistingTitleSelected?.call(title);
+        return;
+      }
+    }
   }
 }
