@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
@@ -33,6 +35,14 @@ class CharacterPage extends ConsumerWidget {
         backgroundColor: const Color(0xFF315B8B),
         backButtonColor: Colors.black,
         titleColor: Colors.black,
+        actionWidget: IconButton(
+          icon: const Icon(Icons.edit, color: Colors.black),
+          onPressed: () async {
+            await context.push(AppRoutes.characterEditById(characterId));
+            ref.invalidate(characterByIdProvider(characterId));
+            ref.invalidate(characterRankingDisplaysProvider(characterId));
+          },
+        ),
       ),
       body: Stack(
         children: [
