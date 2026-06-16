@@ -184,8 +184,19 @@ class CharacterRepositoryImpl implements CharacterRepository {
 
       await _localFileStorage.deleteFiles(
         previousPaths.difference(savedPaths).toList(),
+        characterFolder: character.id,
       );
     }
+
+    await _localFileStorage.syncCompressedManifest(
+      character.id,
+      [
+        mainImagePath,
+        ...galleryImagePaths,
+      ].whereType<String>(),
+    );
+
+    await _localFileStorage.clearDraftsFolder();
   }
 
   void _validateFacts(Character character) {

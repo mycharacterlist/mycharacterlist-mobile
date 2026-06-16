@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:mycharacterlist/core/storage/compressed_images_manifest.dart';
 import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 import 'package:mycharacterlist/features/characters/data/models/character_fact_model.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
@@ -187,6 +188,10 @@ class CharacterJsonImportService {
         }
 
         final now = DateTime.now();
+        final exportCompressedFiles = await _readExportCompressedManifest(
+          jsonFile,
+          id,
+        );
         final embeddedMainImage = await _restoreEmbeddedImage(
           json['mainImageData'],
           folder: id,
@@ -225,14 +230,24 @@ class CharacterJsonImportService {
           mainImagePath:
               json.containsKey('mainImage') || json.containsKey('mainImageData')
               ? embeddedMainImage ??
-                    _resolveOptionalPath(jsonFile, json['mainImage'])
+                    await _importImageFromJsonPath(
+                      jsonFile,
+                      json['mainImage'],
+                      folder: id,
+                      compressedFiles: exportCompressedFiles,
+                    )
               : existing?.mainImagePath,
           galleryImagePaths:
               json.containsKey('galleryImages') ||
                   json.containsKey('galleryImageData')
               ? embeddedGalleryImages.isNotEmpty
                     ? embeddedGalleryImages
-                    : _resolvePaths(jsonFile, json['galleryImages'])
+                    : await _importGalleryPathsFromJson(
+                        jsonFile,
+                        json['galleryImages'],
+                        folder: id,
+                        compressedFiles: exportCompressedFiles,
+                      )
               : existing?.galleryImagePaths ?? const [],
           grades: json.containsKey('grades')
               ? _parseGrades(json['grades'], gradeMaximums)
@@ -278,10 +293,11 @@ class CharacterJsonImportService {
       return null;
     }
 
-    return _localFileStorage.saveBytes(
+    return _localFileStorage.saveImportedImageBytes(
       base64Decode(encoded),
       folder: folder,
       extension: image['extension']?.toString() ?? '',
+      alreadyCompressed: image['compressed'] == true,
     );
   }
 
@@ -301,6 +317,82 @@ class CharacterJsonImportService {
       }
     }
     return paths;
+  }
+
+  Future<String?> _importImageFromJsonPath(
+    File jsonFile,
+    Object? rawPath, {
+    required String folder,
+    Set<String> compressedFiles = const {},
+  }) async {
+    final resolvedPath = _resolveOptionalPath(jsonFile, rawPath);
+    if (resolvedPath == null) {
+      return null;
+    }
+
+    final file = File(resolvedPath);
+    if (!await file.exists()) {
+      return null;
+    }
+
+    return _localFileStorage.saveImportedImageBytes(
+      await file.readAsBytes(),
+      folder: folder,
+      sourcePath: file.path,
+      extension: p.extension(file.path),
+      alreadyCompressed: compressedFiles.contains(p.basename(file.path)),
+    );
+  }
+
+  Future<List<String>> _importGalleryPathsFromJson(
+    File jsonFile,
+    Object? rawPaths, {
+    required String folder,
+    Set<String> compressedFiles = const {},
+  }) async {
+    if (rawPaths is! List) {
+      return const [];
+    }
+
+    final paths = <String>[];
+    for (final rawPath in rawPaths) {
+      final path = rawPath.toString().trim();
+      if (path.isEmpty) {
+        continue;
+      }
+
+      final importedPath = await _importImageFromJsonPath(
+        jsonFile,
+        path,
+        folder: folder,
+        compressedFiles: compressedFiles,
+      );
+      if (importedPath != null) {
+        paths.add(importedPath);
+      }
+    }
+
+    return paths;
+  }
+
+  Future<Set<String>> _readExportCompressedManifest(
+    File jsonFile,
+    String characterId,
+  ) async {
+    final manifestFile = File(
+      p.join(
+        jsonFile.parent.path,
+        'images',
+        _safePathSegment(characterId),
+        CompressedImagesManifest.fileName,
+      ),
+    );
+
+    return CompressedImagesManifest.readFromFile(manifestFile);
+  }
+
+  String _safePathSegment(String value) {
+    return value.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
   }
 
   String _requiredString(Map<String, dynamic> json, String key) {
@@ -326,18 +418,6 @@ class CharacterJsonImportService {
   String? _resolveOptionalPath(File jsonFile, Object? rawPath) {
     final path = rawPath?.toString().trim() ?? '';
     return path.isEmpty ? null : _resolvePath(jsonFile, path);
-  }
-
-  List<String> _resolvePaths(File jsonFile, Object? rawPaths) {
-    if (rawPaths is! List) {
-      return const [];
-    }
-
-    return rawPaths
-        .map((path) => path.toString().trim())
-        .where((path) => path.isNotEmpty)
-        .map((path) => _resolvePath(jsonFile, path))
-        .toList();
   }
 
   String _resolvePath(File jsonFile, String path) {

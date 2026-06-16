@@ -3,7 +3,8 @@ import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:mycharacterlist/core/storage/local_file_storage.dart';
+import 'package:mycharacterlist/core/utils/image_compressor.dart';
 
 class MainPhotoCropPage extends StatefulWidget {
   const MainPhotoCropPage({super.key, required this.imageBytes});
@@ -35,12 +36,16 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
   bool _isCropping = false;
 
   Future<String> _saveCroppedImage(Uint8List bytes) async {
-    final directory = await getTemporaryDirectory();
-    final file = File(
-      '${directory.path}/main_photo_crop_${DateTime.now().millisecondsSinceEpoch}.jpg',
+    final compressed = await const ImageCompressor().compress(
+      bytes,
+      sourcePath: 'crop.jpg',
     );
-    await file.writeAsBytes(bytes, flush: true);
-    return file.path;
+    return LocalFileStorage().saveBytes(
+      compressed.bytes,
+      folder: LocalFileStorage.draftsFolder,
+      extension: compressed.extension,
+      compress: false,
+    );
   }
 
   void _applyCrop() {

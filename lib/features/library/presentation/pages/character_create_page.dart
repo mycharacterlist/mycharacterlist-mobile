@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
+import 'package:mycharacterlist/core/storage/storage_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
@@ -33,6 +34,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   int formVersion = 0;
   bool allowPop = false;
   bool isProcessing = false;
+  bool isGalleryCompressing = false;
+  int galleryCompressCompleted = 0;
+  int galleryCompressTotal = 0;
   String? _animeRenameSource;
 
   bool get isEditing => widget.characterId != null;
@@ -87,6 +91,18 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
         .clearFieldError(CreateCharacterField.archetype);
   }
 
+  void _onGalleryCompressionState(
+    bool isCompressing, {
+    int completed = 0,
+    int total = 0,
+  }) {
+    setState(() {
+      isGalleryCompressing = isCompressing;
+      galleryCompressCompleted = completed;
+      galleryCompressTotal = total;
+    });
+  }
+
   SnackBar _centeredSnackBar(String message) {
     return SnackBar(content: Text(message, textAlign: TextAlign.center));
   }
@@ -121,8 +137,15 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     );
 
     if (confirmed == true && mounted) {
+      await _discardFormDrafts();
       await _popWithoutWarning();
     }
+  }
+
+  Future<void> _discardFormDrafts() async {
+    final fileStorage = ref.read(localFileStorageProvider);
+    await fileStorage.deleteDraftFile(form.mainImagePath);
+    await fileStorage.deleteDraftFiles(form.galleryImagePaths);
   }
 
   Future<void> _popWithoutWarning() async {
@@ -385,7 +408,12 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     });
   }
 
-  void _clearAll() {
+  Future<void> _clearAll() async {
+    await _discardFormDrafts();
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       form.clear();
       _animeRenameSource = null;
@@ -412,6 +440,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       createCharacterViewModelProvider.select((state) => state.invalidFields),
     );
     final referencesState = ref.watch(characterReferencesViewModelProvider);
+    final fileStorage = ref.read(localFileStorageProvider);
     final characterNames =
         ref.watch(characterNameSuggestionsProvider).value ?? const <String>[];
     form.syncGradeControllers(referencesState.gradeDefinitions);
@@ -441,9 +470,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     });
 
     return PopScope(
-      canPop: allowPop && !isProcessing,
+      canPop: allowPop && !isProcessing && !isGalleryCompressing,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop && !isProcessing) {
+        if (!didPop && !isProcessing && !isGalleryCompressing) {
           _requestExit();
         }
       },
@@ -454,7 +483,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
           backgroundColor: const Color(0xFF1A4043),
           backButtonColor: const Color(0xFF009768),
           titleColor: const Color(0xFF4CB897),
-          onBackPressed: isProcessing ? () {} : _requestExit,
+          onBackPressed: isProcessing || isGalleryCompressing
+              ? () {}
+              : _requestExit,
         ),
         body: Stack(
           children: [
@@ -507,6 +538,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                 Center(
                                   child: MainPhotoPicker(
                                     imagePath: form.mainImagePath,
+                                    fileStorage: fileStorage,
                                     onChanged: (path) => setState(
                                       () => form.mainImagePath = path,
                                     ),
@@ -544,6 +576,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                 const SizedBox(height: 15),
                                 GalleryDropdown(
                                   imagePaths: form.galleryImagePaths,
+                                  fileStorage: fileStorage,
+                                  onCompressionStateChanged:
+                                      _onGalleryCompressionState,
                                   onChanged: (paths) => setState(
                                     () => form.galleryImagePaths = paths,
                                   ),
@@ -582,6 +617,43 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                 child: AbsorbPointer(
                   child: Center(
                     child: CircularProgressIndicator(),
+                  ),
+                ),
+              ),
+            if (isGalleryCompressing)
+              Positioned.fill(
+                child: AbsorbPointer(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.72),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Preparing photos...',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontFamily: 'FrancoisOne',
+                            ),
+                          ),
+                          if (galleryCompressTotal > 0) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              '$galleryCompressCompleted / $galleryCompressTotal',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),

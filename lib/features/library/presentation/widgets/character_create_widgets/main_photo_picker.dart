@@ -3,16 +3,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mycharacterlist/app/widgets/main_photo_crop_page.dart';
+import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 
 class MainPhotoPicker extends StatefulWidget {
   const MainPhotoPicker({
     super.key,
     required this.imagePath,
     required this.onChanged,
+    required this.fileStorage,
   });
 
   final String? imagePath;
   final ValueChanged<String?> onChanged;
+  final LocalFileStorage fileStorage;
 
   @override
   State<MainPhotoPicker> createState() => _MainPhotoPickerState();
@@ -42,8 +45,18 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
   Future<void> _openCrop(String imagePath) async {
     final croppedPath = await MainPhotoCropPage.open(context, imagePath);
     if (croppedPath != null && mounted) {
+      final previousPath = widget.imagePath;
       widget.onChanged(croppedPath);
+      if (previousPath != null && previousPath != croppedPath) {
+        await widget.fileStorage.deleteDraftFile(previousPath);
+      }
     }
+  }
+
+  Future<void> _removeImage() async {
+    final previousPath = widget.imagePath;
+    widget.onChanged(null);
+    await widget.fileStorage.deleteDraftFile(previousPath);
   }
 
   @override
@@ -103,7 +116,7 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
                   child: GestureDetector(
                     onTap: widget.imagePath == null
                         ? pickImage
-                        : () => widget.onChanged(null),
+                        : _removeImage,
                     child: Container(
                       width: widget.imagePath == null ? 34 : 28,
                       height: widget.imagePath == null ? 34 : 28,

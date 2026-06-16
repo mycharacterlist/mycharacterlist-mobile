@@ -22,6 +22,7 @@ final characterJsonExportServiceProvider = Provider<CharacterJsonExportService>(
   (ref) => CharacterJsonExportService(
     characterRepository: ref.watch(characterRepositoryProvider),
     rankingListRepository: ref.watch(rankingListRepositoryProvider),
+    localFileStorage: ref.watch(localFileStorageProvider),
   ),
 );
 
