@@ -5,6 +5,7 @@ class SearchBarWidget extends StatelessWidget {
   final TextEditingController controller;
 
   final ValueChanged<String> onChanged;
+  final VoidCallback onClearPressed;
 
   final VoidCallback onFilterPressed;
 
@@ -14,6 +15,7 @@ class SearchBarWidget extends StatelessWidget {
     required this.controller,
 
     required this.onChanged,
+    required this.onClearPressed,
 
     required this.onFilterPressed,
   });
@@ -76,6 +78,24 @@ class SearchBarWidget extends StatelessWidget {
                         fontFamily: 'JosefinSlab',
                       ),
                     ),
+                  ),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: controller,
+                    builder: (context, value, _) {
+                      if (value.text.isEmpty) {
+                        return const SizedBox(width: 8);
+                      }
+
+                      return IconButton(
+                        onPressed: onClearPressed,
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.black54,
+                          size: 26,
+                        ),
+                        tooltip: 'Clear search',
+                      );
+                    },
                   ),
                 ],
               ),

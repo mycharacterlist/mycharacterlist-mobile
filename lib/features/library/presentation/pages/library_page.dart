@@ -51,6 +51,15 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     ref.read(charactersViewModelProvider.notifier).search(query);
   }
 
+  void _clearSearch() {
+    if (searchController.text.isEmpty) {
+      return;
+    }
+
+    searchController.clear();
+    _search('');
+  }
+
   void _unfocusSearch() {
     FocusManager.instance.primaryFocus?.unfocus();
   }
@@ -263,6 +272,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                   SearchBarWidget(
                     controller: searchController,
                     onChanged: _search,
+                    onClearPressed: _clearSearch,
                     onFilterPressed: showFilterSheet,
                   ),
                   Expanded(
