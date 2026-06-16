@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_image_viewer.dart';
 
 class CharacterImage extends StatelessWidget {
@@ -61,7 +62,17 @@ class CharacterImage extends StatelessWidget {
       );
     }
 
-    final image = Image.file(File(imagePath!), fit: fit);
+    final image = Image.file(
+      File(imagePath!),
+      fit: fit,
+      cacheWidth: width != null
+          ? AppImageCache.decodeCacheDimension(width!, context)
+          : null,
+      cacheHeight: height != null
+          ? AppImageCache.decodeCacheDimension(height!, context)
+          : null,
+      gaplessPlayback: true,
+    );
 
     if (width != null || height != null) {
       return _wrapPreview(

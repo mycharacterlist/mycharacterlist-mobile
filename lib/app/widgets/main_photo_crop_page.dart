@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
 import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 import 'package:mycharacterlist/core/utils/image_compressor.dart';
 
@@ -63,6 +64,12 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
 
     setState(() => _isCropping = true);
     _cropController.crop();
+  }
+
+  @override
+  void dispose() {
+    AppImageCache.trimAfterHeavyScreen();
+    super.dispose();
   }
 
   @override

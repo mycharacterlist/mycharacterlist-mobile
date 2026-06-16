@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
 import 'package:mycharacterlist/app/widgets/app_appbar.dart';
 import 'package:mycharacterlist/core/storage/storage_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
@@ -423,6 +424,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
 
   @override
   void dispose() {
+    AppImageCache.trimAfterHeavyScreen();
     form.name.removeListener(_clearNameError);
     form.anime.removeListener(_clearAnimeError);
     form.archetype.removeListener(_clearArchetypeError);

@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
+
 class CharacterImageViewer {
   const CharacterImageViewer._();
 
@@ -42,6 +44,7 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
 
   @override
   void dispose() {
+    AppImageCache.trimAfterHeavyScreen();
     _transformationController.removeListener(_onTransformChanged);
     _transformationController.dispose();
     super.dispose();
@@ -73,7 +76,16 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
   @override
   Widget build(BuildContext context) {
     final viewport = MediaQuery.sizeOf(context);
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final topPadding = MediaQuery.paddingOf(context).top;
+    final cacheWidth = AppImageCache.decodeCacheDimensionWithDpr(
+      viewport.width,
+      devicePixelRatio,
+    );
+    final cacheHeight = AppImageCache.decodeCacheDimensionWithDpr(
+      viewport.height,
+      devicePixelRatio,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -96,6 +108,8 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                 width: viewport.width,
                 height: viewport.height,
                 fit: BoxFit.contain,
+                cacheWidth: cacheWidth,
+                cacheHeight: cacheHeight,
                 filterQuality: FilterQuality.high,
               ),
             ),

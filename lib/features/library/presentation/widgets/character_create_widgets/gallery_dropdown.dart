@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
 import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 
 class GalleryDropdown extends StatefulWidget {
@@ -24,6 +25,8 @@ class GalleryDropdown extends StatefulWidget {
 
 class _GalleryDropdownState extends State<GalleryDropdown> {
   static const initialSlotCount = 5;
+  static const _slotWidth = 90.0;
+  static const _slotHeight = 120.0;
   static const _compressionBatchSize = 4;
   static const _thumbnailCacheWidth = 180;
 
@@ -107,6 +110,7 @@ class _GalleryDropdownState extends State<GalleryDropdown> {
     final updatedPaths = [...widget.imagePaths];
     updatedPaths.removeAt(index);
     widget.onChanged(updatedPaths);
+    AppImageCache.evictFile(removedPath);
     await widget.fileStorage.deleteDraftFile(removedPath);
   }
 
@@ -148,8 +152,8 @@ class _GalleryDropdownState extends State<GalleryDropdown> {
           feedback: Material(
             color: Colors.transparent,
             child: SizedBox(
-              width: 90,
-              height: 120,
+              width: _slotWidth,
+              height: _slotHeight,
               child: Image.file(
                 File(imagePath),
                 fit: BoxFit.cover,
@@ -166,9 +170,14 @@ class _GalleryDropdownState extends State<GalleryDropdown> {
   }
 
   Widget _buildImageSlot(int index, String imagePath) {
+    final cacheWidth = AppImageCache.decodeCacheDimension(
+      _slotWidth,
+      context,
+    );
+
     return Container(
-      width: 90,
-      height: 120,
+      width: _slotWidth,
+      height: _slotHeight,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         border: Border.all(color: Colors.black, width: 2),
@@ -176,7 +185,12 @@ class _GalleryDropdownState extends State<GalleryDropdown> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Image.file(File(imagePath), fit: BoxFit.cover),
+            child: Image.file(
+              File(imagePath),
+              fit: BoxFit.cover,
+              cacheWidth: cacheWidth,
+              gaplessPlayback: true,
+            ),
           ),
           Positioned(
             top: 4,

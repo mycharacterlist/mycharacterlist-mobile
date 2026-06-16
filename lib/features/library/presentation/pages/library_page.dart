@@ -355,7 +355,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                     : _showTransferActions,
               ),
             ),
-            if (state.isImporting)
+            if (state.isImporting || state.isExporting)
               Positioned.fill(
                 child: AbsorbPointer(
                   child: ColoredBox(
@@ -370,7 +370,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                           const SizedBox(height: 20),
                           Text(
                             state.importProgress?.title ??
-                                'Importing characters...',
+                                (state.isExporting
+                                    ? 'Exporting characters...'
+                                    : 'Importing characters...'),
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
 import 'package:mycharacterlist/app/widgets/main_photo_crop_page.dart';
 import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 
@@ -22,6 +23,8 @@ class MainPhotoPicker extends StatefulWidget {
 }
 
 class _MainPhotoPickerState extends State<MainPhotoPicker> {
+  static const _previewWidth = 150.0;
+  static const _previewHeight = 190.0;
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
@@ -48,6 +51,7 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
       final previousPath = widget.imagePath;
       widget.onChanged(croppedPath);
       if (previousPath != null && previousPath != croppedPath) {
+        AppImageCache.evictFile(previousPath);
         await widget.fileStorage.deleteDraftFile(previousPath);
       }
     }
@@ -56,6 +60,7 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
   Future<void> _removeImage() async {
     final previousPath = widget.imagePath;
     widget.onChanged(null);
+    AppImageCache.evictFile(previousPath);
     await widget.fileStorage.deleteDraftFile(previousPath);
   }
 
@@ -67,8 +72,8 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
         GestureDetector(
           onTap: pickImage,
           child: Container(
-            width: 150,
-            height: 190,
+            width: _previewWidth,
+            height: _previewHeight,
             decoration: BoxDecoration(
               border: Border.all(color: Colors.black, width: 3),
             ),
@@ -85,6 +90,15 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
                           child: Image.file(
                             File(widget.imagePath!),
                             fit: BoxFit.cover,
+                            cacheWidth: AppImageCache.decodeCacheDimension(
+                              _previewWidth,
+                              context,
+                            ),
+                            cacheHeight: AppImageCache.decodeCacheDimension(
+                              _previewHeight,
+                              context,
+                            ),
+                            gaplessPlayback: true,
                           ),
                         ),
                 ),

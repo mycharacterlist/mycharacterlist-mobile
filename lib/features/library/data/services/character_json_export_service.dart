@@ -9,6 +9,7 @@ import 'package:mycharacterlist/features/characters/data/models/character_fact_m
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_export_result.dart';
+import 'package:mycharacterlist/features/library/domain/entities/character_import_progress.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
 
@@ -25,7 +26,10 @@ class CharacterJsonExportService {
   final RankingListRepository _rankingListRepository;
   final LocalFileStorage _localFileStorage;
 
-  Future<CharacterExportResult> exportToDirectory(String parentPath) async {
+  Future<CharacterExportResult> exportToDirectory(
+    String parentPath, {
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
     final characters = await _characterRepository.getCharacters();
     final lists = await _rankingListRepository.getLists();
     final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
@@ -37,10 +41,20 @@ class CharacterJsonExportService {
     final exportData = await buildCharactersExportData(
       characters,
       exportDirectory: exportDirectory,
+      onProgress: onProgress,
     );
 
     final listJson = <Map<String, dynamic>>[];
-    for (final list in lists) {
+    for (var index = 0; index < lists.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: lists.length,
+          phase: CharacterImportPhase.exportLists,
+        ),
+      );
+
+      final list = lists[index];
       final rankedCharacters = await _rankingListRepository.getRankedCharacters(
         list.id,
       );
@@ -56,6 +70,14 @@ class CharacterJsonExportService {
             )
             .toList(),
       });
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: lists.length,
+          phase: CharacterImportPhase.exportLists,
+        ),
+      );
     }
 
     final jsonFile = File(p.join(exportDirectory.path, 'data.json'));
@@ -80,12 +102,23 @@ class CharacterJsonExportService {
   Future<CharacterSubsetExportData> buildCharactersExportData(
     List<Character> characters, {
     required Directory exportDirectory,
+    void Function(CharacterImportProgress progress)? onProgress,
   }) async {
     var exportedImages = 0;
     var missingImages = 0;
     final characterJson = <Map<String, dynamic>>[];
+    final total = characters.length;
 
-    for (final character in characters) {
+    for (var index = 0; index < characters.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: total,
+          phase: CharacterImportPhase.exportCharacters,
+        ),
+      );
+
+      final character = characters[index];
       final mainImage = await _copyImage(
         sourcePath: character.mainImagePath,
         exportDirectory: exportDirectory,
@@ -135,6 +168,14 @@ class CharacterJsonExportService {
       await _exportCompressedManifest(
         characterId: character.id,
         exportDirectory: exportDirectory,
+      );
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: total,
+          phase: CharacterImportPhase.exportCharacters,
+        ),
       );
     }
 

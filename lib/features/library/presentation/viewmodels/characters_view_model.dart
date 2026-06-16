@@ -147,10 +147,25 @@ class CharactersViewModel extends StateNotifier<CharactersState> {
       characters: state.characters,
       hasMore: state.hasMore,
       isExporting: true,
+      importProgress: const CharacterImportProgress(
+        completed: 0,
+        total: 0,
+        phase: CharacterImportPhase.exportCharacters,
+      ),
     );
 
     try {
-      final result = await _exportService.exportToDirectory(directoryPath);
+      final result = await _exportService.exportToDirectory(
+        directoryPath,
+        onProgress: (progress) {
+          state = CharactersState(
+            characters: state.characters,
+            hasMore: state.hasMore,
+            isExporting: true,
+            importProgress: progress,
+          );
+        },
+      );
       state = CharactersState(
         characters: state.characters,
         hasMore: state.hasMore,
