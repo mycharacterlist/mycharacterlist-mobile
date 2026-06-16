@@ -253,6 +253,8 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     final characterNames =
         ref.watch(characterNameSuggestionsProvider).value ?? const <String>[];
     form.syncGradeControllers(referencesState.gradeDefinitions);
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final pageSize = MediaQuery.sizeOf(context);
 
     ref.listen(createCharacterViewModelProvider, (previous, next) {
       if (next.errorMessage == null ||
@@ -305,8 +307,8 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
             else
               Center(
                 child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.90,
-                  height: MediaQuery.of(context).size.height * 0.87,
+                  width: pageSize.width * 0.90,
+                  height: pageSize.height * 0.87,
                   child: Stack(
                     children: [
                       Positioned.fill(
@@ -401,7 +403,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                       : 'Clear all',
                                   createLabel: isEditing ? 'Save' : 'Create',
                                 ),
-                                const SizedBox(height: 20),
+                                SizedBox(height: 20 + bottomInset),
                               ],
                             ),
                           ),
