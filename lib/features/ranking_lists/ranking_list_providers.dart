@@ -5,8 +5,8 @@ import 'package:mycharacterlist/features/characters/domain/entities/character.da
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/controllers/lists_page_controller.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/controllers/ranking_list_controller.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_list_content.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_character_display_item.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_list_content.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_providers.dart';

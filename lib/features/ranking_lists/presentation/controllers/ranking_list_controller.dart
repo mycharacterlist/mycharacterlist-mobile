@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:mycharacterlist/app/widgets/bottom_sheet_padding.dart';
+import 'package:mycharacterlist/app/widgets/layout/bottom_sheet_padding.dart';
+import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_character_display_item.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/position_dialog.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/select_character_dialog.dart';
@@ -49,7 +50,7 @@ class RankingListController {
             ListTile(
               leading: const Icon(
                 Icons.person_remove_outlined,
-                color: Color(0xFFB71C1C),
+                color: AppColors.destructive,
               ),
               title: Text('Remove "${item.title}" from list'),
               onTap: () => Navigator.pop(sheetContext, true),
