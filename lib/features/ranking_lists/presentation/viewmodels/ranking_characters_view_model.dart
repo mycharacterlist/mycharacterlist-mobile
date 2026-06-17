@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranked_character.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error.dart';
+import 'package:mycharacterlist/core/errors/error_mapper.dart';
 
 class RankingCharactersState {
   const RankingCharactersState({
@@ -71,7 +71,7 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
     } catch (error) {
       state = state.copyWith(
         isInitialLoading: false,
-        errorMessage: messageFromViewModelError(error),
+        errorMessage: ErrorMapper.userMessage(error),
       );
     }
   }
@@ -90,7 +90,7 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
       await loadCharacters();
     } catch (error) {
       state = state.copyWith(
-        errorMessage: messageFromViewModelError(error),
+        errorMessage: ErrorMapper.userMessage(error),
       );
     }
   }
@@ -105,7 +105,7 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
       await loadCharacters();
     } catch (error) {
       state = state.copyWith(
-        errorMessage: messageFromViewModelError(error),
+        errorMessage: ErrorMapper.userMessage(error),
       );
     }
   }
@@ -137,7 +137,7 @@ class RankingCharactersViewModel extends StateNotifier<RankingCharactersState> {
     } catch (error) {
       state = state.copyWith(
         characters: previousCharacters,
-        errorMessage: messageFromViewModelError(error),
+        errorMessage: ErrorMapper.userMessage(error),
       );
       rethrow;
     }

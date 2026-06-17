@@ -1,4 +1,4 @@
-import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_character_display_item.dart';
 
 class RankedListContent {
   const RankedListContent({

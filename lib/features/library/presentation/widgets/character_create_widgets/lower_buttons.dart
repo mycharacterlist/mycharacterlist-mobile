@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 class LowerButtons extends StatelessWidget {
   const LowerButtons({
     super.key,
@@ -25,7 +27,7 @@ class LowerButtons extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onClear,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6E2E00),
+              backgroundColor: AppColors.saveBrown,
               foregroundColor: Colors.white,
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -51,7 +53,7 @@ class LowerButtons extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onCreate,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF444444),
+              backgroundColor: AppColors.cancelGray,
               foregroundColor: Colors.white,
               elevation: 4,
               shape: RoundedRectangleBorder(

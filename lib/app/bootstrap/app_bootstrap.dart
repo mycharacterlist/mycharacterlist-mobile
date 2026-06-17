@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:mycharacterlist/app/app.dart';
 import 'package:mycharacterlist/app/bootstrap/image_compression_migration.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
+import 'package:mycharacterlist/core/theme/app_typography.dart';
 
 /// Runs one-time startup work after the first frame so the app does not stay
 /// on a blank screen while photo migration is in progress.
@@ -58,25 +60,18 @@ class _AppBootstrapState extends State<AppBootstrap> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const CircularProgressIndicator(color: Colors.white),
+                const AppLoadingIndicator(color: Colors.white),
                 const SizedBox(height: 20),
                 Text(
                   progress?.title ?? 'Updating photos...',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontFamily: 'FrancoisOne',
-                  ),
+                  style: AppTypography.loadingOverlayTitle,
                 ),
                 if (progress != null && progress.total > 0) ...[
                   const SizedBox(height: 8),
                   Text(
                     '${progress.completed} / ${progress.total}',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
+                    style: AppTypography.loadingOverlayProgress,
                   ),
                 ],
               ],

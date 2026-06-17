@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_message_view.dart';
+import 'package:mycharacterlist/core/errors/app_messages.dart';
+
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 
@@ -62,13 +66,13 @@ class _SelectCharacterDialogState extends ConsumerState<SelectCharacterDialog> {
         width: 350,
         height: 400,
         child: libraryAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Center(
-            child: Text('Failed to load characters'),
+          loading: () => const AppLoadingIndicator(),
+          error: (_, __) => const AppMessageView(
+            message: AppMessages.couldNotLoadCharacters,
           ),
           data: (libraryCharacters) {
             if (libraryCharacters.isEmpty) {
-              return const Center(child: Text('Library is empty'));
+              return const AppMessageView(message: 'Library is empty');
             }
 
             final availableCharacters = libraryCharacters
@@ -76,8 +80,8 @@ class _SelectCharacterDialogState extends ConsumerState<SelectCharacterDialog> {
                 .toList();
 
             if (availableCharacters.isEmpty) {
-              return const Center(
-                child: Text('All library characters are already in this list'),
+              return const AppMessageView(
+                message: 'All library characters are already in this list',
               );
             }
 

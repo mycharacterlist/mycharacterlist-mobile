@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
-import 'package:mycharacterlist/app/widgets/main_photo_crop_page.dart';
+import 'package:mycharacterlist/app/widgets/character/main_photo_crop_page.dart';
 import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 
 class MainPhotoPicker extends StatefulWidget {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'filter_button.dart';
 
 class SearchBarWidget extends StatelessWidget {
@@ -32,7 +34,7 @@ class SearchBarWidget extends StatelessWidget {
               height: 60,
 
               decoration: BoxDecoration(
-                color: const Color(0xFFD9D4D9),
+                color: AppColors.searchField,
 
                 borderRadius: BorderRadius.circular(22),
 
@@ -57,6 +59,7 @@ class SearchBarWidget extends StatelessWidget {
                     child: TextField(
                       controller: controller,
                       onChanged: onChanged,
+                      scrollPadding: EdgeInsets.zero,
 
                       decoration: const InputDecoration(
                         hintText: 'Search',
@@ -70,6 +73,13 @@ class SearchBarWidget extends StatelessWidget {
                         ),
 
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
+                        contentPadding: EdgeInsets.zero,
+                        isDense: true,
                       ),
 
                       style: const TextStyle(

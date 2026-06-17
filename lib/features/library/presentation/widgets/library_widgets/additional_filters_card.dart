@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 class AdditionalFiltersCard extends StatefulWidget {
   const AdditionalFiltersCard({
     super.key,
@@ -86,7 +88,7 @@ class _AdditionalFiltersCardState extends State<AdditionalFiltersCard> {
       padding: const EdgeInsets.all(15),
 
       decoration: BoxDecoration(
-        color: const Color(0xFFE9E9E9),
+        color: AppColors.filterCard,
 
         borderRadius: BorderRadius.circular(18),
       ),

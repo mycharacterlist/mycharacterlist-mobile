@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/ranking_marquee_text.dart';
+import 'package:mycharacterlist/app/widgets/text/marquee_text.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/theme/ranking_medal_colors.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/ranking_position_field.dart';
 
 class RankingCharacterCard extends StatelessWidget {
@@ -31,61 +32,6 @@ class RankingCharacterCard extends StatelessWidget {
   final ValueChanged<int>? onPositionSubmitted;
   final VoidCallback? onTap;
 
-  Color _getBadgeColor() {
-    switch (index) {
-      case 1:
-        return const Color(0xFFE6E600);
-      case 2:
-        return const Color(0xFF898985);
-      case 3:
-        return const Color(0xFF935712);
-      default:
-        return const Color(0xFF9996DF);
-    }
-  }
-
-  LinearGradient _getCardGradient() {
-    switch (index) {
-      case 1:
-        return const LinearGradient(
-          colors: [Color(0xFFFFFD6C), Color(0xFFD9D9D9)],
-        );
-      case 2:
-        return const LinearGradient(
-          colors: [Color(0xFF979794), Color(0xFFD9D9D9)],
-        );
-      case 3:
-        return const LinearGradient(
-          colors: [Color(0xFF9B4D22), Color(0xFFD9D9D9)],
-        );
-      default:
-        return const LinearGradient(
-          colors: [Color(0xFFC8C3FA), Color(0xFFD9D9D9)],
-        );
-    }
-  }
-
-  LinearGradient _getTitleGradient() {
-    switch (index) {
-      case 1:
-        return const LinearGradient(
-          colors: [Color(0xFFFF8001), Color(0xFFCAC300)],
-        );
-      case 2:
-        return const LinearGradient(
-          colors: [Color(0xFF4D4B49), Color(0xFF979794)],
-        );
-      case 3:
-        return const LinearGradient(
-          colors: [Color(0xFF3C2207), Color(0xFFEBA5A5)],
-        );
-      default:
-        return const LinearGradient(
-          colors: [Color(0xFF000000), Color(0xFF3424EE)],
-        );
-    }
-  }
-
   Widget _buildTitleText() {
     const style = TextStyle(
       fontSize: 40,
@@ -93,20 +39,22 @@ class RankingCharacterCard extends StatelessWidget {
       color: Colors.white,
     );
 
+    final titleGradient = RankingMedalColors.titleGradientForPosition(index);
+
     if (!animateMarquee) {
       return _StaticClippedText(
         text: title,
         style: style,
-        gradient: _getTitleGradient(),
+        gradient: titleGradient,
       );
     }
 
     return ShaderMask(
       blendMode: BlendMode.srcIn,
-      shaderCallback: (bounds) => _getTitleGradient().createShader(bounds),
-      child: RankingMarqueeText(
+      shaderCallback: (bounds) => titleGradient.createShader(bounds),
+      child: MarqueeText(
         key: ValueKey('title-$itemId'),
-        listPosition: index,
+        resetToken: index,
         text: title,
         style: style,
       ),
@@ -124,9 +72,9 @@ class RankingCharacterCard extends StatelessWidget {
       return _StaticClippedText(text: subtitle, style: style);
     }
 
-    return RankingMarqueeText(
+    return MarqueeText(
       key: ValueKey('subtitle-$itemId'),
-      listPosition: index,
+      resetToken: index,
       text: subtitle,
       style: style,
     );
@@ -165,7 +113,7 @@ class RankingCharacterCard extends StatelessWidget {
     final card = Container(
       height: 115,
       decoration: BoxDecoration(
-        gradient: _getCardGradient(),
+        gradient: RankingMedalColors.cardGradientForPosition(index),
         borderRadius: BorderRadius.circular(30),
       ),
       child: Row(
@@ -174,7 +122,7 @@ class RankingCharacterCard extends StatelessWidget {
             width: 68,
             padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
-              color: _getBadgeColor(),
+              color: RankingMedalColors.badgeColorForPosition(index),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(30),
                 bottomLeft: Radius.circular(30),

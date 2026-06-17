@@ -4,12 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
-import 'package:mycharacterlist/app/widgets/app_appbar.dart';
-import 'package:mycharacterlist/app/widgets/app_background_image.dart';
-import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error_listener.dart';
+import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
+import 'package:mycharacterlist/app/widgets/layout/bottom_action_slot.dart';
+import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
+import 'package:mycharacterlist/core/presentation/listeners/view_model_error_listener.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/lists_page/create_new_button.dart';
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+import 'package:mycharacterlist/core/theme/screen_app_bar_styles.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 
 class ListsView extends ConsumerWidget {
@@ -28,41 +31,45 @@ class ListsView extends ConsumerWidget {
       context: context,
     );
 
-    return Scaffold(
+    return ScreenScaffold(
       resizeToAvoidBottomInset: false,
+      backgroundAssetPath: AppBackgroundAssets.lists,
       appBar: CustomAppBar(
         title: state.isEditMode ? 'Select list' : 'My Lists',
-        backgroundColor: const Color(0xFF0E2432),
-        backButtonColor: const Color(0xFFB60894),
-        titleColor: const Color(0xFFB60894),
+        backgroundColor: AppScreenAppBars.lists.backgroundColor,
+        backButtonColor: AppScreenAppBars.lists.backButtonColor,
+        titleColor: AppScreenAppBars.lists.titleColor,
         onBackPressed: state.isEditMode ? controller.exitEditMode : null,
         actionWidget: IconButton(
           onPressed: controller.toggleEditMode,
           icon: Icon(state.isEditMode ? Icons.close : Icons.edit),
-          color: const Color(0xFFB60894),
+          color: AppColors.listsMagenta,
           tooltip: state.isEditMode ? 'Cancel editing' : 'Edit list',
         ),
       ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: AppBackgroundImage(
-              assetPath: AppBackgroundAssets.lists,
+      overlays: [
+        if (!state.isEditMode)
+          BottomActionSlot(
+            bottomMargin: 40,
+            child: CreateNewButton(
+              text: 'Create new',
+              onPressed: () => controller.showCreateDialog(context),
             ),
           ),
-          SafeArea(
-            maintainBottomViewPadding: true,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 120),
-              child: state.isLoading && state.lists.isEmpty
-                  ? const Center(child: CircularProgressIndicator())
-                  : state.lists.isEmpty
+      ],
+      child: SafeArea(
+        maintainBottomViewPadding: true,
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 120),
+          child: state.isLoading && state.lists.isEmpty
+              ? const AppLoadingIndicator()
+              : state.lists.isEmpty
                   ? const Center(
                       child: Text(
                         'No lists yet',
                         style: TextStyle(
                           fontSize: 24,
-                          color: Color(0xFFBEB53E),
+                          color: AppColors.listsGold,
                           fontFamily: 'JpAnimeFont',
                         ),
                       ),
@@ -82,7 +89,7 @@ class ListsView extends ConsumerWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              const Color(0xFF3D4789),
+                              AppColors.listsCardStart,
                               Color(list.colorValue),
                             ],
                             begin: Alignment.topLeft,
@@ -91,7 +98,7 @@ class ListsView extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(20),
                           border: state.isEditMode
                               ? Border.all(
-                                  color: const Color(0xFFB60894),
+                                  color: AppColors.listsMagenta,
                                   width: 3,
                                 )
                               : null,
@@ -138,7 +145,7 @@ class ListsView extends ConsumerWidget {
                                         fontSize: 22,
                                         height: 1.05,
                                         fontFamily: 'JpAnimeFont',
-                                        color: Color(0xFFBEB53E),
+                                        color: AppColors.listsGold,
                                       ),
                                     ),
                                   ],
@@ -149,7 +156,7 @@ class ListsView extends ConsumerWidget {
                                 child: state.isEditMode
                                     ? const Icon(
                                         Icons.edit,
-                                        color: Color(0xFFB60894),
+                                        color: AppColors.listsMagenta,
                                       )
                                     : null,
                               ),
@@ -161,17 +168,7 @@ class ListsView extends ConsumerWidget {
                   }).toList(),
                 ),
               ),
-            ),
-          ),
-          if (!state.isEditMode)
-            BottomActionSlot(
-              bottomMargin: 40,
-              child: CreateNewButton(
-                text: 'Create new',
-                onPressed: () => controller.showCreateDialog(context),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

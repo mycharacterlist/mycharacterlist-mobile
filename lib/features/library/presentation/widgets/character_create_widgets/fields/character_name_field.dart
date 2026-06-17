@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 import 'package:mycharacterlist/core/text/text_editing_utils.dart';
 
 class CharacterNameField extends StatelessWidget {
@@ -47,7 +49,7 @@ class CharacterNameField extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError ? Colors.red : const Color(0xFF7B61FF),
+                color: hasError ? Colors.red : AppColors.formAccent,
                 width: 2,
               ),
             ),

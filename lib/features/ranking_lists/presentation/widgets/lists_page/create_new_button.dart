@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/widgets/buttons/gradient_action_button.dart';
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+import 'package:mycharacterlist/core/theme/app_typography.dart';
+
 class CreateNewButton extends StatelessWidget {
   const CreateNewButton({
     super.key,
@@ -12,39 +16,18 @@ class CreateNewButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GradientActionButton(
       width: 250,
       height: 60,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3D4789), Color(0xFF2F013B)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.35),
-            blurRadius: 20,
-            spreadRadius: 1,
-            offset: const Offset(0, -8),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-        ),
-        onPressed: onPressed,
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Color(0xFFBEB53E),
-            fontFamily: 'JpAnimeFont',
-            fontSize: 30,
-          ),
-        ),
+      borderRadius: 20,
+      gradientColors: const [
+        AppColors.listsCardStart,
+        AppColors.listsCardEnd,
+      ],
+      onPressed: onPressed,
+      child: Text(
+        text,
+        style: AppTypography.createNewButton,
       ),
     );
   }

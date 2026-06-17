@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'marquee_text.dart';
+
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+import 'package:mycharacterlist/app/widgets/text/marquee_text.dart';
 
 class LibraryCard extends StatelessWidget {
   final String mainText;
@@ -29,7 +31,7 @@ class LibraryCard extends StatelessWidget {
 
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF00734F), Color(0xFF009768)],
+          colors: [AppColors.libraryGreenDark, AppColors.libraryGreen],
         ),
 
         borderRadius: BorderRadius.circular(25),

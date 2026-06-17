@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error.dart';
+import 'package:mycharacterlist/core/errors/error_mapper.dart';
 
 class ListsState {
   const ListsState({
@@ -71,7 +71,7 @@ class ListsViewModel extends StateNotifier<ListsState> {
       state = ListsState(
         lists: state.lists,
         isEditMode: state.isEditMode,
-        errorMessage: messageFromViewModelError(error),
+        errorMessage: ErrorMapper.userMessage(error),
       );
     }
   }
@@ -99,7 +99,7 @@ class ListsViewModel extends StateNotifier<ListsState> {
       state = state.copyWith(lists: [...state.lists, list]);
       return true;
     } catch (error) {
-      state = state.copyWith(errorMessage: messageFromViewModelError(error));
+      state = state.copyWith(errorMessage: ErrorMapper.userMessage(error));
       return false;
     }
   }
@@ -132,7 +132,7 @@ class ListsViewModel extends StateNotifier<ListsState> {
       );
       return true;
     } catch (error) {
-      state = state.copyWith(errorMessage: messageFromViewModelError(error));
+      state = state.copyWith(errorMessage: ErrorMapper.userMessage(error));
       return false;
     }
   }
@@ -145,7 +145,7 @@ class ListsViewModel extends StateNotifier<ListsState> {
       );
       return true;
     } catch (error) {
-      state = state.copyWith(errorMessage: messageFromViewModelError(error));
+      state = state.copyWith(errorMessage: ErrorMapper.userMessage(error));
       return false;
     }
   }

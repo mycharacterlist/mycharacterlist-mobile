@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/widgets/utils/system_view_padding.dart';
+
 const emptyStateTextStyle = TextStyle(
   fontSize: 24,
   color: Colors.white,
@@ -19,7 +21,7 @@ class EmptyStateMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final bottomInset = SystemViewPadding.bottomOf(context);
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomPadding + bottomInset),

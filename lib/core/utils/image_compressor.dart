@@ -14,12 +14,6 @@ class CompressedImageResult {
   final String extension;
 }
 
-/// Compresses uploaded images without lowering visible quality.
-///
-/// Uses the Dart [image] package to decode common formats (JPEG, PNG, WebP,
-/// GIF, BMP, ...) and [flutter_image_compress] for native formats like HEIC.
-/// Output is JPEG at quality 90 for regular photos, or PNG when transparency
-/// is required. The original bytes are kept whenever nothing ends up smaller.
 class ImageCompressor {
   const ImageCompressor();
 

@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
-import 'package:mycharacterlist/app/widgets/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_message_view.dart';
+import 'package:mycharacterlist/core/errors/app_messages.dart';
+import 'package:mycharacterlist/app/widgets/layout/background_stack.dart';
+import 'package:mycharacterlist/app/widgets/layout/framed_content_panel.dart';
+import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
-import 'package:mycharacterlist/features/characters/presentation/models/character_ranking_display.dart';
+import 'package:mycharacterlist/features/characters/domain/entities/character_ranking_display.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_facts.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_gallery.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_main_information.dart';
@@ -41,104 +48,75 @@ class _CharacterPageState extends ConsumerState<CharacterPage> {
     final gradeDefinitionsAsync = ref.watch(gradeDefinitionsProvider);
     final rankingsAsync =
         ref.watch(characterRankingDisplaysProvider(widget.characterId));
+    final canEdit = characterAsync.maybeWhen(
+      data: (character) => character != null,
+      orElse: () => false,
+    );
 
     return Scaffold(
       appBar: CustomAppBar(
         title: 'Character page',
-        backgroundColor: const Color(0xFF315B8B),
+        backgroundColor: AppColors.characterAppBarBackground,
         backButtonColor: Colors.black,
         titleColor: Colors.black,
-        actionWidget: IconButton(
-          icon: const Icon(Icons.edit, color: Colors.black),
-          onPressed: () async {
-            await context.push(AppRoutes.characterEditById(widget.characterId));
-            ref.invalidate(characterByIdProvider(widget.characterId));
-            ref.invalidate(characterRankingDisplaysProvider(widget.characterId));
-          },
-        ),
+        actionWidget: canEdit
+            ? IconButton(
+                icon: const Icon(Icons.edit, color: Colors.black),
+                onPressed: () async {
+                  await context.push(
+                    AppRoutes.characterEditById(widget.characterId),
+                  );
+                  ref.invalidate(characterByIdProvider(widget.characterId));
+                  ref.invalidate(
+                    characterRankingDisplaysProvider(widget.characterId),
+                  );
+                },
+              )
+            : null,
       ),
-      body: Stack(
+      body: BackgroundStack(
+        backgroundAssetPath: AppBackgroundAssets.characterPage,
         children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/CharacterPage_bg.jpg',
-              fit: BoxFit.cover,
-            ),
-          ),
-          Center(
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width * 0.95,
-              height: MediaQuery.of(context).size.height * 0.87,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images/cropped_rectangle.png',
-                      fit: BoxFit.fill,
-                    ),
-                  ),
-                  Positioned(
-                    top: 0,
-                    left: 8,
-                    right: 8,
-                    bottom: 20,
-                    child: characterAsync.when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (_, __) => const Center(
-                        child: Text(
-                          'Could not load character',
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-                      data: (character) {
-                        if (character == null) {
-                          return const Center(
-                            child: Text(
-                              'Character not found',
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: Colors.black,
-                              ),
-                            ),
-                          );
-                        }
-
-                        return gradeDefinitionsAsync.when(
-                          loading: () => const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                          error: (_, __) => _CharacterContent(
-                            character: character,
-                            definitions: const [],
-                            rankings: rankingsAsync.valueOrNull ?? const [],
-                          ),
-                          data: (definitions) => rankingsAsync.when(
-                            loading: () => _CharacterContent(
-                              character: character,
-                              definitions: definitions,
-                              rankings: const [],
-                            ),
-                            error: (_, __) => _CharacterContent(
-                              character: character,
-                              definitions: definitions,
-                              rankings: const [],
-                            ),
-                            data: (rankings) => _CharacterContent(
-                              character: character,
-                              definitions: definitions,
-                              rankings: rankings,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+          FramedContentPanel(
+            frameAssetPath: AppBackgroundAssets.characterFrame,
+            child: characterAsync.when(
+              loading: () => const AppLoadingIndicator(),
+              error: (_, __) => const AppMessageView(
+                message: AppMessages.couldNotLoadCharacter,
               ),
+              data: (character) {
+                if (character == null) {
+                  return const AppMessageView(
+                    message: AppMessages.characterNotFound,
+                  );
+                }
+
+                return gradeDefinitionsAsync.when(
+                  loading: () => const AppLoadingIndicator(),
+                  error: (_, __) => _CharacterContent(
+                    character: character,
+                    definitions: const [],
+                    rankings: rankingsAsync.valueOrNull ?? const [],
+                  ),
+                  data: (definitions) => rankingsAsync.when(
+                    loading: () => _CharacterContent(
+                      character: character,
+                      definitions: definitions,
+                      rankings: const [],
+                    ),
+                    error: (_, __) => _CharacterContent(
+                      character: character,
+                      definitions: definitions,
+                      rankings: const [],
+                    ),
+                    data: (rankings) => _CharacterContent(
+                      character: character,
+                      definitions: definitions,
+                      rankings: rankings,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -199,8 +177,12 @@ class _CharacterContent extends StatelessWidget {
             CharacterFacts(facts: character.facts),
           ],
           const SizedBox(height: 12),
-          CharacterPersonalNotes(notes: character.personalNotes),
-          const SizedBox(height: 12),
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: 12 + MediaQuery.viewPaddingOf(context).bottom,
+            ),
+            child: CharacterPersonalNotes(notes: character.personalNotes),
+          ),
         ],
       ),
     );

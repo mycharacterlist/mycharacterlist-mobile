@@ -10,7 +10,7 @@ import 'package:mycharacterlist/features/characters/domain/entities/character.da
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/characters/domain/repositories/character_reference_repository.dart';
-import 'package:mycharacterlist/features/characters/presentation/models/character_ranking_display.dart';
+import 'package:mycharacterlist/features/characters/domain/entities/character_ranking_display.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_providers.dart';
 
 final characterLocalDataSourceProvider = Provider<CharacterLocalDataSource>(

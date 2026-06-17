@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character_gender.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_image.dart';
@@ -37,7 +38,7 @@ class CharacterMainInformation extends StatelessWidget {
         vertical: 12,
       ),
       decoration: const BoxDecoration(
-        color: Color(0xFFECEBEB),
+        color: AppColors.sectionPanel,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

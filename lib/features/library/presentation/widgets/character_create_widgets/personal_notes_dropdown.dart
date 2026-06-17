@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 class PersonalNotesDropdown extends StatefulWidget {
   const PersonalNotesDropdown({super.key, required this.controller});
 
@@ -79,20 +81,20 @@ class _PersonalNotesDropdownState extends State<PersonalNotesDropdown> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
 
-                        borderSide: const BorderSide(color: Color(0xFF7B61FF)),
+                        borderSide: const BorderSide(color: AppColors.formAccent),
                       ),
 
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
 
-                        borderSide: const BorderSide(color: Color(0xFF7B61FF)),
+                        borderSide: const BorderSide(color: AppColors.formAccent),
                       ),
 
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
 
                         borderSide: const BorderSide(
-                          color: Color(0xFF7B61FF),
+                          color: AppColors.formAccent,
                           width: 2,
                         ),
                       ),

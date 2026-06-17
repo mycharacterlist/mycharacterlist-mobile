@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/additional_filters_card.dart';
-import 'package:mycharacterlist/app/widgets/bottom_sheet_padding.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/filter_bottom_buttons.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/filter_dropdown.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/grade_range_slider.dart';
@@ -99,7 +98,7 @@ class _LibraryFilterSheetState extends State<LibraryFilterSheet> {
               const SizedBox(height: 10),
               FilterBottomButtons(onClear: widget.onClear, onShow: _apply),
               SizedBox(
-                height: BottomSheetPadding.bottomInset(context, margin: 20),
+                height: 10 + MediaQuery.viewPaddingOf(context).bottom,
               ),
             ],
           ),
