@@ -3,10 +3,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-/// Tracks which image files in a character folder are already compressed.
-///
-/// Stored as `.compressed_images.json` next to the image files. The export
-/// package copies this file into `images/<characterId>/`.
 class CompressedImagesManifest {
   CompressedImagesManifest._();
 
