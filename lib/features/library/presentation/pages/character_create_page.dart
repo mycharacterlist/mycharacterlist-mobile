@@ -3,12 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
-import 'package:mycharacterlist/app/widgets/app_appbar.dart';
+import 'package:mycharacterlist/app/assets/app_background_assets.dart';
+import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_overlay.dart';
+import 'package:mycharacterlist/app/widgets/layout/framed_content_panel.dart';
+import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
+import 'package:mycharacterlist/core/presentation/listeners/view_model_error_listener.dart';
+import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
+import 'package:mycharacterlist/core/storage/app_disk_cache.dart';
+import 'package:mycharacterlist/core/theme/screen_app_bar_styles.dart';
 import 'package:mycharacterlist/core/storage/storage_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/library/presentation/controllers/character_form_controller.dart';
+import 'package:mycharacterlist/features/library/presentation/viewmodels/character_references_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/create_character_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/gallery_dropdown.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/character_create_widgets/lower_buttons.dart';
@@ -102,10 +112,6 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       galleryCompressCompleted = completed;
       galleryCompressTotal = total;
     });
-  }
-
-  SnackBar _centeredSnackBar(String message) {
-    return SnackBar(content: Text(message, textAlign: TextAlign.center));
   }
 
   Future<void> _requestExit() async {
@@ -267,8 +273,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       }
 
       if (!renamed) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          _centeredSnackBar('Could not update anime for all characters.'),
+        AppSnackBar.showCentered(
+          context,
+          'Could not update anime for all characters.',
         );
       }
     }
@@ -317,8 +324,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       }
 
       if (!renamed) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          _centeredSnackBar('Could not update anime for all characters.'),
+        AppSnackBar.showCentered(
+          context,
+          'Could not update anime for all characters.',
         );
       }
     }
@@ -425,6 +433,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   @override
   void dispose() {
     AppImageCache.trimAfterHeavyScreen();
+    AppDiskCache.cleanUnused(includeDrafts: true);
     form.name.removeListener(_clearNameError);
     form.anime.removeListener(_clearAnimeError);
     form.archetype.removeListener(_clearArchetypeError);
@@ -447,29 +456,22 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
         ref.watch(characterNameSuggestionsProvider).value ?? const <String>[];
     form.syncGradeControllers(referencesState.gradeDefinitions);
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
-    final pageSize = MediaQuery.sizeOf(context);
 
-    ref.listen(createCharacterViewModelProvider, (previous, next) {
-      if (next.errorMessage == null ||
-          next.errorMessage == previous?.errorMessage) {
-        return;
-      }
+    listenViewModelError(
+      ref,
+      provider: createCharacterViewModelProvider,
+      selectError: (state) => (state as CreateCharacterState).errorMessage,
+      context: context,
+      centered: true,
+    );
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(_centeredSnackBar(next.errorMessage!));
-    });
-
-    ref.listen(characterReferencesViewModelProvider, (previous, next) {
-      if (next.errorMessage == null ||
-          next.errorMessage == previous?.errorMessage) {
-        return;
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(_centeredSnackBar(next.errorMessage!));
-    });
+    listenViewModelError(
+      ref,
+      provider: characterReferencesViewModelProvider,
+      selectError: (state) => (state as CharacterReferencesState).errorMessage,
+      context: context,
+      centered: true,
+    );
 
     return PopScope(
       canPop: allowPop && !isProcessing && !isGalleryCompressing,
@@ -478,51 +480,44 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
           _requestExit();
         }
       },
-      child: Scaffold(
+      child: ScreenScaffold(
         resizeToAvoidBottomInset: false,
+        backgroundAssetPath: AppBackgroundAssets.library,
         appBar: CustomAppBar(
           title: isEditing ? 'Edit Character' : 'New Character',
-          backgroundColor: const Color(0xFF1A4043),
-          backButtonColor: const Color(0xFF009768),
-          titleColor: const Color(0xFF4CB897),
+          backgroundColor: AppScreenAppBars.library.backgroundColor,
+          backButtonColor: AppScreenAppBars.library.backButtonColor,
+          titleColor: AppScreenAppBars.library.titleColor,
           onBackPressed: isProcessing || isGalleryCompressing
               ? () {}
               : _requestExit,
         ),
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/Library_bg.jpg',
-                fit: BoxFit.cover,
-              ),
+        overlays: [
+          if (isProcessing) const AppLoadingOverlay(dimmed: false),
+          if (isGalleryCompressing)
+            AppLoadingOverlay(
+              title: 'Preparing photos...',
+              completed: galleryCompressCompleted,
+              total: galleryCompressTotal,
             ),
-            if (isLoading)
-              const Center(child: CircularProgressIndicator())
-            else
-              Center(
-                child: SizedBox(
-                  width: pageSize.width * 0.90,
-                  height: pageSize.height * 0.87,
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Image.asset(
-                          'assets/images/PagePictureFixed.png',
-                          fit: BoxFit.fill,
-                        ),
-                      ),
-                      Positioned(
-                        top: 55,
-                        left: 20,
-                        right: 20,
-                        bottom: 25,
-                        child: ClipRect(
-                          child: SingleChildScrollView(
-                            controller: formScrollController,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+        ],
+        child: isLoading
+            ? const AppLoadingIndicator()
+            : FramedContentPanel(
+                widthFactor: 0.90,
+                frameAssetPath: AppBackgroundAssets.characterForm,
+                contentPadding: const EdgeInsets.only(
+                  top: 55,
+                  left: 20,
+                  right: 20,
+                  bottom: 25,
+                ),
+                child: ClipRect(
+                  child: SingleChildScrollView(
+                    controller: formScrollController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                                 const SizedBox(height: 17),
                                 Center(
                                   child: Text(
@@ -607,60 +602,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                 SizedBox(height: 20 + bottomInset),
                               ],
                             ),
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
-            if (isProcessing)
-              const Positioned.fill(
-                child: AbsorbPointer(
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-              ),
-            if (isGalleryCompressing)
-              Positioned.fill(
-                child: AbsorbPointer(
-                  child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.72),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(
-                            color: Colors.white,
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Preparing photos...',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontFamily: 'FrancoisOne',
-                            ),
-                          ),
-                          if (galleryCompressTotal > 0) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              '$galleryCompressCompleted / $galleryCompressTotal',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
       ),
     );
   }

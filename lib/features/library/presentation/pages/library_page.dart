@@ -5,12 +5,18 @@ import 'package:go_router/go_router.dart';
 
 import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
-import 'package:mycharacterlist/app/widgets/app_appbar.dart';
-import 'package:mycharacterlist/app/widgets/app_background_image.dart';
-import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
-import 'package:mycharacterlist/app/widgets/bottom_sheet_padding.dart';
-import 'package:mycharacterlist/app/widgets/empty_state_message.dart';
+import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_overlay.dart';
+import 'package:mycharacterlist/app/widgets/layout/bottom_action_slot.dart';
+import 'package:mycharacterlist/app/widgets/layout/bottom_sheet_padding.dart';
+import 'package:mycharacterlist/app/widgets/layout/empty_state_message.dart';
+import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
 import 'package:mycharacterlist/core/platform/platform_file_helper.dart';
+import 'package:mycharacterlist/core/storage/app_disk_cache.dart';
+import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+import 'package:mycharacterlist/core/theme/screen_app_bar_styles.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
@@ -41,6 +47,15 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
   }
 
   void _loadMore() {
+    if (!mounted) {
+      return;
+    }
+
+    final keyboardInset = View.of(context).viewInsets.bottom;
+    if (keyboardInset > 0) {
+      return;
+    }
+
     if (!charactersScrollController.hasClients ||
         charactersScrollController.position.extentAfter > 300) {
       return;
@@ -114,21 +129,21 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       return;
     }
 
-    final importResult = await ref
-        .read(charactersViewModelProvider.notifier)
-        .importFile(path);
-    ref.invalidate(characterNameSuggestionsProvider);
-    ref.invalidate(libraryCharactersProvider);
-    ref.invalidate(rankingCharactersViewModelProvider);
-    await ref.read(listsViewModelProvider.notifier).loadLists();
-    await ref.read(characterReferencesViewModelProvider.notifier).load();
+    try {
+      final importResult = await ref
+          .read(charactersViewModelProvider.notifier)
+          .importFile(path);
+      ref.invalidate(characterNameSuggestionsProvider);
+      ref.invalidate(libraryCharactersProvider);
+      ref.invalidate(rankingCharactersViewModelProvider);
+      await ref.read(listsViewModelProvider.notifier).loadLists();
+      await ref.read(characterReferencesViewModelProvider.notifier).load();
 
-    if (mounted && importResult != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(importResult.message, textAlign: TextAlign.center),
-        ),
-      );
+      if (mounted && importResult != null) {
+        AppSnackBar.showCentered(context, importResult.message);
+      }
+    } finally {
+      await AppDiskCache.deleteFileIfTemporary(path);
     }
   }
 
@@ -149,11 +164,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     );
 
     if (mounted && exportResult != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(exportResult.message, textAlign: TextAlign.center),
-        ),
-      );
+      AppSnackBar.showCentered(context, exportResult.message);
     }
   }
 
@@ -217,7 +228,7 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         expand: false,
         builder: (context, scrollController) => DecoratedBox(
           decoration: const BoxDecoration(
-            color: Color(0xFFD9D4D9),
+            color: AppColors.searchField,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(30),
               topRight: Radius.circular(30),
@@ -269,137 +280,120 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
           _leaveLibrary();
         }
       },
-      child: Scaffold(
+      child: ScreenScaffold(
       resizeToAvoidBottomInset: false,
+      backgroundAssetPath: AppBackgroundAssets.library,
       appBar: CustomAppBar(
         title: 'Library',
-        backgroundColor: const Color(0xFF1A4043),
-        backButtonColor: const Color(0xFF009768),
-        titleColor: const Color(0xFF4CB897),
+        backgroundColor: AppScreenAppBars.library.backgroundColor,
+        backButtonColor: AppScreenAppBars.library.backButtonColor,
+        titleColor: AppScreenAppBars.library.titleColor,
         onBackPressed: _leaveLibrary,
       ),
-      body: GestureDetector(
+      bodyWrapper: (body) => GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTap: _unfocusSearch,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: AppBackgroundImage(
-                assetPath: AppBackgroundAssets.library,
-              ),
-            ),
-            SafeArea(
-              child: Column(
-                children: [
-                  SearchBarWidget(
-                    controller: searchController,
-                    onChanged: _search,
-                    onClearPressed: _clearSearch,
-                    onFilterPressed: showFilterSheet,
-                  ),
-                  Expanded(
-                    child: state.isLoading && state.characters.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
-                        : state.characters.isEmpty
-                        ? EmptyStateMessage(message: emptyMessage)
-                        : Padding(
-                            padding: EdgeInsets.only(
-                              bottom:
-                                  84 + MediaQuery.viewPaddingOf(context).bottom,
-                            ),
-                            child: Scrollbar(
-                              thumbVisibility: true,
-                              controller: charactersScrollController,
-                              child: ListView.builder(
-                                controller: charactersScrollController,
-                                padding: const EdgeInsets.only(top: 5),
-                                itemCount:
-                                    state.characters.length +
-                                    (state.isLoadingMore ? 1 : 0),
-                                itemBuilder: (context, index) {
-                                  if (index == state.characters.length) {
-                                    return const Padding(
-                                      padding: EdgeInsets.all(16),
-                                      child: Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    );
-                                  }
-                                  final character = state.characters[index];
-                                  return LibraryCard(
-                                    key: ValueKey(character.id),
-                                    mainText: character.name,
-                                    sideText: character.sourceTitle,
-                                    index: index,
-                                    onPressed: () => _openPage(
-                                      AppRoutes.characterById(character.id),
-                                      resetSearch: false,
-                                    ),
-                                    onEditPressed: () => _openPage(
-                                      AppRoutes.characterEditById(character.id),
-                                      resetSearch: false,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            BottomActionSlot(
+        child: body,
+      ),
+      overlays: [
+        if (!state.isLoading && state.characters.isEmpty)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: _librarySearchSectionHeight,
+            bottom: BottomActionSlot.contentBottomPadding(
+              context,
               bottomMargin: 20,
-              child: PlusButton(
-                icon: const Icon(Icons.add, color: Colors.black, size: 45),
-                onPressed: () => _openPage(AppRoutes.characterCreate),
-                onLongPress: state.isImporting || state.isExporting
-                    ? null
-                    : _showTransferActions,
-              ),
             ),
-            if (state.isImporting || state.isExporting)
-              Positioned.fill(
-                child: AbsorbPointer(
-                  child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.72),
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(
-                            color: Colors.white,
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            state.importProgress?.title ??
-                                (state.isExporting
-                                    ? 'Exporting characters...'
-                                    : 'Importing characters...'),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontFamily: 'FrancoisOne',
-                            ),
-                          ),
-                          if (state.importProgress != null &&
-                              state.importProgress!.total > 0) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              '${state.importProgress!.completed} / ${state.importProgress!.total}',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
+            child: IgnorePointer(
+              child: Center(
+                child: Text(
+                  emptyMessage,
+                  style: emptyStateTextStyle,
+                  textAlign: TextAlign.center,
                 ),
               ),
+            ),
+          ),
+        BottomActionSlot(
+          bottomMargin: 20,
+          child: PlusButton(
+            icon: const Icon(Icons.add, color: Colors.black, size: 45),
+            onPressed: () => _openPage(AppRoutes.characterCreate),
+            onLongPress: state.isImporting || state.isExporting
+                ? null
+                : _showTransferActions,
+          ),
+        ),
+        if (state.isImporting || state.isExporting)
+          AppLoadingOverlay(
+            title: state.importProgress?.title ??
+                (state.isExporting
+                    ? 'Exporting characters...'
+                    : 'Importing characters...'),
+            completed: state.importProgress?.completed,
+            total: state.importProgress?.total,
+          ),
+      ],
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            SearchBarWidget(
+              controller: searchController,
+              onChanged: _search,
+              onClearPressed: _clearSearch,
+              onFilterPressed: showFilterSheet,
+            ),
+            Expanded(
+              child: ClipRect(
+                child: state.isLoading && state.characters.isEmpty
+                    ? const AppLoadingIndicator()
+                    : state.characters.isEmpty
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: EdgeInsets.only(
+                          bottom: BottomActionSlot.contentBottomPadding(
+                            context,
+                            bottomMargin: 20,
+                          ),
+                        ),
+                        child: Scrollbar(
+                        thumbVisibility: true,
+                        controller: charactersScrollController,
+                        child: ListView.builder(
+                          controller: charactersScrollController,
+                          padding: const EdgeInsets.only(top: 5),
+                          itemCount: state.characters.length +
+                              (state.isLoadingMore ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index == state.characters.length) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16),
+                                child: AppLoadingIndicator(),
+                              );
+                            }
+                            final character = state.characters[index];
+                            return LibraryCard(
+                              key: ValueKey(character.id),
+                              mainText: character.name,
+                              sideText: character.sourceTitle,
+                              index: index,
+                              onPressed: () => _openPage(
+                                AppRoutes.characterById(character.id),
+                                resetSearch: false,
+                              ),
+                              onEditPressed: () => _openPage(
+                                AppRoutes.characterEditById(character.id),
+                                resetSearch: false,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+              ),
+            ),
           ],
         ),
       ),
@@ -409,3 +403,5 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
 }
 
 enum _LibraryTransferAction { importCharacters, exportCharacters }
+
+const _librarySearchSectionHeight = 90.0;

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:mycharacterlist/app/bootstrap/app_image_cache.dart';
 import 'package:mycharacterlist/app/bootstrap/precache_app_assets.dart';
 import 'package:mycharacterlist/app/router/app_router.dart';
+import 'package:mycharacterlist/core/storage/app_disk_cache.dart';
+import 'package:mycharacterlist/core/theme/app_theme.dart';
 
 class MyCharacterListApp extends StatefulWidget {
   const MyCharacterListApp({super.key});
@@ -24,6 +26,7 @@ class _MyCharacterListAppState extends State<MyCharacterListApp>
       }
 
       precacheAppBackgrounds(context);
+      AppDiskCache.cleanUnused(includeDrafts: true);
     });
   }
 
@@ -37,6 +40,7 @@ class _MyCharacterListAppState extends State<MyCharacterListApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
       AppImageCache.trimUnused();
+      AppDiskCache.cleanUnused();
     }
   }
 
@@ -52,10 +56,7 @@ class _MyCharacterListAppState extends State<MyCharacterListApp>
     return MaterialApp.router(
       title: 'MyCharacterList',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       builder: (context, child) {
         return ColoredBox(
           color: Colors.black,
