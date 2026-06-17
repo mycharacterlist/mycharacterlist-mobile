@@ -78,13 +78,10 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
     final viewport = MediaQuery.sizeOf(context);
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final topPadding = MediaQuery.paddingOf(context).top;
-    final cacheWidth = AppImageCache.decodeCacheDimensionWithDpr(
-      viewport.width,
-      devicePixelRatio,
-    );
-    final cacheHeight = AppImageCache.decodeCacheDimensionWithDpr(
-      viewport.height,
-      devicePixelRatio,
+    final cacheWidth = AppImageCache.decodeCacheWidthForBoxWithDpr(
+      width: viewport.width,
+      height: viewport.height,
+      devicePixelRatio: devicePixelRatio,
     );
 
     return Material(
@@ -109,7 +106,6 @@ class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
                 height: viewport.height,
                 fit: BoxFit.contain,
                 cacheWidth: cacheWidth,
-                cacheHeight: cacheHeight,
                 filterQuality: FilterQuality.high,
               ),
             ),

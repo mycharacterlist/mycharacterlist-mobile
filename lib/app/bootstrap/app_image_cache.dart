@@ -21,6 +21,53 @@ class AppImageCache {
     return (logicalPixels * devicePixelRatio).round().clamp(1, 4096);
   }
 
+  /// Use with [Image.file] / [Image.asset] when [BoxFit.cover] or
+  /// [BoxFit.contain] should keep the original aspect ratio.
+  ///
+  /// Setting both [cacheWidth] and [cacheHeight] on [Image] forces a stretched
+  /// decode size and makes photos look squished.
+  static int? decodeCacheWidthForBox({
+    double? width,
+    double? height,
+    required BuildContext context,
+  }) {
+    final logicalSize = _largestSide(width, height);
+    if (logicalSize <= 0) {
+      return null;
+    }
+
+    return decodeCacheDimension(logicalSize, context);
+  }
+
+  static int? decodeCacheWidthForBoxWithDpr({
+    double? width,
+    double? height,
+    required double devicePixelRatio,
+  }) {
+    final logicalSize = _largestSide(width, height);
+    if (logicalSize <= 0) {
+      return null;
+    }
+
+    return decodeCacheDimensionWithDpr(logicalSize, devicePixelRatio);
+  }
+
+  static double _largestSide(double? width, double? height) {
+    if (width == null && height == null) {
+      return 0;
+    }
+
+    if (width == null) {
+      return height!;
+    }
+
+    if (height == null) {
+      return width;
+    }
+
+    return width > height ? width : height;
+  }
+
   static void evictFile(String? path) {
     if (path == null || path.trim().isEmpty) {
       return;

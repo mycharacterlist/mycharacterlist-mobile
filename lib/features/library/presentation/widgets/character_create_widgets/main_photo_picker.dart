@@ -90,13 +90,10 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
                           child: Image.file(
                             File(widget.imagePath!),
                             fit: BoxFit.cover,
-                            cacheWidth: AppImageCache.decodeCacheDimension(
-                              _previewWidth,
-                              context,
-                            ),
-                            cacheHeight: AppImageCache.decodeCacheDimension(
-                              _previewHeight,
-                              context,
+                            cacheWidth: AppImageCache.decodeCacheWidthForBox(
+                              width: _previewWidth,
+                              height: _previewHeight,
+                              context: context,
                             ),
                             gaplessPlayback: true,
                           ),

@@ -65,12 +65,11 @@ class CharacterImage extends StatelessWidget {
     final image = Image.file(
       File(imagePath!),
       fit: fit,
-      cacheWidth: width != null
-          ? AppImageCache.decodeCacheDimension(width!, context)
-          : null,
-      cacheHeight: height != null
-          ? AppImageCache.decodeCacheDimension(height!, context)
-          : null,
+      cacheWidth: AppImageCache.decodeCacheWidthForBox(
+        width: width,
+        height: height,
+        context: context,
+      ),
       gaplessPlayback: true,
     );
 
