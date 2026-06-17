@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:mycharacterlist/core/errors/app_messages.dart';
+import 'package:mycharacterlist/core/errors/error_mapper.dart';
+
 import 'package:mycharacterlist/features/characters/domain/repositories/character_reference_repository.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 
@@ -42,7 +45,7 @@ class CharacterReferencesViewModel
       );
     } catch (_) {
       state = const CharacterReferencesState(
-        errorMessage: 'Could not load anime and archetypes.',
+        errorMessage: AppMessages.couldNotLoadReferences,
       );
     }
   }
@@ -60,7 +63,7 @@ class CharacterReferencesViewModel
         animeTitles: state.animeTitles,
         archetypes: state.archetypes,
         gradeDefinitions: state.gradeDefinitions,
-        errorMessage: error.message,
+        errorMessage: ErrorMapper.userMessage(error),
       );
       return false;
     } catch (_) {
@@ -68,7 +71,7 @@ class CharacterReferencesViewModel
         animeTitles: state.animeTitles,
         archetypes: state.archetypes,
         gradeDefinitions: state.gradeDefinitions,
-        errorMessage: 'Could not save grade definition.',
+        errorMessage: AppMessages.couldNotSaveGradeDefinition,
       );
       return false;
     }

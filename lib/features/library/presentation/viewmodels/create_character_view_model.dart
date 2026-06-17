@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:mycharacterlist/core/errors/app_messages.dart';
+import 'package:mycharacterlist/core/errors/error_mapper.dart';
+
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character_fact.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character_gender.dart';
@@ -99,7 +102,7 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
       final character = await _repository.getCharacterById(id);
       if (character == null) {
         state = const CreateCharacterState(
-          errorMessage: 'Character not found.',
+          errorMessage: AppMessages.characterNotFound,
         );
       } else {
         state = const CreateCharacterState();
@@ -107,7 +110,7 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
       return character;
     } catch (_) {
       state = const CreateCharacterState(
-        errorMessage: 'Could not load character.',
+        errorMessage: AppMessages.couldNotLoadCharacter,
       );
       return null;
     }
@@ -126,7 +129,7 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
       return true;
     } catch (_) {
       state = const CreateCharacterState(
-        errorMessage: 'Could not delete character.',
+        errorMessage: AppMessages.couldNotDeleteCharacter,
       );
       return false;
     }
@@ -277,11 +280,13 @@ class CreateCharacterViewModel extends StateNotifier<CreateCharacterState> {
       state = const CreateCharacterState();
       return true;
     } on StateError catch (error) {
-      state = CreateCharacterState(errorMessage: error.message);
+      state = CreateCharacterState(
+        errorMessage: ErrorMapper.userMessage(error),
+      );
       return false;
     } catch (_) {
       state = const CreateCharacterState(
-        errorMessage: 'Could not save character.',
+        errorMessage: AppMessages.couldNotSaveCharacter,
       );
       return false;
     }
