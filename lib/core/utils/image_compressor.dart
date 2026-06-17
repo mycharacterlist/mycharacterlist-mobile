@@ -40,13 +40,15 @@ class ImageCompressor {
       );
     }
 
+    final oriented = img.bakeOrientation(decoded);
+
     final candidates = <CompressedImageResult>[];
 
-    if (!_hasTransparency(decoded)) {
-      candidates.addAll(await _buildJpegCandidates(input, decoded));
+    if (!_hasTransparency(oriented)) {
+      candidates.addAll(await _buildJpegCandidates(input, oriented));
     }
 
-    final pngBytes = Uint8List.fromList(img.encodePng(decoded, level: 9));
+    final pngBytes = Uint8List.fromList(img.encodePng(oriented, level: 9));
     if (pngBytes.length < input.length) {
       candidates.add(CompressedImageResult(bytes: pngBytes, extension: '.png'));
     }

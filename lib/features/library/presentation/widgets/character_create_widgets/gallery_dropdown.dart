@@ -170,9 +170,10 @@ class _GalleryDropdownState extends State<GalleryDropdown> {
   }
 
   Widget _buildImageSlot(int index, String imagePath) {
-    final cacheWidth = AppImageCache.decodeCacheDimension(
-      _slotWidth,
-      context,
+    final cacheWidth = AppImageCache.decodeCacheWidthForBox(
+      width: _slotWidth,
+      height: _slotHeight,
+      context: context,
     );
 
     return Container(
