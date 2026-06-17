@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/widgets/character/character_section_panel.dart';
+import 'package:mycharacterlist/core/theme/app_typography.dart';
+
 class CharacterPersonalNotes extends StatelessWidget {
   const CharacterPersonalNotes({
     super.key,
@@ -12,33 +15,11 @@ class CharacterPersonalNotes extends StatelessWidget {
   Widget build(BuildContext context) {
     final trimmedNotes = notes.trim();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: const BoxDecoration(
-        color: Color(0xFFECEBEB),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Personal notes:',
-            style: TextStyle(
-              fontSize: 32,
-              color: Colors.black,
-              fontFamily: 'Joan',
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            trimmedNotes.isEmpty ? 'No notes' : trimmedNotes,
-            style: const TextStyle(
-              fontSize: 22,
-              color: Colors.black,
-              fontFamily: 'Joan',
-            ),
-          ),
-        ],
+    return CharacterSectionPanel(
+      title: 'Personal notes:',
+      child: Text(
+        trimmedNotes.isEmpty ? 'No notes' : trimmedNotes,
+        style: AppTypography.characterSectionEmpty,
       ),
     );
   }

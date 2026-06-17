@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/widgets/buttons/gradient_action_button.dart';
+import 'package:mycharacterlist/core/theme/app_typography.dart';
+
 class HomeButton extends StatelessWidget {
   final String text;
 
@@ -18,49 +21,14 @@ class HomeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return GradientActionButton(
       width: 280,
       height: 100,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              firstColor,
-              secondColor,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.35),
-              blurRadius: 20,
-              spreadRadius: 1,
-              offset: const Offset(0, -8),
-            ),
-          ],
-        ),
-
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-          ),
-
-          onPressed: onPressed,
-
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 35,
-              color: Colors.black,
-              fontFamily: 'LibreCaslonText',
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+      gradientColors: [firstColor, secondColor],
+      onPressed: onPressed,
+      child: Text(
+        text,
+        style: AppTypography.homeButton,
       ),
     );
   }

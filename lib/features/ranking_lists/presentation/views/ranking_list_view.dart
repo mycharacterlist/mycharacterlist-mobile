@@ -4,13 +4,16 @@ import 'package:go_router/go_router.dart';
 
 import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/router/routes.dart';
-import 'package:mycharacterlist/app/widgets/app_appbar.dart';
-import 'package:mycharacterlist/app/widgets/app_background_image.dart';
-import 'package:mycharacterlist/app/widgets/bottom_action_slot.dart';
-import 'package:mycharacterlist/app/widgets/empty_state_message.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_character_display_item.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/models/ranked_list_content.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/utils/view_model_error_listener.dart';
+import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
+import 'package:mycharacterlist/app/widgets/layout/bottom_action_slot.dart';
+import 'package:mycharacterlist/app/widgets/layout/empty_state_message.dart';
+import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
+import 'package:mycharacterlist/app/widgets/utils/system_view_padding.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_character_display_item.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_list_content.dart';
+import 'package:mycharacterlist/core/presentation/listeners/view_model_error_listener.dart';
+import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/add_character_button.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/ranking_character_card.dart';
@@ -54,11 +57,12 @@ class RankingListView extends ConsumerWidget {
           controller.exitEditMode();
         }
       },
-      child: Scaffold(
+      child: ScreenScaffold(
       resizeToAvoidBottomInset: false,
+      backgroundAssetPath: AppBackgroundAssets.rankingList,
       appBar: CustomAppBar(
         title: currentList.name,
-        backgroundColor: const Color(0xFF091E7A),
+        backgroundColor: AppColors.rankingAppBarBackground,
         backButtonColor: Colors.purple,
         titleColor: Colors.limeAccent,
         onBackPressed: charactersState.isEditMode ? controller.exitEditMode : null,
@@ -70,27 +74,20 @@ class RankingListView extends ConsumerWidget {
           onPressed: controller.toggleEditMode,
         ),
       ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: AppBackgroundImage(
-              assetPath: AppBackgroundAssets.rankingList,
+      overlays: [
+        if (!charactersState.isEditMode)
+          BottomActionSlot(
+            bottomMargin: 12,
+            child: GestureDetector(
+              onTap: () => controller.openAddCharacterFlow(context),
+              child: const AddCharacterButton(),
             ),
           ),
-          _RankingCharactersList(
-            listId: listId,
-            content: content,
-            isEditMode: charactersState.isEditMode,
-          ),
-          if (!charactersState.isEditMode)
-            BottomActionSlot(
-              bottomMargin: 12,
-              child: GestureDetector(
-                onTap: () => controller.openAddCharacterFlow(context),
-                child: const AddCharacterButton(),
-              ),
-            ),
-        ],
+      ],
+      child: _RankingCharactersList(
+        listId: listId,
+        content: content,
+        isEditMode: charactersState.isEditMode,
       ),
       ),
     );
@@ -303,7 +300,7 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
     final content = widget.content;
 
     if (content.isLoadingCharacters) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingIndicator();
     }
 
     if (content.isEmpty) {
@@ -316,12 +313,12 @@ class _RankingCharactersListState extends ConsumerState<_RankingCharactersList> 
     final displayItems = _items.isNotEmpty ? _items : content.items;
 
     if (displayItems.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const AppLoadingIndicator();
     }
 
     final animateMarquee = !widget.isEditMode || !_isDragging;
 
-    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final bottomInset = SystemViewPadding.bottomOf(context);
 
     return Scrollbar(
       controller: _scrollController,

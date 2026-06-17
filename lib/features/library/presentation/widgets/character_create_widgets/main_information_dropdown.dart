@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'gender_selector.dart';
 import 'fields/archetype_field.dart';
 import 'fields/anime_field.dart';
@@ -75,7 +77,7 @@ class _MainInformationDropdownState extends State<MainInformationDropdown> {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
-              color: hasError ? Colors.red : const Color(0xFF7B61FF),
+              color: hasError ? Colors.red : AppColors.formAccent,
               width: 2,
             ),
           ),

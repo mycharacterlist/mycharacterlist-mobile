@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 class AddCharacterButton extends StatelessWidget {
   const AddCharacterButton({super.key});
 
@@ -13,7 +15,10 @@ class AddCharacterButton extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF4D1A8D), Color(0xFF24114D)],
+          colors: [
+            AppColors.addCharacterGradientStart,
+            AppColors.addCharacterGradientEnd,
+          ],
         ),
         boxShadow: const [
           BoxShadow(

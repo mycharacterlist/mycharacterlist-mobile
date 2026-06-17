@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 import 'package:mycharacterlist/core/text/text_editing_utils.dart';
 
 class GradeRangeSlider extends StatefulWidget {
@@ -61,7 +63,7 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
       padding: const EdgeInsets.all(15),
 
       decoration: BoxDecoration(
-        color: const Color(0xFFE9E9E9),
+        color: AppColors.filterCard,
 
         borderRadius: BorderRadius.circular(18),
       ),
@@ -102,6 +104,14 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.black26),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.black54),
+                    ),
                   ),
                 ),
               ),
@@ -126,6 +136,14 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.black26),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.black54),
+                    ),
                   ),
                 ),
               ),
@@ -134,7 +152,14 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
 
           const SizedBox(height: 18),
 
-          RangeSlider(
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: Colors.deepPurple,
+              inactiveTrackColor: Colors.deepPurple.withValues(alpha: 0.25),
+              thumbColor: Colors.deepPurple,
+              overlayColor: Colors.deepPurple.withValues(alpha: 0.12),
+            ),
+            child: RangeSlider(
             values: values,
 
             min: 0,
@@ -164,6 +189,7 @@ class _GradeRangeSliderState extends State<GradeRangeSlider> {
               });
               widget.onChanged(newValues);
             },
+            ),
           ),
 
           LayoutBuilder(

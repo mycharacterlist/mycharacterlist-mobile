@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 class FilterButton
     extends StatelessWidget {
 
@@ -22,7 +24,7 @@ class FilterButton
 
       decoration:
       BoxDecoration(
-        color: const Color(0xFFD9D4D9,),
+        color: AppColors.searchField,
 
         borderRadius: BorderRadius.circular(20,),
 

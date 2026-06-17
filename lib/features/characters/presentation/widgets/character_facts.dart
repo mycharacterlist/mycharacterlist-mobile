@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/widgets/character/character_section_panel.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character_fact.dart';
 
 class CharacterFacts extends StatelessWidget {
@@ -16,24 +17,11 @@ class CharacterFacts extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(10),
-      decoration: const BoxDecoration(
-        color: Color(0xFFECEBEB),
-      ),
+    return CharacterSectionPanel(
+      title: 'Facts:',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Facts:',
-            style: TextStyle(
-              fontSize: 32,
-              color: Colors.black,
-              fontFamily: 'Joan',
-            ),
-          ),
-          const SizedBox(height: 10),
           for (var index = 0; index < facts.length; index++) ...[
             if (index > 0) const SizedBox(height: 10),
             _FactRow(fact: facts[index]),

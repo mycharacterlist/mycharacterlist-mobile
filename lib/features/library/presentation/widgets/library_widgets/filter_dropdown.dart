@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 class FilterDropdown extends StatefulWidget {
   final String title;
 
@@ -62,7 +64,7 @@ class _FilterDropdownState extends State<FilterDropdown> {
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
 
       decoration: BoxDecoration(
-        color: const Color(0xFFE9E9E9),
+        color: AppColors.filterCard,
 
         borderRadius: BorderRadius.circular(18),
       ),

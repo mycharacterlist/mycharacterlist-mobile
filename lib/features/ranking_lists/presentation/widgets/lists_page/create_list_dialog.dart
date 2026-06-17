@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
+import 'package:mycharacterlist/core/theme/app_colors.dart';
+
 class CreateListDialog {
   static void show({
     required BuildContext context,
     required TextEditingController controller,
     required Future<void> Function(Color) onCreate,
-    Color initialColor = const Color(0xFF768AFD),
+    Color initialColor = AppColors.defaultListColor,
     String title = 'Create list',
     String submitLabel = 'Create',
     Future<void> Function()? onDelete,
@@ -76,6 +78,19 @@ class _CreateListDialogState extends State<_CreateListDialog> {
               decoration: InputDecoration(
                 hintText: 'Enter list name',
                 errorText: _nameErrorText,
+                border: const UnderlineInputBorder(),
+                enabledBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black38),
+                ),
+                focusedBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.black87),
+                ),
+                errorBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.red),
+                ),
+                focusedErrorBorder: const UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.red),
+                ),
               ),
             ),
             const SizedBox(height: 20),
