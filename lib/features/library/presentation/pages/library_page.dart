@@ -141,9 +141,12 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       return;
     }
 
-    final exportResult = await ref
-        .read(charactersViewModelProvider.notifier)
-        .exportToDirectory(directoryPath);
+    final exportResult = await PlatformFileHelper.withExportDirectoryAccess(
+      directoryPath,
+      (path) => ref
+          .read(charactersViewModelProvider.notifier)
+          .exportToDirectory(path),
+    );
 
     if (mounted && exportResult != null) {
       ScaffoldMessenger.of(context).showSnackBar(
