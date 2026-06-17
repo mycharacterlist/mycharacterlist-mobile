@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/core/theme/app_typography.dart';
+
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
 
@@ -33,13 +35,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
       title: Text(
         title,
-
-        style: TextStyle(
-          color: titleColor,
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'JosefinSans',
-        ),
+        style: AppTypography.appBarTitle.copyWith(color: titleColor),
       ),
 
       leading: IconButton(

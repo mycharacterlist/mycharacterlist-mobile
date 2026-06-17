@@ -1,27 +1,30 @@
 import 'package:flutter/material.dart';
 
-import 'package:mycharacterlist/app/widgets/viewport_visibility.dart';
+import 'package:mycharacterlist/app/widgets/utils/viewport_visibility.dart';
 
-class RankingMarqueeText extends StatefulWidget {
-  const RankingMarqueeText({
+/// Horizontally scrolling text when it does not fit the available width.
+class MarqueeText extends StatefulWidget {
+  const MarqueeText({
     super.key,
     required this.text,
     required this.style,
-    this.listPosition,
     this.enabled = true,
+    this.resetToken,
   });
 
   final String text;
   final TextStyle style;
-  final int? listPosition;
   final bool enabled;
 
+  /// When this value changes, the marquee animation restarts.
+  final Object? resetToken;
+
   @override
-  State<RankingMarqueeText> createState() => _RankingMarqueeTextState();
+  State<MarqueeText> createState() => _MarqueeTextState();
 }
 
-class _RankingMarqueeTextState extends State<RankingMarqueeText>
-    with ParentScrollVisibilityMixin<RankingMarqueeText> {
+class _MarqueeTextState extends State<MarqueeText>
+    with ParentScrollVisibilityMixin<MarqueeText> {
   static const _startDelay = Duration(milliseconds: 500);
 
   late final ScrollController _controller;
@@ -38,12 +41,12 @@ class _RankingMarqueeTextState extends State<RankingMarqueeText>
   }
 
   @override
-  void didUpdateWidget(covariant RankingMarqueeText oldWidget) {
+  void didUpdateWidget(covariant MarqueeText oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     final shouldReset = oldWidget.text != widget.text ||
         oldWidget.style != widget.style ||
-        oldWidget.listPosition != widget.listPosition ||
+        oldWidget.resetToken != widget.resetToken ||
         (!oldWidget.enabled && widget.enabled);
 
     if (shouldReset) {
