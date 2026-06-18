@@ -1,16 +1,24 @@
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranked_character.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
+import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
+import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_patch_entry_model.dart';
+import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_patch_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranked_character_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
+import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list_patch.dart';
+import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list_patch_entry.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/sources/local/ranking_list_local_data_source.dart';
 
 class RankingListRepositoryImpl implements RankingListRepository {
   const RankingListRepositoryImpl({
     required RankingListLocalDataSource localDataSource,
-  }) : _localDataSource = localDataSource;
+    required CharacterRepository characterRepository,
+  }) : _localDataSource = localDataSource,
+       _characterRepository = characterRepository;
 
   final RankingListLocalDataSource _localDataSource;
+  final CharacterRepository _characterRepository;
 
   @override
   Future<List<RankingList>> getLists() {
@@ -270,6 +278,81 @@ class RankingListRepositoryImpl implements RankingListRepository {
       listId,
       rankedCharacters,
     );
+  }
+
+  @override
+  Future<RankingListPatch> createPatchFromCurrentList(String listId) async {
+    final listCharacters = await _loadListCharacters(listId);
+
+    if (listCharacters.isEmpty) {
+      throw StateError('Cannot save a patch for an empty list.');
+    }
+
+    final now = DateTime.now();
+    final existingPatches = await _localDataSource.getPatchesForList(listId);
+    final patch = RankingListPatchModel(
+      id: 'patch_${listId}_${now.microsecondsSinceEpoch}',
+      listId: listId,
+      label: _formatPatchLabel(now, existingPatches.length + 1),
+      createdAt: now,
+    );
+
+    final characterIds = listCharacters
+        .map((rankedCharacter) => rankedCharacter.characterId)
+        .toList();
+    final characters = await _characterRepository.getCharactersByIds(
+      characterIds,
+    );
+    final charactersById = {
+      for (final character in characters) character.id: character,
+    };
+
+    final entries = listCharacters.asMap().entries.map((entry) {
+      final rankedCharacter = entry.value;
+      final character = charactersById[rankedCharacter.characterId];
+
+      return RankingListPatchEntryModel(
+        id: '${patch.id}_${rankedCharacter.characterId}',
+        patchId: patch.id,
+        characterId: rankedCharacter.characterId,
+        characterName: character?.name ?? 'Unknown character',
+        sourceTitle: character?.sourceTitle ?? '',
+        position: entry.key + 1,
+      );
+    }).toList();
+
+    await _localDataSource.savePatch(patch, entries);
+    return patch;
+  }
+
+  @override
+  Future<List<RankingListPatch>> getPatchesForList(String listId) {
+    return _localDataSource.getPatchesForList(listId);
+  }
+
+  @override
+  Future<RankingListPatch?> getPatchById(String patchId) {
+    return _localDataSource.getPatchById(patchId);
+  }
+
+  @override
+  Future<List<RankingListPatchEntry>> getPatchEntries(String patchId) {
+    return _localDataSource.getPatchEntries(patchId);
+  }
+
+  @override
+  Future<void> deletePatch(String patchId) {
+    return _localDataSource.deletePatch(patchId);
+  }
+
+  String _formatPatchLabel(DateTime createdAt, int patchNumber) {
+    final year = createdAt.year;
+    final month = createdAt.month.toString().padLeft(2, '0');
+    final day = createdAt.day.toString().padLeft(2, '0');
+    final hour = createdAt.hour.toString().padLeft(2, '0');
+    final minute = createdAt.minute.toString().padLeft(2, '0');
+
+    return 'Patch #$patchNumber · $day.$month.$year $hour:$minute';
   }
 
   T? _firstOrNull<T>(Iterable<T> items) {
