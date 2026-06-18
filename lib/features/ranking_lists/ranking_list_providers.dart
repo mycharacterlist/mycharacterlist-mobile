@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
+import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list_patch.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/controllers/lists_page_controller.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/controllers/ranking_list_controller.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_character_display_item.dart';
@@ -138,6 +139,61 @@ final rankedListContentProvider = Provider.family<RankedListContent, String>((re
       subtitle: character?.sourceTitle ?? '',
     );
   }).toList();
+
+  return RankedListContent(items: items);
+});
+
+final rankingListPatchesProvider =
+    FutureProvider.autoDispose.family<List<RankingListPatch>, String>((
+  ref,
+  listId,
+) {
+  return ref.watch(rankingListRepositoryProvider).getPatchesForList(listId);
+});
+
+final rankingListPatchByIdProvider =
+    FutureProvider.autoDispose.family<RankingListPatch?, String>((
+  ref,
+  patchId,
+) {
+  return ref.watch(rankingListRepositoryProvider).getPatchById(patchId);
+});
+
+final patchDisplayContentProvider =
+    FutureProvider.autoDispose.family<RankedListContent, String>((
+  ref,
+  patchId,
+) async {
+  final entries = await ref
+      .watch(rankingListRepositoryProvider)
+      .getPatchEntries(patchId);
+
+  if (entries.isEmpty) {
+    return const RankedListContent(isEmpty: true);
+  }
+
+  final characterIds = entries.map((entry) => entry.characterId).toList();
+  final characters = await ref
+      .read(characterRepositoryProvider)
+      .getCharactersByIds(characterIds);
+  final charactersById = {for (final character in characters) character.id: character};
+
+  final items = entries
+      .map(
+        (entry) {
+          final character = charactersById[entry.characterId];
+
+          return RankedCharacterDisplayItem(
+            id: entry.id,
+            characterId: entry.characterId,
+            position: entry.position,
+            title: character?.name ?? entry.characterName,
+            subtitle: character?.sourceTitle ?? entry.sourceTitle,
+            isCharacterAvailable: character != null,
+          );
+        },
+      )
+      .toList();
 
   return RankedListContent(items: items);
 });
