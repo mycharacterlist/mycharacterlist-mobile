@@ -18,6 +18,7 @@ class RankingCharacterCard extends StatelessWidget {
     this.maxPosition,
     this.onPositionSubmitted,
     this.onTap,
+    this.isCharacterAvailable = true,
   });
 
   final String itemId;
@@ -31,6 +32,7 @@ class RankingCharacterCard extends StatelessWidget {
   final int? maxPosition;
   final ValueChanged<int>? onPositionSubmitted;
   final VoidCallback? onTap;
+  final bool isCharacterAvailable;
 
   Widget _buildTitleText() {
     const style = TextStyle(
@@ -110,7 +112,9 @@ class RankingCharacterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Container(
+    final card = Opacity(
+      opacity: isCharacterAvailable ? 1 : 0.72,
+      child: Container(
       height: 115,
       decoration: BoxDecoration(
         gradient: RankingMedalColors.cardGradientForPosition(index),
@@ -145,6 +149,7 @@ class RankingCharacterCard extends StatelessWidget {
           const SizedBox(width: 8),
         ],
       ),
+    ),
     );
 
     return Padding(

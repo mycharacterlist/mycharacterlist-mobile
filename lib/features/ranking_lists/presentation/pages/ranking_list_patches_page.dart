@@ -11,6 +11,7 @@ import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list_patch.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/utils/patch_formatters.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_providers.dart';
 
 class RankingListPatchesPage extends StatelessWidget {
@@ -44,7 +45,7 @@ class RankingListPatchesView extends ConsumerWidget {
       resizeToAvoidBottomInset: false,
       backgroundAssetPath: AppBackgroundAssets.rankingList,
       appBar: CustomAppBar(
-        title: currentList == null ? 'Patch list' : '${currentList.name} patches',
+        title: currentList?.name ?? 'List',
         backgroundColor: AppColors.rankingAppBarBackground,
         backButtonColor: Colors.purple,
         titleColor: Colors.limeAccent,
@@ -62,7 +63,7 @@ class RankingListPatchesView extends ConsumerWidget {
           if (patches.isEmpty) {
             return const EmptyStateMessage(
               message: 'No patches yet',
-              color: Colors.limeAccent,
+              color: Colors.white,
             );
           }
 
@@ -147,13 +148,27 @@ class _PatchListTile extends StatelessWidget {
               const Icon(Icons.history, color: AppColors.formAccent),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  patch.label,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontFamily: 'Joan',
-                    color: Colors.black87,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      patch.label,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontFamily: 'Joan',
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      PatchFormatters.formatCreatedAt(patch.createdAt),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontFamily: 'Joan',
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Icon(Icons.chevron_right, color: Colors.black54),

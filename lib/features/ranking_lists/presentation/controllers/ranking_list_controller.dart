@@ -12,6 +12,7 @@ import 'package:mycharacterlist/features/characters/domain/entities/character.da
 import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_character_display_item.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/position_dialog.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/save_patch_dialog.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/select_character_dialog.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_providers.dart';
@@ -190,9 +191,26 @@ class RankingListController {
 
   Future<void> saveCurrentListPatch(BuildContext context) async {
     try {
-      final patch = await _ref
-          .read(rankingListRepositoryProvider)
-          .createPatchFromCurrentList(listId);
+      final repository = _ref.read(rankingListRepositoryProvider);
+      final suggestedLabel = await repository.getSuggestedPatchLabel(listId);
+
+      if (!context.mounted) {
+        return;
+      }
+
+      final label = await SavePatchDialog.show(
+        context,
+        suggestedLabel: suggestedLabel,
+      );
+
+      if (label == null || !context.mounted) {
+        return;
+      }
+
+      final patch = await repository.createPatchFromCurrentList(
+        listId,
+        label: label,
+      );
       _ref.invalidate(rankingListPatchesProvider(listId));
 
       if (context.mounted) {

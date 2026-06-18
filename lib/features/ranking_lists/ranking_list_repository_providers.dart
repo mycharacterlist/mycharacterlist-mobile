@@ -15,6 +15,6 @@ final rankingListLocalDataSourceProvider = Provider<RankingListLocalDataSource>(
 final rankingListRepositoryProvider = Provider<RankingListRepository>(
   (ref) => RankingListRepositoryImpl(
     localDataSource: ref.watch(rankingListLocalDataSourceProvider),
-    characterRepository: ref.watch(characterRepositoryProvider),
+    characterLocalDataSource: ref.watch(characterLocalDataSourceProvider),
   ),
 );

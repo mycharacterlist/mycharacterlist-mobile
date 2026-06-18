@@ -1,7 +1,7 @@
+import 'package:mycharacterlist/features/characters/data/sources/local/character_local_data_source.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranked_character.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
-import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_patch_entry_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_patch_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranked_character_model.dart';
@@ -13,12 +13,12 @@ import 'package:mycharacterlist/features/ranking_lists/data/sources/local/rankin
 class RankingListRepositoryImpl implements RankingListRepository {
   const RankingListRepositoryImpl({
     required RankingListLocalDataSource localDataSource,
-    required CharacterRepository characterRepository,
+    required CharacterLocalDataSource characterLocalDataSource,
   }) : _localDataSource = localDataSource,
-       _characterRepository = characterRepository;
+       _characterLocalDataSource = characterLocalDataSource;
 
   final RankingListLocalDataSource _localDataSource;
-  final CharacterRepository _characterRepository;
+  final CharacterLocalDataSource _characterLocalDataSource;
 
   @override
   Future<List<RankingList>> getLists() {
@@ -281,26 +281,39 @@ class RankingListRepositoryImpl implements RankingListRepository {
   }
 
   @override
-  Future<RankingListPatch> createPatchFromCurrentList(String listId) async {
+  Future<String> getSuggestedPatchLabel(String listId) async {
+    final existingPatches = await _localDataSource.getPatchesForList(listId);
+    return 'Patch ${existingPatches.length + 1}';
+  }
+
+  @override
+  Future<RankingListPatch> createPatchFromCurrentList(
+    String listId, {
+    required String label,
+  }) async {
     final listCharacters = await _loadListCharacters(listId);
 
     if (listCharacters.isEmpty) {
       throw StateError('Cannot save a patch for an empty list.');
     }
 
+    final trimmedLabel = label.trim();
+    if (trimmedLabel.isEmpty) {
+      throw StateError('Patch name cannot be empty.');
+    }
+
     final now = DateTime.now();
-    final existingPatches = await _localDataSource.getPatchesForList(listId);
     final patch = RankingListPatchModel(
       id: 'patch_${listId}_${now.microsecondsSinceEpoch}',
       listId: listId,
-      label: _formatPatchLabel(now, existingPatches.length + 1),
+      label: trimmedLabel,
       createdAt: now,
     );
 
     final characterIds = listCharacters
         .map((rankedCharacter) => rankedCharacter.characterId)
         .toList();
-    final characters = await _characterRepository.getCharactersByIds(
+    final characters = await _characterLocalDataSource.getCharactersByIds(
       characterIds,
     );
     final charactersById = {
@@ -343,16 +356,6 @@ class RankingListRepositoryImpl implements RankingListRepository {
   @override
   Future<void> deletePatch(String patchId) {
     return _localDataSource.deletePatch(patchId);
-  }
-
-  String _formatPatchLabel(DateTime createdAt, int patchNumber) {
-    final year = createdAt.year;
-    final month = createdAt.month.toString().padLeft(2, '0');
-    final day = createdAt.day.toString().padLeft(2, '0');
-    final hour = createdAt.hour.toString().padLeft(2, '0');
-    final minute = createdAt.minute.toString().padLeft(2, '0');
-
-    return 'Patch #$patchNumber · $day.$month.$year $hour:$minute';
   }
 
   T? _firstOrNull<T>(Iterable<T> items) {

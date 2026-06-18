@@ -44,7 +44,12 @@ abstract interface class RankingListRepository {
     required List<({String characterId, int position})> entries,
   });
 
-  Future<RankingListPatch> createPatchFromCurrentList(String listId);
+  Future<String> getSuggestedPatchLabel(String listId);
+
+  Future<RankingListPatch> createPatchFromCurrentList(
+    String listId, {
+    required String label,
+  });
 
   Future<List<RankingListPatch>> getPatchesForList(String listId);
 

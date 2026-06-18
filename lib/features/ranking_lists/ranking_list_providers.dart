@@ -4,6 +4,7 @@ import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list_patch.dart';
+import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list_patch_entry.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/controllers/lists_page_controller.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/controllers/ranking_list_controller.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_character_display_item.dart';
@@ -159,44 +160,72 @@ final rankingListPatchByIdProvider =
   return ref.watch(rankingListRepositoryProvider).getPatchById(patchId);
 });
 
-final patchDisplayContentProvider =
-    FutureProvider.autoDispose.family<RankedListContent, String>((
+final patchEntriesProvider =
+    FutureProvider.autoDispose.family<List<RankingListPatchEntry>, String>((
   ref,
   patchId,
-) async {
-  final entries = await ref
-      .watch(rankingListRepositoryProvider)
-      .getPatchEntries(patchId);
+) {
+  return ref.watch(rankingListRepositoryProvider).getPatchEntries(patchId);
+});
 
-  if (entries.isEmpty) {
-    return const RankedListContent(isEmpty: true);
+final patchDisplayContentProvider =
+    Provider.autoDispose.family<RankedListContent, String>((ref, patchId) {
+  final entriesAsync = ref.watch(patchEntriesProvider(patchId));
+  final libraryAsync = ref.watch(libraryCharactersProvider);
+
+  return entriesAsync.when(
+    loading: () => const RankedListContent(isLoadingCharacters: true),
+    error: (_, __) => const RankedListContent(isEmpty: true),
+    data: (entries) {
+      if (entries.isEmpty) {
+        return const RankedListContent(isEmpty: true);
+      }
+
+      final libraryIds = libraryAsync.maybeWhen(
+        data: (characters) => characters.map((character) => character.id).toSet(),
+        orElse: () => null,
+      );
+
+      final items = entries
+          .map(
+            (entry) => RankedCharacterDisplayItem(
+              id: entry.id,
+              characterId: entry.characterId,
+              position: entry.position,
+              title: _patchEntryTitle(entry, null),
+              subtitle: _patchEntrySubtitle(entry, null),
+              isCharacterAvailable:
+                  libraryIds?.contains(entry.characterId) ?? true,
+            ),
+          )
+          .toList();
+
+      return RankedListContent(items: items);
+    },
+  );
+});
+
+String _patchEntryTitle(
+  RankingListPatchEntry entry,
+  Character? character,
+) {
+  if (entry.characterName.trim().isNotEmpty) {
+    return entry.characterName;
   }
 
-  final characterIds = entries.map((entry) => entry.characterId).toList();
-  final characters = await ref
-      .read(characterRepositoryProvider)
-      .getCharactersByIds(characterIds);
-  final charactersById = {for (final character in characters) character.id: character};
+  return character?.name ?? 'Unknown character';
+}
 
-  final items = entries
-      .map(
-        (entry) {
-          final character = charactersById[entry.characterId];
+String _patchEntrySubtitle(
+  RankingListPatchEntry entry,
+  Character? character,
+) {
+  if (entry.sourceTitle.trim().isNotEmpty) {
+    return entry.sourceTitle;
+  }
 
-          return RankedCharacterDisplayItem(
-            id: entry.id,
-            characterId: entry.characterId,
-            position: entry.position,
-            title: character?.name ?? entry.characterName,
-            subtitle: character?.sourceTitle ?? entry.sourceTitle,
-            isCharacterAvailable: character != null,
-          );
-        },
-      )
-      .toList();
-
-  return RankedListContent(items: items);
-});
+  return character?.sourceTitle ?? '';
+}
 
 final rankingListControllerProvider = Provider.autoDispose.family<RankingListController, String>(
   (ref, listId) => RankingListController(ref, listId),
