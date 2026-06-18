@@ -46,6 +46,7 @@ class CharacterMainInformation extends StatelessWidget {
           Center(
             child: CharacterImage(
               imagePath: character.mainImagePath,
+              characterFolder: character.id,
               width: 220,
               height: 320,
               placeholderIconSize: 96,

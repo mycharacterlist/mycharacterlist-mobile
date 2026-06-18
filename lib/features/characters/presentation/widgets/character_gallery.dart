@@ -6,9 +6,11 @@ import 'package:mycharacterlist/features/characters/presentation/widgets/charact
 class CharacterGallery extends StatelessWidget {
   const CharacterGallery({
     super.key,
+    required this.characterId,
     required this.imagePaths,
   });
 
+  final String characterId;
   final List<String> imagePaths;
 
   @override
@@ -22,6 +24,7 @@ class CharacterGallery extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: CharacterImage(
                   imagePath: null,
+                  characterFolder: characterId,
                   width: 130,
                   height: 180,
                   placeholderIconSize: 48,
@@ -41,6 +44,7 @@ class CharacterGallery extends StatelessWidget {
                     height: 180,
                     child: CharacterImage(
                       imagePath: imagePaths[index],
+                      characterFolder: characterId,
                       width: 130,
                       height: 180,
                       placeholderIconSize: 48,
