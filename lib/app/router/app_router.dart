@@ -7,6 +7,8 @@ import 'package:mycharacterlist/features/home/presentation/pages/home_page.dart'
 import 'package:mycharacterlist/features/library/presentation/pages/character_create_page.dart';
 import 'package:mycharacterlist/features/library/presentation/pages/library_page.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/pages/lists_page.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/pages/ranking_list_patch_detail_page.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/pages/ranking_list_patches_page.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/pages/ranking_list_page.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -38,6 +40,34 @@ final List<RouteBase> appRoutes = [
         child: RankingListPage(listId: id),
       );
     },
+    routes: [
+      GoRoute(
+        path: 'patches',
+        pageBuilder: (context, state) {
+          final listId = state.pathParameters['id']!;
+          return buildAppPage(
+            state: state,
+            child: RankingListPatchesPage(listId: listId),
+          );
+        },
+        routes: [
+          GoRoute(
+            path: ':patchId',
+            pageBuilder: (context, state) {
+              final listId = state.pathParameters['id']!;
+              final patchId = state.pathParameters['patchId']!;
+              return buildAppPage(
+                state: state,
+                child: RankingListPatchDetailPage(
+                  listId: listId,
+                  patchId: patchId,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    ],
   ),
   GoRoute(
     path: AppRoutes.characterCreate,
