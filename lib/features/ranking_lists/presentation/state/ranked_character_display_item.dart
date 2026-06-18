@@ -5,6 +5,7 @@ class RankedCharacterDisplayItem {
     required this.position,
     required this.title,
     required this.subtitle,
+    this.isCharacterAvailable = true,
   });
 
   final String id;
@@ -12,4 +13,5 @@ class RankedCharacterDisplayItem {
   final int position;
   final String title;
   final String subtitle;
+  final bool isCharacterAvailable;
 }

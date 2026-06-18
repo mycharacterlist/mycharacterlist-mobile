@@ -16,6 +16,7 @@ import 'package:mycharacterlist/core/presentation/listeners/view_model_error_lis
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/add_character_button.dart';
+import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/patch_action_button.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/ranking_character_card.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 
@@ -75,7 +76,7 @@ class RankingListView extends ConsumerWidget {
         ),
       ),
       overlays: [
-        if (!charactersState.isEditMode)
+        if (!charactersState.isEditMode) ...[
           BottomActionSlot(
             bottomMargin: 12,
             child: GestureDetector(
@@ -83,6 +84,15 @@ class RankingListView extends ConsumerWidget {
               child: const AddCharacterButton(),
             ),
           ),
+          Positioned(
+            right: 20,
+            bottom: 12 + SystemViewPadding.bottomOf(context),
+            child: GestureDetector(
+              onTap: () => controller.showPatchOptionsSheet(context),
+              child: const PatchActionButton(),
+            ),
+          ),
+        ],
       ],
       child: _RankingCharactersList(
         listId: listId,
