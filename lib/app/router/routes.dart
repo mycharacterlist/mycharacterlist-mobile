@@ -12,8 +12,12 @@ class AppRoutes {
   static const library = '/library';
 
   static String rankingListById(String id) => '/lists/$id';
+
   static String rankingListPatchesById(String listId) => '/lists/$listId/patches';
-  static String rankingListPatchById(String listId, String patchId) => '/lists/$listId/patches/$patchId';
+
+  static String rankingListPatchById(String listId, String patchId) =>
+      '/lists/$listId/patches/$patchId';
+
   static String characterById(String id) => '/characters/$id';
   static String characterEditById(String id) => '/characters/$id/edit';
 }
