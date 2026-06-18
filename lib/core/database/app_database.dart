@@ -24,7 +24,7 @@ class AppDatabase {
 
     return openDatabase(
       databasePath,
-      version: 1,
+      version: 2,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
       },
@@ -163,6 +163,8 @@ class AppDatabase {
           'ON ranked_characters(character_id)',
         );
 
+        await _createRankingListPatchTables(database);
+
         await database.execute(
           'CREATE INDEX character_gallery_images_character_id_index '
           'ON character_gallery_images(character_id)',
@@ -218,6 +220,105 @@ class AppDatabase {
           });
         }
       },
+      onUpgrade: (database, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await _createRankingListPatchTables(database);
+        }
+        if (oldVersion < 3) {
+          await _migratePatchEntriesToV3(database);
+        }
+      },
+    );
+  }
+
+  Future<void> _createRankingListPatchTables(Database database) async {
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS ranking_list_patches (
+        id TEXT PRIMARY KEY,
+        list_id TEXT NOT NULL,
+        label TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY(list_id) REFERENCES ranking_lists(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await database.execute('''
+      CREATE TABLE IF NOT EXISTS ranking_list_patch_entries (
+        id TEXT PRIMARY KEY,
+        patch_id TEXT NOT NULL,
+        character_id TEXT NOT NULL,
+        character_name TEXT NOT NULL,
+        source_title TEXT NOT NULL,
+        position INTEGER NOT NULL,
+        UNIQUE(patch_id, character_id),
+        UNIQUE(patch_id, position),
+        FOREIGN KEY(patch_id) REFERENCES ranking_list_patches(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await database.execute(
+      'CREATE INDEX IF NOT EXISTS ranking_list_patches_list_id_index '
+      'ON ranking_list_patches(list_id)',
+    );
+
+    await database.execute(
+      'CREATE INDEX IF NOT EXISTS ranking_list_patch_entries_patch_id_index '
+      'ON ranking_list_patch_entries(patch_id)',
+    );
+  }
+
+  Future<void> _migratePatchEntriesToV3(Database database) async {
+    final tableExists = await database.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='ranking_list_patch_entries'",
+    );
+
+    if (tableExists.isEmpty) {
+      return;
+    }
+
+    final columns = await database.rawQuery(
+      'PRAGMA table_info(ranking_list_patch_entries)',
+    );
+    final hasSnapshotColumns = columns.any(
+      (column) => column['name'] == 'character_name',
+    );
+
+    if (hasSnapshotColumns) {
+      return;
+    }
+
+    await database.execute('''
+      CREATE TABLE ranking_list_patch_entries_v3 (
+        id TEXT PRIMARY KEY,
+        patch_id TEXT NOT NULL,
+        character_id TEXT NOT NULL,
+        character_name TEXT NOT NULL DEFAULT '',
+        source_title TEXT NOT NULL DEFAULT '',
+        position INTEGER NOT NULL,
+        UNIQUE(patch_id, character_id),
+        UNIQUE(patch_id, position),
+        FOREIGN KEY(patch_id) REFERENCES ranking_list_patches(id) ON DELETE CASCADE
+      )
+    ''');
+
+    await database.execute('''
+      INSERT INTO ranking_list_patch_entries_v3 (
+        id, patch_id, character_id, character_name, source_title, position
+      )
+      SELECT id, patch_id, character_id, '', '', position
+      FROM ranking_list_patch_entries
+    ''');
+
+    await database.execute('DROP TABLE ranking_list_patch_entries');
+    await database.execute(
+      'ALTER TABLE ranking_list_patch_entries_v3 '
+      'RENAME TO ranking_list_patch_entries',
+    );
+
+    await database.execute(
+      'CREATE INDEX IF NOT EXISTS ranking_list_patch_entries_patch_id_index '
+      'ON ranking_list_patch_entries(patch_id)',
     );
   }
 }
