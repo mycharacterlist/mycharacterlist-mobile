@@ -20,19 +20,12 @@ class CharacterGallery extends StatelessWidget {
               height: 180,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: Container(
+                child: CharacterImage(
+                  imagePath: null,
                   width: 130,
                   height: 180,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black, width: 3),
-                    color: Colors.white,
-                  ),
-                  child: const CharacterImage(
-                    imagePath: null,
-                    width: 130,
-                    height: 180,
-                    placeholderIconSize: 48,
-                  ),
+                  placeholderIconSize: 48,
+                  showPlaceholderBorder: true,
                 ),
               ),
             )
