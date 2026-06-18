@@ -44,22 +44,13 @@ class CharacterMainInformation extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: Container(
+            child: CharacterImage(
+              imagePath: character.mainImagePath,
               width: 220,
               height: 320,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black, width: 3),
-                color: Colors.white,
-              ),
-              child: CharacterImage(
-                imagePath: character.mainImagePath,
-                width: 220,
-                height: 320,
-                fit: BoxFit.contain,
-                placeholderIconSize: 96,
-                showPlaceholderBorder: false,
-                enableFullscreenPreview: true,
-              ),
+              placeholderIconSize: 96,
+              showPlaceholderBorder: true,
+              enableFullscreenPreview: true,
             ),
           ),
           const SizedBox(height: 15),
