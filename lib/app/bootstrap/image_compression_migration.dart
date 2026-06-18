@@ -33,9 +33,10 @@ class ImageCompressionMigration {
   }) : _characterLocalDataSource = characterLocalDataSource,
        _localFileStorage = localFileStorage;
 
-  static const markerFileName = '.image_compression_migration_v2';
-  static const progressFileName = '.image_compression_migration_v2_progress';
+  static const markerFileName = '.image_compression_migration_v3';
+  static const progressFileName = '.image_compression_migration_v3_progress';
   static const legacyMarkerFileName = '.image_compression_migration_v1';
+  static const supersededMarkerFileName = '.image_compression_migration_v2';
 
   final CharacterLocalDataSource _characterLocalDataSource;
   final LocalFileStorage _localFileStorage;
@@ -97,12 +98,22 @@ class ImageCompressionMigration {
       activeCharacterIds: (await _characterLocalDataSource.getCharacters())
           .map((character) => character.id)
           .toSet(),
-      referencedFilesByCharacter: await _collectReferencedFilesByCharacter(),
     );
-    await _localFileStorage.clearDraftsFolder();
+
+    final referencedPaths = <String>{};
+    for (final character in await _characterLocalDataSource.getCharacters()) {
+      referencedPaths.addAll(
+        _collectPaths(
+          mainImagePath: character.mainImagePath,
+          galleryImagePaths: character.galleryImagePaths,
+        ),
+      );
+    }
+    await _localFileStorage.clearUnreferencedDraftFiles(referencedPaths);
     await marker.writeAsString(DateTime.now().toIso8601String());
     await _deleteProgress();
     await _deleteLegacyMarker();
+    await _deleteSupersededMarker();
   }
 
   Future<void> _migrateCharacter(CharacterModel character) async {
@@ -111,10 +122,16 @@ class ImageCompressionMigration {
       galleryImagePaths: character.galleryImagePaths,
     );
 
-    final migrated = await _localFileStorage.migrateCharacterImages(
+    final recovered = await _localFileStorage.recoverMissingImageReferences(
       characterId: character.id,
       mainImagePath: character.mainImagePath,
       galleryImagePaths: character.galleryImagePaths,
+    );
+
+    final migrated = await _localFileStorage.migrateCharacterImages(
+      characterId: character.id,
+      mainImagePath: recovered.mainImagePath,
+      galleryImagePaths: recovered.galleryImagePaths,
     );
 
     final updatedCharacter = character.copyWith(
@@ -161,31 +178,6 @@ class ImageCompressionMigration {
     };
   }
 
-  Future<Map<String, Set<String>>> _collectReferencedFilesByCharacter() async {
-    final characters = await _characterLocalDataSource.getCharacters();
-    final referencedFilesByCharacter = <String, Set<String>>{};
-
-    for (final character in characters) {
-      final fileNames = <String>{};
-      for (final path in _collectPaths(
-        mainImagePath: character.mainImagePath,
-        galleryImagePaths: character.galleryImagePaths,
-      )) {
-        final resolvedPath = await _localFileStorage.resolveExistingImagePath(
-          path,
-          characterFolder: character.id,
-        );
-        if (resolvedPath != null) {
-          fileNames.add(p.basename(resolvedPath));
-        }
-      }
-
-      referencedFilesByCharacter[character.id] = fileNames;
-    }
-
-    return referencedFilesByCharacter;
-  }
-
   Future<File> _markerFile() async {
     final storageRoot = await _localFileStorage.storageRoot();
     return File(p.join(storageRoot.path, markerFileName));
@@ -194,6 +186,19 @@ class ImageCompressionMigration {
   Future<File> _progressFile() async {
     final storageRoot = await _localFileStorage.storageRoot();
     return File(p.join(storageRoot.path, progressFileName));
+  }
+
+  Future<void> _deleteSupersededMarker() async {
+    final storageRoot = await _localFileStorage.storageRoot();
+    for (final markerName in {
+      supersededMarkerFileName,
+      '.image_compression_migration_v2_progress',
+    }) {
+      final marker = File(p.join(storageRoot.path, markerName));
+      if (await marker.exists()) {
+        await marker.delete();
+      }
+    }
   }
 
   Future<void> _deleteLegacyMarker() async {

@@ -171,7 +171,10 @@ class _CharacterContent extends StatelessWidget {
           const SizedBox(height: 12),
           CharacterRanksStanding(rankings: rankings),
           const SizedBox(height: 12),
-          CharacterGallery(imagePaths: character.galleryImagePaths),
+          CharacterGallery(
+            characterId: character.id,
+            imagePaths: character.galleryImagePaths,
+          ),
           if (character.facts.isNotEmpty) ...[
             const SizedBox(height: 12),
             CharacterFacts(facts: character.facts),

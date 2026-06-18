@@ -237,7 +237,10 @@ class CharacterJsonExportService {
       return null;
     }
 
-    final resolvedPath = await _localFileStorage.resolveExistingImagePath(path);
+    final resolvedPath = await _localFileStorage.resolveExistingImagePath(
+      path,
+      characterFolder: characterId,
+    );
     if (resolvedPath == null) {
       return null;
     }
@@ -267,6 +270,7 @@ class CharacterJsonExportService {
 
     final resolvedPath = await _localFileStorage.resolveExistingImagePath(
       sourcePath,
+      characterFolder: characterId,
     );
     if (resolvedPath == null) {
       return null;
