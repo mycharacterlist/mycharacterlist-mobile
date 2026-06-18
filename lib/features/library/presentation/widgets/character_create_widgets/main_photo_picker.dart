@@ -76,6 +76,7 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
             height: _previewHeight,
             decoration: BoxDecoration(
               border: Border.all(color: Colors.black, width: 3),
+              color: Colors.white,
             ),
             child: Stack(
               children: [
@@ -86,17 +87,15 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
                           size: 100,
                           color: Colors.black,
                         )
-                      : ClipRect(
-                          child: Image.file(
-                            File(widget.imagePath!),
-                            fit: BoxFit.cover,
-                            cacheWidth: AppImageCache.decodeCacheWidthForBox(
-                              width: _previewWidth,
-                              height: _previewHeight,
-                              context: context,
-                            ),
-                            gaplessPlayback: true,
+                      : Image.file(
+                          File(widget.imagePath!),
+                          fit: BoxFit.contain,
+                          cacheWidth: AppImageCache.decodeCacheWidthForBox(
+                            width: _previewWidth,
+                            height: _previewHeight,
+                            context: context,
                           ),
+                          gaplessPlayback: true,
                         ),
                 ),
                 if (widget.imagePath != null)

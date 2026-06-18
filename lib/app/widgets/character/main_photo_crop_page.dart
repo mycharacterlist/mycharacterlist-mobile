@@ -12,10 +12,9 @@ class MainPhotoCropPage extends StatefulWidget {
 
   final Uint8List imageBytes;
 
-  static const aspectRatio = 150 / 190;
-
   static Future<String?> open(BuildContext context, String imagePath) async {
-    final bytes = await File(imagePath).readAsBytes();
+    final rawBytes = await File(imagePath).readAsBytes();
+    final imageBytes = const ImageCompressor().prepareForCrop(rawBytes);
     if (!context.mounted) {
       return null;
     }
@@ -23,7 +22,7 @@ class MainPhotoCropPage extends StatefulWidget {
     return Navigator.of(context).push<String>(
       MaterialPageRoute(
         fullscreenDialog: true,
-        builder: (_) => MainPhotoCropPage(imageBytes: bytes),
+        builder: (_) => MainPhotoCropPage(imageBytes: imageBytes),
       ),
     );
   }
@@ -35,7 +34,6 @@ class MainPhotoCropPage extends StatefulWidget {
 class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
   final _cropController = CropController();
   bool _isCropping = false;
-  bool _skipInitialCoverScale = true;
 
   Future<String> _saveCroppedImage(Uint8List bytes) async {
     final compressed = await const ImageCompressor().compress(
@@ -118,21 +116,19 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
             child: Crop(
               image: widget.imageBytes,
               controller: _cropController,
-              aspectRatio: MainPhotoCropPage.aspectRatio,
               interactive: true,
-              fixCropRect: true,
+              fixCropRect: false,
+              initialRectBuilder: InitialRectBuilder.withBuilder(
+                (viewportRect, imageRect) => imageRect,
+              ),
               baseColor: Colors.black,
-              maskColor: Colors.black.withOpacity(0.62),
+              maskColor: Colors.black.withValues(alpha: 0.62),
               radius: 0,
-              willUpdateScale: (newScale) {
-                // crop_your_image auto-zooms to cover the crop rect on open;
-                // keep the full photo visible so the user can pinch to zoom in.
-                if (_skipInitialCoverScale) {
-                  _skipInitialCoverScale = false;
-                  return false;
-                }
-                return newScale <= 8;
-              },
+              filterQuality: FilterQuality.high,
+              cornerDotBuilder: (size, edgeAlignment) => DotControl(
+                color: Colors.white,
+              ),
+              willUpdateScale: (newScale) => newScale <= 8,
               onCropped: (result) async {
                 switch (result) {
                   case CropSuccess(:final croppedImage):
@@ -167,7 +163,7 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
           Padding(
             padding: EdgeInsets.fromLTRB(20, 8, 20, 12 + bottomInset),
             child: const Text(
-              'Move and zoom the photo.',
+              'Pinch to zoom. Drag corners to resize the crop area.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
