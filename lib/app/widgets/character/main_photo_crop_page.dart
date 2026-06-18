@@ -34,6 +34,13 @@ class MainPhotoCropPage extends StatefulWidget {
 class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
   final _cropController = CropController();
   bool _isCropping = false;
+  bool _isFullImageCrop = false;
+
+  Rect? _viewportImageRect;
+  Rect? _savedCropRect;
+  Rect? _lastCropRect;
+
+  static const _initialCropInset = 0.1;
 
   Future<String> _saveCroppedImage(Uint8List bytes) async {
     final compressed = await const ImageCompressor().compress(
@@ -62,6 +69,28 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
 
     setState(() => _isCropping = true);
     _cropController.crop();
+  }
+
+  void _toggleFullImageCrop() {
+    if (_isCropping || _viewportImageRect == null) {
+      return;
+    }
+
+    if (_isFullImageCrop) {
+      if (_savedCropRect != null) {
+        _cropController.cropRect = _savedCropRect!;
+      }
+      setState(() => _isFullImageCrop = false);
+      return;
+    }
+
+    _savedCropRect = _lastCropRect ?? _viewportImageRect;
+    _cropController.cropRect = _viewportImageRect!;
+    setState(() => _isFullImageCrop = true);
+  }
+
+  void _onCropMoved(Rect cropRect, Rect imageBasedRect) {
+    _lastCropRect = cropRect;
   }
 
   @override
@@ -110,66 +139,173 @@ class _MainPhotoCropPageState extends State<MainPhotoCropPage> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: Crop(
-              image: widget.imageBytes,
-              controller: _cropController,
-              interactive: true,
-              fixCropRect: false,
-              initialRectBuilder: InitialRectBuilder.withBuilder(
-                (viewportRect, imageRect) => imageRect,
-              ),
-              baseColor: Colors.black,
-              maskColor: Colors.black.withValues(alpha: 0.62),
-              radius: 0,
-              filterQuality: FilterQuality.high,
-              cornerDotBuilder: (size, edgeAlignment) => DotControl(
-                color: Colors.white,
-              ),
-              willUpdateScale: (newScale) => newScale <= 8,
-              onCropped: (result) async {
-                switch (result) {
-                  case CropSuccess(:final croppedImage):
-                    try {
-                      final path = await _saveCroppedImage(croppedImage);
-                      if (mounted) {
-                        Navigator.pop(context, path);
+          Positioned.fill(
+            bottom: 28 + bottomInset,
+            child: GestureDetector(
+              onDoubleTap: _toggleFullImageCrop,
+              child: Crop(
+                image: widget.imageBytes,
+                controller: _cropController,
+                interactive: true,
+                fixCropRect: false,
+                initialRectBuilder: InitialRectBuilder.withBuilder(
+                  (viewportRect, imageRect) {
+                    _viewportImageRect = imageRect;
+                    return Rect.fromLTRB(
+                      imageRect.left + imageRect.width * _initialCropInset,
+                      imageRect.top + imageRect.height * _initialCropInset,
+                      imageRect.right - imageRect.width * _initialCropInset,
+                      imageRect.bottom - imageRect.height * _initialCropInset,
+                    );
+                  },
+                ),
+                baseColor: Colors.black,
+                maskColor: Colors.black.withValues(alpha: 0.55),
+                radius: 0,
+                filterQuality: FilterQuality.high,
+                clipBehavior: Clip.none,
+                cornerDotBuilder: (size, edgeAlignment) =>
+                    _CropCornerHandle(alignment: edgeAlignment),
+                overlayBuilder: (context, rect) => Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+                willUpdateScale: (newScale) => newScale >= 0.35 && newScale <= 8,
+                onMoved: _onCropMoved,
+                onCropped: (result) async {
+                  switch (result) {
+                    case CropSuccess(:final croppedImage):
+                      try {
+                        final path = await _saveCroppedImage(croppedImage);
+                        if (mounted) {
+                          Navigator.pop(context, path);
+                        }
+                      } catch (_) {
+                        if (mounted) {
+                          setState(() => _isCropping = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Could not save cropped photo.'),
+                            ),
+                          );
+                        }
                       }
-                    } catch (_) {
+                    case CropFailure():
                       if (mounted) {
                         setState(() => _isCropping = false);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Could not save cropped photo.'),
+                            content: Text('Could not crop photo.'),
                           ),
                         );
                       }
-                    }
-                  case CropFailure():
-                    if (mounted) {
-                      setState(() => _isCropping = false);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Could not crop photo.'),
-                        ),
-                      );
-                    }
-                }
-              },
+                  }
+                },
+              ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, 8, 20, 12 + bottomInset),
-            child: const Text(
-              'Pinch to zoom. Drag corners to resize the crop area.',
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 6 + bottomInset,
+            child: Text(
+              'Pinch to zoom · drag corners · double tap for full image',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 11,
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class _CropCornerHandle extends StatelessWidget {
+  const _CropCornerHandle({required this.alignment});
+
+  final EdgeAlignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    const armLength = 22.0;
+    const thickness = 4.0;
+
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: CustomPaint(
+        painter: _CornerHandlePainter(
+          alignment: alignment,
+          armLength: armLength,
+          thickness: thickness,
+        ),
+      ),
+    );
+  }
+}
+
+class _CornerHandlePainter extends CustomPainter {
+  const _CornerHandlePainter({
+    required this.alignment,
+    required this.armLength,
+    required this.thickness,
+  });
+
+  final EdgeAlignment alignment;
+  final double armLength;
+  final double thickness;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final fill = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = thickness
+      ..strokeCap = StrokeCap.round;
+
+    final outline = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = thickness + 2
+      ..strokeCap = StrokeCap.round;
+
+    void drawCorner(Offset origin, {required bool horizontalRight, required bool verticalDown}) {
+      final horizontalEnd = origin.translate(
+        horizontalRight ? armLength : -armLength,
+        0,
+      );
+      final verticalEnd = origin.translate(
+        0,
+        verticalDown ? armLength : -armLength,
+      );
+
+      canvas.drawLine(origin, horizontalEnd, outline);
+      canvas.drawLine(origin, verticalEnd, outline);
+      canvas.drawLine(origin, horizontalEnd, fill);
+      canvas.drawLine(origin, verticalEnd, fill);
+    }
+
+    switch (alignment) {
+      case EdgeAlignment.topLeft:
+        drawCorner(center, horizontalRight: true, verticalDown: true);
+      case EdgeAlignment.topRight:
+        drawCorner(center, horizontalRight: false, verticalDown: true);
+      case EdgeAlignment.bottomLeft:
+        drawCorner(center, horizontalRight: true, verticalDown: false);
+      case EdgeAlignment.bottomRight:
+        drawCorner(center, horizontalRight: false, verticalDown: false);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CornerHandlePainter oldDelegate) {
+    return oldDelegate.alignment != alignment;
   }
 }
