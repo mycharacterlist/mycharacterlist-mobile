@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:mycharacterlist/app/widgets/character/character_section_panel.dart';
-import 'package:mycharacterlist/core/theme/app_typography.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_image.dart';
 
 class CharacterGallery extends StatelessWidget {
@@ -17,9 +16,18 @@ class CharacterGallery extends StatelessWidget {
     return CharacterSectionPanel(
       title: 'Gallery:',
       child: imagePaths.isEmpty
-          ? const Text(
-              'No gallery images',
-              style: AppTypography.characterSectionEmpty,
+          ? SizedBox(
+              height: 180,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: CharacterImage(
+                  imagePath: null,
+                  width: 130,
+                  height: 180,
+                  placeholderIconSize: 48,
+                  showPlaceholderBorder: true,
+                ),
+              ),
             )
           : SizedBox(
               height: 180,

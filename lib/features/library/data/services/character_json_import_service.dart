@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
 
@@ -235,10 +236,6 @@ class CharacterJsonImportService {
           json['mainImageData'],
           folder: id,
         );
-        final embeddedGalleryImages = await _restoreEmbeddedImages(
-          json['galleryImageData'],
-          folder: id,
-        );
         final character = Character(
           id: id,
           name: _requiredString(json, 'name'),
@@ -279,14 +276,13 @@ class CharacterJsonImportService {
           galleryImagePaths:
               json.containsKey('galleryImages') ||
                   json.containsKey('galleryImageData')
-              ? embeddedGalleryImages.isNotEmpty
-                    ? embeddedGalleryImages
-                    : await _importGalleryPathsFromJson(
-                        jsonFile,
-                        json['galleryImages'],
-                        folder: id,
-                        compressedFiles: exportCompressedFiles,
-                      )
+              ? await _importGalleryImages(
+                  jsonFile,
+                  json['galleryImages'],
+                  json['galleryImageData'],
+                  folder: id,
+                  compressedFiles: exportCompressedFiles,
+                )
               : existing?.galleryImagePaths ?? const [],
           grades: json.containsKey('grades')
               ? _parseGrades(json['grades'], gradeMaximums)
@@ -348,78 +344,78 @@ class CharacterJsonImportService {
     );
   }
 
-  Future<List<String>> _restoreEmbeddedImages(
-    Object? rawImages, {
-    required String folder,
-  }) async {
-    if (rawImages is! List) {
-      return const [];
-    }
-
-    final paths = <String>[];
-    for (final rawImage in rawImages) {
-      final path = await _restoreEmbeddedImage(rawImage, folder: folder);
-      if (path != null) {
-        paths.add(path);
-      }
-    }
-    return paths;
-  }
-
   Future<String?> _importImageFromJsonPath(
     File jsonFile,
     Object? rawPath, {
     required String folder,
     Set<String> compressedFiles = const {},
   }) async {
-    final resolvedPath = _resolveOptionalPath(jsonFile, rawPath);
+    final sourcePath = _resolveOptionalPath(jsonFile, rawPath);
+    if (sourcePath == null) {
+      return null;
+    }
+
+    final resolvedPath = await _localFileStorage.resolveExistingImagePath(
+      sourcePath,
+      characterFolder: folder,
+    );
     if (resolvedPath == null) {
       return null;
     }
 
-    final file = File(resolvedPath);
-    if (!await file.exists()) {
+    try {
+      final savedPath = await _localFileStorage.saveFile(
+        resolvedPath,
+        folder: folder,
+      );
+      if (compressedFiles.contains(p.basename(resolvedPath))) {
+        await _localFileStorage.markImageAsCompressed(folder, savedPath);
+      }
+      return savedPath;
+    } on Object {
       return null;
     }
-
-    return _localFileStorage.saveImportedImageBytes(
-      await file.readAsBytes(),
-      folder: folder,
-      sourcePath: file.path,
-      extension: p.extension(file.path),
-      alreadyCompressed: compressedFiles.contains(p.basename(file.path)),
-    );
   }
 
-  Future<List<String>> _importGalleryPathsFromJson(
+  Future<List<String>> _importGalleryImages(
     File jsonFile,
-    Object? rawPaths, {
+    Object? rawPaths,
+    Object? rawEmbedded, {
     required String folder,
     Set<String> compressedFiles = const {},
   }) async {
-    if (rawPaths is! List) {
-      return const [];
-    }
+    final pathEntries = rawPaths is List
+        ? rawPaths.map((path) => path.toString().trim()).toList()
+        : const <String>[];
+    final embeddedEntries = rawEmbedded is List ? rawEmbedded : const <dynamic>[];
+    final count = math.max(pathEntries.length, embeddedEntries.length);
+    final importedPaths = <String>[];
 
-    final paths = <String>[];
-    for (final rawPath in rawPaths) {
-      final path = rawPath.toString().trim();
-      if (path.isEmpty) {
-        continue;
+    for (var index = 0; index < count; index++) {
+      String? importedPath;
+
+      if (index < embeddedEntries.length) {
+        importedPath = await _restoreEmbeddedImage(
+          embeddedEntries[index],
+          folder: folder,
+        );
       }
 
-      final importedPath = await _importImageFromJsonPath(
-        jsonFile,
-        path,
-        folder: folder,
-        compressedFiles: compressedFiles,
-      );
+      if (importedPath == null && index < pathEntries.length) {
+        importedPath = await _importImageFromJsonPath(
+          jsonFile,
+          pathEntries[index],
+          folder: folder,
+          compressedFiles: compressedFiles,
+        );
+      }
+
       if (importedPath != null) {
-        paths.add(importedPath);
+        importedPaths.add(importedPath);
       }
     }
 
-    return paths;
+    return importedPaths;
   }
 
   Future<Set<String>> _readExportCompressedManifest(

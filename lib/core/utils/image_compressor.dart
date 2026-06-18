@@ -158,4 +158,19 @@ class ImageCompressor {
 
     return extension;
   }
+
+  /// Applies EXIF orientation so crop/preview match what the user sees.
+  Uint8List prepareForCrop(Uint8List input) {
+    final decoded = img.decodeImage(input);
+    if (decoded == null) {
+      return input;
+    }
+
+    final oriented = img.bakeOrientation(decoded);
+    if (!_hasTransparency(oriented)) {
+      return Uint8List.fromList(img.encodeJpg(oriented, quality: 95));
+    }
+
+    return Uint8List.fromList(img.encodePng(oriented));
+  }
 }

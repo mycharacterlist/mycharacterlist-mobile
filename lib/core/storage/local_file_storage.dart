@@ -6,11 +6,22 @@ import 'package:mycharacterlist/core/utils/image_compressor.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as path_provider;
 
+class MigratedCharacterImages {
+  const MigratedCharacterImages({
+    this.mainImagePath,
+    this.galleryImagePaths = const [],
+  });
+
+  final String? mainImagePath;
+  final List<String> galleryImagePaths;
+}
+
 class LocalFileStorage {
   LocalFileStorage({ImageCompressor? imageCompressor})
     : _imageCompressor = imageCompressor ?? const ImageCompressor();
 
   static const draftsFolder = '_drafts';
+  static const storageFolderName = 'mycharacterlist_files';
 
   final ImageCompressor _imageCompressor;
 
@@ -231,10 +242,18 @@ class LocalFileStorage {
 
     final storageRoot = await _storageRoot();
     final draftsDirectory = Directory(p.join(storageRoot.path, draftsFolder));
-    final file = File(path);
-    final normalizedPath = file.absolute.path;
+    final resolvedPath = await resolveExistingImagePath(path);
+    if (resolvedPath == null) {
+      return;
+    }
 
-    if (!_isInsideDirectory(normalizedPath, draftsDirectory.absolute.path)) {
+    final file = File(resolvedPath);
+    final normalizedPath = _normalizePathForComparison(file.absolute.path);
+    final normalizedDraftsDirectory = _normalizePathForComparison(
+      draftsDirectory.absolute.path,
+    );
+
+    if (!_isInsideDirectory(normalizedPath, normalizedDraftsDirectory)) {
       return;
     }
 
@@ -295,28 +314,36 @@ class LocalFileStorage {
   }
 
   Future<String> saveFile(String sourcePath, {required String folder}) async {
-    final sourceFile = File(sourcePath);
-
-    if (!await sourceFile.exists()) {
+    final resolvedPath = await resolveExistingImagePath(
+      sourcePath,
+      characterFolder: folder,
+    );
+    if (resolvedPath == null) {
       throw StateError('File does not exist: $sourcePath');
     }
 
+    final sourceFile = File(resolvedPath);
     final storageRoot = await _storageRoot();
-    final normalizedSourcePath = sourceFile.absolute.path;
+    final normalizedSourcePath = _normalizePathForComparison(
+      sourceFile.absolute.path,
+    );
     final destinationDirectory = Directory(p.join(storageRoot.path, folder));
     await destinationDirectory.create(recursive: true);
-    final normalizedDestinationPath = destinationDirectory.absolute.path;
+    final normalizedDestinationPath = _normalizePathForComparison(
+      destinationDirectory.absolute.path,
+    );
+    final normalizedStorageRoot = _normalizePathForComparison(storageRoot.path);
 
     if (_isInsideDirectory(normalizedSourcePath, normalizedDestinationPath)) {
-      return normalizedSourcePath;
+      return sourceFile.absolute.path;
     }
 
-    if (_isInsideDirectory(normalizedSourcePath, storageRoot.path)) {
+    if (_isInsideDirectory(normalizedSourcePath, normalizedStorageRoot)) {
       final relocatedPath = await _relocateStoredFile(
         sourceFile,
         destinationDirectory,
       );
-      if (_isInsideDrafts(normalizedSourcePath, storageRoot.path)) {
+      if (_isInsideDrafts(normalizedSourcePath, normalizedStorageRoot)) {
         await markImageAsCompressed(folder, relocatedPath);
       }
       return relocatedPath;
@@ -350,11 +377,20 @@ class LocalFileStorage {
       return;
     }
 
-    final storageRoot = await _storageRoot();
-    final file = File(path);
-    final normalizedPath = file.absolute.path;
+    final resolvedPath = await resolveExistingImagePath(
+      path,
+      characterFolder: characterFolder,
+    );
+    if (resolvedPath == null) {
+      return;
+    }
 
-    if (!_isInsideDirectory(normalizedPath, storageRoot.path)) {
+    final storageRoot = await _storageRoot();
+    final file = File(resolvedPath);
+    final normalizedPath = _normalizePathForComparison(file.absolute.path);
+    final normalizedStorageRoot = _normalizePathForComparison(storageRoot.path);
+
+    if (!_isInsideDirectory(normalizedPath, normalizedStorageRoot)) {
       return;
     }
 
@@ -382,15 +418,21 @@ class LocalFileStorage {
       return path;
     }
 
-    final file = File(path);
-    if (!await file.exists()) {
-      return path;
+    final inferredFolder = p.basename(p.dirname(p.normalize(path)));
+    final resolvedPath = await resolveExistingImagePath(
+      path,
+      characterFolder: inferredFolder,
+    );
+    if (resolvedPath == null) {
+      return null;
     }
 
+    final file = File(resolvedPath);
     final storageRoot = await _storageRoot();
-    final normalizedPath = file.absolute.path;
-    if (!_isInsideDirectory(normalizedPath, storageRoot.path)) {
-      return path;
+    final normalizedPath = _normalizePathForComparison(file.absolute.path);
+    final normalizedStorageRoot = _normalizePathForComparison(storageRoot.path);
+    if (!_isInsideDirectory(normalizedPath, normalizedStorageRoot)) {
+      return resolvedPath;
     }
 
     final originalBytes = await file.readAsBytes();
@@ -400,7 +442,7 @@ class LocalFileStorage {
     );
 
     if (compressed.bytes.length >= originalBytes.length) {
-      return path;
+      return resolvedPath;
     }
 
     final characterFolder = p.basename(file.parent.path);
@@ -417,12 +459,118 @@ class LocalFileStorage {
 
   Future<Directory> storageRoot() => _storageRoot();
 
+  /// Removes legacy folders and files left behind after images were relocated.
+  Future<void> cleanupOrphanedStorage({
+    required Set<String> activeCharacterIds,
+    required Map<String, Set<String>> referencedFilesByCharacter,
+  }) async {
+    final storageRoot = await _storageRoot();
+    if (!await storageRoot.exists()) {
+      return;
+    }
+
+    await for (final entity in storageRoot.list()) {
+      if (entity is File) {
+        final fileName = p.basename(entity.path);
+        if (fileName.startsWith('.')) {
+          continue;
+        }
+
+        await _deleteIfExists(entity);
+        continue;
+      }
+
+      if (entity is! Directory) {
+        continue;
+      }
+
+      final directoryName = p.basename(entity.path);
+      if (directoryName.startsWith('.') || directoryName == draftsFolder) {
+        continue;
+      }
+
+      if (!activeCharacterIds.contains(directoryName)) {
+        await entity.delete(recursive: true);
+        continue;
+      }
+
+      final referencedFiles = referencedFilesByCharacter[directoryName] ?? {};
+      await for (final child in entity.list()) {
+        if (child is! File) {
+          continue;
+        }
+
+        final fileName = p.basename(child.path);
+        if (fileName == CompressedImagesManifest.fileName ||
+            referencedFiles.contains(fileName)) {
+          continue;
+        }
+
+        await _deleteIfExists(child);
+      }
+    }
+  }
+
+  /// Relocates character images into [characterId], compresses when possible,
+  /// and returns the final paths to store in SQLite.
+  Future<MigratedCharacterImages> migrateCharacterImages({
+    required String characterId,
+    required String? mainImagePath,
+    required List<String> galleryImagePaths,
+  }) async {
+    final migratedMain = await _migrateImagePath(
+      mainImagePath,
+      characterId: characterId,
+    );
+
+    final migratedGallery = <String>[];
+    for (final path in galleryImagePaths) {
+      final migratedPath = await _migrateImagePath(
+        path,
+        characterId: characterId,
+      );
+      if (migratedPath != null) {
+        migratedGallery.add(migratedPath);
+      }
+    }
+
+    return MigratedCharacterImages(
+      mainImagePath: migratedMain,
+      galleryImagePaths: migratedGallery,
+    );
+  }
+
+  /// Resolves a stored image path to an existing file, including legacy folders.
+  Future<String?> resolveExistingImagePath(
+    String? path, {
+    String? characterFolder,
+  }) async {
+    if (path == null || path.trim().isEmpty) {
+      return null;
+    }
+
+    final candidates = await _buildPathResolutionCandidates(
+      path.trim(),
+      characterFolder: characterFolder,
+    );
+
+    for (final candidate in candidates) {
+      final file = File(candidate);
+      if (await file.exists()) {
+        return file.absolute.path;
+      }
+    }
+
+    return null;
+  }
+
   Future<void> deleteFolder(String folder) async {
     final storageRoot = await _storageRoot();
     final directory = Directory(p.join(storageRoot.path, folder));
-    final normalizedPath = directory.absolute.path;
+    final normalizedPath = _normalizePathForComparison(directory.absolute.path);
+    final normalizedStorageRoot = _normalizePathForComparison(storageRoot.path);
 
-    if (!_isInsideDirectory(normalizedPath, storageRoot.path)) {
+    if (!_isInsideDirectory(normalizedPath, normalizedStorageRoot)) {
       return;
     }
 
@@ -465,7 +613,7 @@ class LocalFileStorage {
     final documentsDirectory = await path_provider
         .getApplicationDocumentsDirectory();
     final storageRoot = Directory(
-      p.join(documentsDirectory.path, 'mycharacterlist_files'),
+      p.join(documentsDirectory.path, storageFolderName),
     );
 
     await storageRoot.create(recursive: true);
@@ -473,12 +621,122 @@ class LocalFileStorage {
   }
 
   bool _isInsideDirectory(String path, String directoryPath) {
-    final normalizedDirectoryPath =
-        directoryPath.endsWith(Platform.pathSeparator)
-        ? directoryPath
-        : '$directoryPath${Platform.pathSeparator}';
+    final normalizedPath = _normalizePathForComparison(path);
+    final normalizedDirectory = _normalizePathForComparison(directoryPath);
+    final directoryPrefix = normalizedDirectory.endsWith('/')
+        ? normalizedDirectory
+        : '$normalizedDirectory/';
 
-    return path == directoryPath || path.startsWith(normalizedDirectoryPath);
+    return normalizedPath == normalizedDirectory ||
+        normalizedPath.startsWith(directoryPrefix);
+  }
+
+  String _normalizePathForComparison(String path) {
+    var normalized = p.normalize(path);
+
+    if (Platform.isIOS || Platform.isMacOS) {
+      if (normalized.startsWith('/var/') &&
+          !normalized.startsWith('/private/')) {
+        normalized = '/private$normalized';
+      }
+    }
+
+    return normalized;
+  }
+
+  Future<List<String>> _buildPathResolutionCandidates(
+    String path, {
+    String? characterFolder,
+  }) async {
+    final seen = <String>{};
+    final candidates = <String>[];
+
+    void addCandidate(String? candidate) {
+      if (candidate == null || candidate.isEmpty) {
+        return;
+      }
+
+      for (final variant in _iosPathVariants(candidate)) {
+        if (seen.add(variant)) {
+          candidates.add(variant);
+        }
+      }
+    }
+
+    addCandidate(p.normalize(path));
+
+    final rebasedPath = await _rebasePathToCurrentStorageRoot(path);
+    addCandidate(rebasedPath);
+
+    final fileName = p.basename(p.normalize(path));
+    if (fileName.isEmpty) {
+      return candidates;
+    }
+
+    final storageRoot = await _storageRoot();
+    if (characterFolder != null && characterFolder.isNotEmpty) {
+      addCandidate(p.join(storageRoot.path, characterFolder, fileName));
+      addCandidate(p.join(storageRoot.path, draftsFolder, fileName));
+    }
+
+    addCandidate(p.join(storageRoot.path, fileName));
+
+    return candidates;
+  }
+
+  Iterable<String> _iosPathVariants(String path) sync* {
+    final normalized = p.normalize(path);
+    yield normalized;
+
+    if (Platform.isIOS || Platform.isMacOS) {
+      if (normalized.startsWith('/var/') &&
+          !normalized.startsWith('/private/')) {
+        yield '/private$normalized';
+      }
+      if (normalized.startsWith('/private/var/')) {
+        yield normalized.substring('/private'.length);
+      }
+    }
+  }
+
+  Future<String?> _rebasePathToCurrentStorageRoot(String path) async {
+    final normalized = _normalizePathForComparison(p.normalize(path));
+    final marker = '/$storageFolderName/';
+    final markerIndex = normalized.indexOf(marker);
+    if (markerIndex < 0) {
+      return null;
+    }
+
+    final suffix = normalized.substring(markerIndex + marker.length);
+    if (suffix.isEmpty) {
+      return null;
+    }
+
+    final storageRoot = await _storageRoot();
+    return p.join(storageRoot.path, suffix.replaceAll('\\', '/'));
+  }
+
+  Future<void> _deleteIfExists(File file) async {
+    if (await file.exists()) {
+      await file.delete();
+    }
+  }
+
+  Future<String?> _migrateImagePath(
+    String? path, {
+    required String characterId,
+  }) async {
+    final resolvedPath = await resolveExistingImagePath(
+      path,
+      characterFolder: characterId,
+    );
+    if (resolvedPath == null) {
+      return null;
+    }
+
+    var storedPath = await saveFile(resolvedPath, folder: characterId);
+    storedPath = await compressStoredFileIfNeeded(storedPath) ?? storedPath;
+    return storedPath;
   }
 
   String _resolveExtension({
