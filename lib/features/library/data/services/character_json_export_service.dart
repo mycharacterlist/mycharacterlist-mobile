@@ -237,14 +237,15 @@ class CharacterJsonExportService {
       return null;
     }
 
-    final file = File(path);
-    if (!await file.exists()) {
+    final resolvedPath = await _localFileStorage.resolveExistingImagePath(path);
+    if (resolvedPath == null) {
       return null;
     }
 
+    final file = File(resolvedPath);
     final isCompressed = await _localFileStorage.isImageCompressed(
       characterId,
-      path,
+      resolvedPath,
     );
 
     return {
@@ -264,10 +265,14 @@ class CharacterJsonExportService {
       return null;
     }
 
-    final source = File(sourcePath);
-    if (!await source.exists()) {
+    final resolvedPath = await _localFileStorage.resolveExistingImagePath(
+      sourcePath,
+    );
+    if (resolvedPath == null) {
       return null;
     }
+
+    final source = File(resolvedPath);
 
     final extension = p.extension(source.path);
     final relativePath = p.join(
