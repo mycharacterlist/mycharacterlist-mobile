@@ -1,5 +1,3 @@
-import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list_patch.dart';
-import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list_patch_entry.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranked_character.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/entities/ranking_list.dart';
 
@@ -43,19 +41,4 @@ abstract interface class RankingListRepository {
     required String listId,
     required List<({String characterId, int position})> entries,
   });
-
-  Future<String> getSuggestedPatchLabel(String listId);
-
-  Future<RankingListPatch> createPatchFromCurrentList(
-    String listId, {
-    required String label,
-  });
-
-  Future<List<RankingListPatch>> getPatchesForList(String listId);
-
-  Future<RankingListPatch?> getPatchById(String patchId);
-
-  Future<List<RankingListPatchEntry>> getPatchEntries(String patchId);
-
-  Future<void> deletePatch(String patchId);
 }
