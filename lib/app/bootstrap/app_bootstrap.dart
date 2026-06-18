@@ -33,8 +33,10 @@ class _AppBootstrapState extends State<AppBootstrap> {
           }
         },
       );
-    } on Object {
-      // Keep launching the app even if migration fails.
+    } on Object catch (error, stackTrace) {
+      debugPrint(
+        'Image compression migration failed: $error\n$stackTrace',
+      );
     }
 
     if (mounted) {

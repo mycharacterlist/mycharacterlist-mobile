@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:mycharacterlist/core/database/app_database.dart';
 import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 import 'package:mycharacterlist/features/characters/data/models/character_model.dart';
@@ -22,9 +24,8 @@ class ImageCompressionMigrationProgress {
 typedef ImageCompressionMigrationProgressCallback =
     void Function(ImageCompressionMigrationProgress progress);
 
-/// One-time migration that compresses images saved before upload compression
-/// was added. Skips files that are already as small as the compressor can make
-/// them. Progress is saved after each character so a closed app can resume.
+/// One-time migration that relocates legacy images into character folders,
+/// compresses them when possible, and fixes stored paths in SQLite.
 class ImageCompressionMigration {
   ImageCompressionMigration({
     required CharacterLocalDataSource characterLocalDataSource,
@@ -32,8 +33,9 @@ class ImageCompressionMigration {
   }) : _characterLocalDataSource = characterLocalDataSource,
        _localFileStorage = localFileStorage;
 
-  static const markerFileName = '.image_compression_migration_v1';
-  static const progressFileName = '.image_compression_migration_v1_progress';
+  static const markerFileName = '.image_compression_migration_v2';
+  static const progressFileName = '.image_compression_migration_v2_progress';
+  static const legacyMarkerFileName = '.image_compression_migration_v1';
 
   final CharacterLocalDataSource _characterLocalDataSource;
   final LocalFileStorage _localFileStorage;
@@ -78,14 +80,110 @@ class ImageCompressionMigration {
         continue;
       }
 
-      await _migrateCharacter(character);
+      try {
+        await _migrateCharacter(character);
+      } on Object catch (error, stackTrace) {
+        debugPrint(
+          'Image migration failed for ${character.id}: $error\n$stackTrace',
+        );
+      }
+
       completedIds.add(character.id);
       await _writeProgress(completedIds);
       report(completedIds.length);
     }
 
+    await _localFileStorage.cleanupOrphanedStorage(
+      activeCharacterIds: (await _characterLocalDataSource.getCharacters())
+          .map((character) => character.id)
+          .toSet(),
+      referencedFilesByCharacter: await _collectReferencedFilesByCharacter(),
+    );
+    await _localFileStorage.clearDraftsFolder();
     await marker.writeAsString(DateTime.now().toIso8601String());
     await _deleteProgress();
+    await _deleteLegacyMarker();
+  }
+
+  Future<void> _migrateCharacter(CharacterModel character) async {
+    final previousPaths = _collectPaths(
+      mainImagePath: character.mainImagePath,
+      galleryImagePaths: character.galleryImagePaths,
+    );
+
+    final migrated = await _localFileStorage.migrateCharacterImages(
+      characterId: character.id,
+      mainImagePath: character.mainImagePath,
+      galleryImagePaths: character.galleryImagePaths,
+    );
+
+    final updatedCharacter = character.copyWith(
+      mainImagePath: migrated.mainImagePath,
+      galleryImagePaths: migrated.galleryImagePaths,
+    );
+
+    final pathsChanged =
+        updatedCharacter.mainImagePath != character.mainImagePath ||
+        !_samePaths(
+          updatedCharacter.galleryImagePaths,
+          character.galleryImagePaths,
+        );
+
+    if (pathsChanged) {
+      await _characterLocalDataSource.saveCharacter(
+        CharacterModel.fromEntity(updatedCharacter),
+      );
+    }
+
+    final nextPaths = _collectPaths(
+      mainImagePath: updatedCharacter.mainImagePath,
+      galleryImagePaths: updatedCharacter.galleryImagePaths,
+    );
+
+    await _localFileStorage.deleteFiles(
+      previousPaths.difference(nextPaths).toList(),
+      characterFolder: character.id,
+    );
+
+    await _localFileStorage.syncCompressedManifest(
+      character.id,
+      nextPaths,
+    );
+  }
+
+  Set<String> _collectPaths({
+    required String? mainImagePath,
+    required List<String> galleryImagePaths,
+  }) {
+    return {
+      if (mainImagePath != null && mainImagePath.trim().isNotEmpty) mainImagePath,
+      ...galleryImagePaths.where((path) => path.trim().isNotEmpty),
+    };
+  }
+
+  Future<Map<String, Set<String>>> _collectReferencedFilesByCharacter() async {
+    final characters = await _characterLocalDataSource.getCharacters();
+    final referencedFilesByCharacter = <String, Set<String>>{};
+
+    for (final character in characters) {
+      final fileNames = <String>{};
+      for (final path in _collectPaths(
+        mainImagePath: character.mainImagePath,
+        galleryImagePaths: character.galleryImagePaths,
+      )) {
+        final resolvedPath = await _localFileStorage.resolveExistingImagePath(
+          path,
+          characterFolder: character.id,
+        );
+        if (resolvedPath != null) {
+          fileNames.add(p.basename(resolvedPath));
+        }
+      }
+
+      referencedFilesByCharacter[character.id] = fileNames;
+    }
+
+    return referencedFilesByCharacter;
   }
 
   Future<File> _markerFile() async {
@@ -96,6 +194,16 @@ class ImageCompressionMigration {
   Future<File> _progressFile() async {
     final storageRoot = await _localFileStorage.storageRoot();
     return File(p.join(storageRoot.path, progressFileName));
+  }
+
+  Future<void> _deleteLegacyMarker() async {
+    final storageRoot = await _localFileStorage.storageRoot();
+    final legacyMarker = File(
+      p.join(storageRoot.path, legacyMarkerFileName),
+    );
+    if (await legacyMarker.exists()) {
+      await legacyMarker.delete();
+    }
   }
 
   Future<Set<String>> _readProgress() async {
@@ -136,47 +244,6 @@ class ImageCompressionMigration {
     if (await file.exists()) {
       await file.delete();
     }
-  }
-
-  Future<String?> _compressPath(String? path) async {
-    try {
-      return await _localFileStorage.compressStoredFileIfNeeded(path);
-    } on Object {
-      return path;
-    }
-  }
-
-  Future<void> _migrateCharacter(CharacterModel character) async {
-    final newMainPath = await _compressPath(character.mainImagePath);
-
-    final newGalleryPaths = <String>[];
-    for (final path in character.galleryImagePaths) {
-      newGalleryPaths.add(await _compressPath(path) ?? path);
-    }
-
-    final mainChanged = newMainPath != character.mainImagePath;
-    final galleryChanged = !_samePaths(
-      character.galleryImagePaths,
-      newGalleryPaths,
-    );
-    if (mainChanged || galleryChanged) {
-      await _characterLocalDataSource.saveCharacter(
-        CharacterModel.fromEntity(
-          character.copyWith(
-            mainImagePath: newMainPath,
-            galleryImagePaths: newGalleryPaths,
-          ),
-        ),
-      );
-    }
-
-    await _localFileStorage.markMigrationProcessedImages(
-      character.id,
-      [
-        newMainPath,
-        ...newGalleryPaths,
-      ].whereType<String>(),
-    );
   }
 
   bool _samePaths(List<String> left, List<String> right) {
