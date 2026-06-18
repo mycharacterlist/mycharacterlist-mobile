@@ -1,7 +1,10 @@
 part of 'local_file_storage.dart';
 
-extension _LocalFileStorageDrafts on LocalFileStorage {
-  /// Compresses a picked image immediately and stores it in [draftsFolder].
+class _LocalFileStorageDrafts {
+  _LocalFileStorageDrafts(this._storage);
+
+  final LocalFileStorage _storage;
+
   Future<String> compressAndStagePickedFile(String sourcePath) async {
     final sourceFile = File(sourcePath);
 
@@ -10,23 +13,23 @@ extension _LocalFileStorageDrafts on LocalFileStorage {
     }
 
     final bytes = await sourceFile.readAsBytes();
-    final compressed = await _imageCompressor.compress(
+    final compressed = await _storage._imageCompressor.compress(
       bytes,
       sourcePath: sourceFile.path,
     );
 
     if (compressed.bytes.length >= bytes.length) {
-      return saveBytes(
+      return _storage.saveBytes(
         bytes,
-        folder: draftsFolder,
+        folder: LocalFileStorage.draftsFolder,
         extension: p.extension(sourceFile.path),
         compress: false,
       );
     }
 
-    return saveBytes(
+    return _storage.saveBytes(
       compressed.bytes,
-      folder: draftsFolder,
+      folder: LocalFileStorage.draftsFolder,
       extension: compressed.extension,
       compress: false,
     );
@@ -37,20 +40,27 @@ extension _LocalFileStorageDrafts on LocalFileStorage {
       return;
     }
 
-    final storageRoot = await _storageRoot();
-    final draftsDirectory = Directory(p.join(storageRoot.path, draftsFolder));
-    final resolvedPath = await resolveExistingImagePath(path);
+    final storageRoot = await _storage._storageRoot();
+    final draftsDirectory = Directory(
+      p.join(storageRoot.path, LocalFileStorage.draftsFolder),
+    );
+    final resolvedPath = await _storage.resolveExistingImagePath(path);
     if (resolvedPath == null) {
       return;
     }
 
     final file = File(resolvedPath);
-    final normalizedPath = _normalizePathForComparison(file.absolute.path);
-    final normalizedDraftsDirectory = _normalizePathForComparison(
+    final normalizedPath = StoragePathUtils.normalizePathForComparison(
+      file.absolute.path,
+    );
+    final normalizedDraftsDirectory = StoragePathUtils.normalizePathForComparison(
       draftsDirectory.absolute.path,
     );
 
-    if (!_isInsideDirectory(normalizedPath, normalizedDraftsDirectory)) {
+    if (!StoragePathUtils.isInsideDirectory(
+      normalizedPath,
+      normalizedDraftsDirectory,
+    )) {
       return;
     }
 
@@ -65,11 +75,11 @@ extension _LocalFileStorageDrafts on LocalFileStorage {
     }
   }
 
-  /// Removes leftover files from [draftsFolder] after they were moved to a
-  /// character folder or when the form is abandoned.
   Future<void> clearDraftsFolder() async {
-    final storageRoot = await _storageRoot();
-    final draftsDirectory = Directory(p.join(storageRoot.path, draftsFolder));
+    final storageRoot = await _storage._storageRoot();
+    final draftsDirectory = Directory(
+      p.join(storageRoot.path, LocalFileStorage.draftsFolder),
+    );
 
     if (!await draftsDirectory.exists()) {
       return;
@@ -82,10 +92,11 @@ extension _LocalFileStorageDrafts on LocalFileStorage {
     }
   }
 
-  /// Deletes draft files that are not referenced by any stored character path.
   Future<void> clearUnreferencedDraftFiles(Set<String> referencedPaths) async {
-    final storageRoot = await _storageRoot();
-    final draftsDirectory = Directory(p.join(storageRoot.path, draftsFolder));
+    final storageRoot = await _storage._storageRoot();
+    final draftsDirectory = Directory(
+      p.join(storageRoot.path, LocalFileStorage.draftsFolder),
+    );
 
     if (!await draftsDirectory.exists()) {
       return;
@@ -97,9 +108,9 @@ extension _LocalFileStorageDrafts on LocalFileStorage {
         continue;
       }
 
-      referencedBasenames.add(_basenameKey(path));
+      referencedBasenames.add(StoragePathUtils.basenameKey(path));
 
-      final resolved = await resolveExistingImagePath(path);
+      final resolved = await _storage.resolveExistingImagePath(path);
       if (resolved != null) {
         referencedBasenames.add(p.basename(resolved).toLowerCase());
       }

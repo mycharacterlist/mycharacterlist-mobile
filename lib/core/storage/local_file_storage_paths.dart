@@ -1,16 +1,10 @@
 part of 'local_file_storage.dart';
 
-extension _LocalFileStoragePaths on LocalFileStorage {
-  static const _imageExtensions = {
-    '.jpg',
-    '.jpeg',
-    '.png',
-    '.webp',
-    '.gif',
-    '.heic',
-  };
+class _LocalFileStoragePaths {
+  _LocalFileStoragePaths(this._storage);
 
-  /// Resolves a stored image path to an existing file, including legacy folders.
+  final LocalFileStorage _storage;
+
   Future<String?> resolveExistingImagePath(
     String? path, {
     String? characterFolder,
@@ -19,7 +13,7 @@ extension _LocalFileStoragePaths on LocalFileStorage {
       return null;
     }
 
-    final sanitizedPath = _sanitizeStoredPath(path.trim());
+    final sanitizedPath = StoragePathUtils.sanitizeStoredPath(path.trim());
     final candidates = await _buildPathResolutionCandidates(
       sanitizedPath,
       characterFolder: characterFolder,
@@ -35,19 +29,7 @@ extension _LocalFileStoragePaths on LocalFileStorage {
     return null;
   }
 
-  String _basenameKey(String path) {
-    return p.basename(_sanitizeStoredPath(path)).toLowerCase();
-  }
-
-  bool _isImageFileName(String fileName) {
-    if (fileName.startsWith('.')) {
-      return false;
-    }
-
-    return _imageExtensions.contains(p.extension(fileName).toLowerCase());
-  }
-
-  Future<void> _forEachImageFileInDirectory(
+  Future<void> forEachImageFileInDirectory(
     Directory directory,
     void Function(File file) onFile,
   ) async {
@@ -61,57 +43,12 @@ extension _LocalFileStoragePaths on LocalFileStorage {
       }
 
       final fileName = p.basename(entity.path);
-      if (!_isImageFileName(fileName)) {
+      if (!StoragePathUtils.isImageFileName(fileName)) {
         continue;
       }
 
       onFile(entity);
     }
-  }
-
-  String _sanitizeStoredPath(String path) {
-    var sanitized = path.trim();
-
-    if (sanitized.startsWith('file://')) {
-      sanitized = sanitized.substring('file://'.length);
-    }
-
-    try {
-      sanitized = Uri.decodeComponent(sanitized);
-    } on Object {
-      // Keep the original path when URI decoding fails.
-    }
-
-    return p.normalize(sanitized);
-  }
-
-  String _normalizePathForComparison(String path) {
-    var normalized = _sanitizeStoredPath(path);
-
-    if (Platform.isIOS || Platform.isMacOS) {
-      if (normalized.startsWith('/var/') &&
-          !normalized.startsWith('/private/')) {
-        normalized = '/private$normalized';
-      }
-    }
-
-    return normalized;
-  }
-
-  bool _isInsideDirectory(String path, String directoryPath) {
-    final normalizedPath = _normalizePathForComparison(path);
-    final normalizedDirectory = _normalizePathForComparison(directoryPath);
-    final directoryPrefix = normalizedDirectory.endsWith('/')
-        ? normalizedDirectory
-        : '$normalizedDirectory/';
-
-    return normalizedPath == normalizedDirectory ||
-        normalizedPath.startsWith(directoryPrefix);
-  }
-
-  bool _isInsideDrafts(String path, String storageRootPath) {
-    final draftsDirectory = p.join(storageRootPath, draftsFolder);
-    return _isInsideDirectory(path, draftsDirectory);
   }
 
   Future<List<String>> _buildPathResolutionCandidates(
@@ -126,7 +63,7 @@ extension _LocalFileStoragePaths on LocalFileStorage {
         return;
       }
 
-      for (final variant in _iosPathVariants(candidate)) {
+      for (final variant in StoragePathUtils.iosPathVariants(candidate)) {
         if (seen.add(variant)) {
           candidates.add(variant);
         }
@@ -143,10 +80,12 @@ extension _LocalFileStoragePaths on LocalFileStorage {
       return candidates;
     }
 
-    final storageRoot = await _storageRoot();
+    final storageRoot = await _storage._storageRoot();
     if (characterFolder != null && characterFolder.isNotEmpty) {
       addCandidate(p.join(storageRoot.path, characterFolder, fileName));
-      addCandidate(p.join(storageRoot.path, draftsFolder, fileName));
+      addCandidate(
+        p.join(storageRoot.path, LocalFileStorage.draftsFolder, fileName),
+      );
     }
 
     addCandidate(p.join(storageRoot.path, fileName));
@@ -164,7 +103,7 @@ extension _LocalFileStoragePaths on LocalFileStorage {
     String fileName, {
     String? characterFolder,
   }) async {
-    final storageRoot = await _storageRoot();
+    final storageRoot = await _storage._storageRoot();
     final normalizedFileName = fileName.toLowerCase();
 
     if (characterFolder != null && characterFolder.isNotEmpty) {
@@ -178,7 +117,7 @@ extension _LocalFileStoragePaths on LocalFileStorage {
     }
 
     final draftsMatch = await _findBasenameInDirectory(
-      Directory(p.join(storageRoot.path, draftsFolder)),
+      Directory(p.join(storageRoot.path, LocalFileStorage.draftsFolder)),
       normalizedFileName,
     );
     if (draftsMatch != null) {
@@ -195,7 +134,8 @@ extension _LocalFileStoragePaths on LocalFileStorage {
       }
 
       final directoryName = p.basename(entity.path);
-      if (directoryName.startsWith('.') || directoryName == draftsFolder) {
+      if (directoryName.startsWith('.') ||
+          directoryName == LocalFileStorage.draftsFolder) {
         continue;
       }
 
@@ -229,24 +169,11 @@ extension _LocalFileStoragePaths on LocalFileStorage {
     return null;
   }
 
-  Iterable<String> _iosPathVariants(String path) sync* {
-    final normalized = p.normalize(path);
-    yield normalized;
-
-    if (Platform.isIOS || Platform.isMacOS) {
-      if (normalized.startsWith('/var/') &&
-          !normalized.startsWith('/private/')) {
-        yield '/private$normalized';
-      }
-      if (normalized.startsWith('/private/var/')) {
-        yield normalized.substring('/private'.length);
-      }
-    }
-  }
-
   Future<String?> _rebasePathToCurrentStorageRoot(String path) async {
-    final normalized = _normalizePathForComparison(p.normalize(path));
-    final marker = '/$storageFolderName/';
+    final normalized = StoragePathUtils.normalizePathForComparison(
+      p.normalize(path),
+    );
+    final marker = '/${LocalFileStorage.storageFolderName}/';
     final markerIndex = normalized.indexOf(marker);
     if (markerIndex < 0) {
       return null;
@@ -257,32 +184,7 @@ extension _LocalFileStoragePaths on LocalFileStorage {
       return null;
     }
 
-    final storageRoot = await _storageRoot();
+    final storageRoot = await _storage._storageRoot();
     return p.join(storageRoot.path, suffix.replaceAll('\\', '/'));
-  }
-
-  String _resolveExtension({
-    required String preferredExtension,
-    required String fallbackExtension,
-  }) {
-    if (RegExp(r'^\.[a-zA-Z0-9]+$').hasMatch(preferredExtension)) {
-      return preferredExtension;
-    }
-
-    if (RegExp(r'^\.[a-zA-Z0-9]+$').hasMatch(fallbackExtension)) {
-      return fallbackExtension;
-    }
-
-    return '';
-  }
-
-  String _uniqueFilePath({
-    required String directoryPath,
-    required String extension,
-  }) {
-    return p.join(
-      directoryPath,
-      '${DateTime.now().microsecondsSinceEpoch}$extension',
-    );
   }
 }

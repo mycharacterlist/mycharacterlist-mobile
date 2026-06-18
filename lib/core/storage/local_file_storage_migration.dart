@@ -1,12 +1,14 @@
 part of 'local_file_storage.dart';
 
-extension _LocalFileStorageMigration on LocalFileStorage {
-  /// Removes legacy folders and loose files left behind after images were relocated.
-  /// Does not delete files inside active character folders.
+class _LocalFileStorageMigration {
+  _LocalFileStorageMigration(this._storage);
+
+  final LocalFileStorage _storage;
+
   Future<void> cleanupOrphanedStorage({
     required Set<String> activeCharacterIds,
   }) async {
-    final storageRoot = await _storageRoot();
+    final storageRoot = await _storage._storageRoot();
     if (!await storageRoot.exists()) {
       return;
     }
@@ -18,7 +20,7 @@ extension _LocalFileStorageMigration on LocalFileStorage {
           continue;
         }
 
-        await _deleteIfExists(entity);
+        await _storage._deleteIfExists(entity);
         continue;
       }
 
@@ -27,7 +29,8 @@ extension _LocalFileStorageMigration on LocalFileStorage {
       }
 
       final directoryName = p.basename(entity.path);
-      if (directoryName.startsWith('.') || directoryName == draftsFolder) {
+      if (directoryName.startsWith('.') ||
+          directoryName == LocalFileStorage.draftsFolder) {
         continue;
       }
 
@@ -37,8 +40,6 @@ extension _LocalFileStorageMigration on LocalFileStorage {
     }
   }
 
-  /// Relocates character images into [characterId], compresses when possible,
-  /// and returns the final paths to store in SQLite.
   Future<MigratedCharacterImages> migrateCharacterImages({
     required String characterId,
     required String? mainImagePath,
@@ -68,7 +69,6 @@ extension _LocalFileStorageMigration on LocalFileStorage {
     );
   }
 
-  /// Re-links image files in [characterId] folder that are not referenced in SQLite.
   Future<MigratedCharacterImages> recoverMissingImageReferences({
     required String characterId,
     required String? mainImagePath,
@@ -81,7 +81,7 @@ extension _LocalFileStorageMigration on LocalFileStorage {
       if (path == null || path.trim().isEmpty) {
         return;
       }
-      referencedBasenames.add(_basenameKey(path));
+      referencedBasenames.add(StoragePathUtils.basenameKey(path));
     }
 
     trackReference(mainImagePath);
@@ -94,21 +94,21 @@ extension _LocalFileStorageMigration on LocalFileStorage {
         continue;
       }
 
-      final resolved = await resolveExistingImagePath(
+      final resolved = await _storage.resolveExistingImagePath(
         path,
         characterFolder: characterId,
       );
       if (resolved != null) {
         referencedBasenames.add(p.basename(resolved).toLowerCase());
       } else {
-        unresolvedBasenames.add(_basenameKey(path));
+        unresolvedBasenames.add(StoragePathUtils.basenameKey(path));
       }
     }
 
     final orphanPaths = <String>{};
 
-    await _forEachImageFileInDirectory(
-      await _characterDirectory(characterId),
+    await _storage._paths.forEachImageFileInDirectory(
+      await _storage._characterDirectory(characterId),
       (file) {
         final fileName = p.basename(file.path).toLowerCase();
         if (referencedBasenames.contains(fileName)) {
@@ -118,9 +118,9 @@ extension _LocalFileStorageMigration on LocalFileStorage {
       },
     );
 
-    final storageRoot = await _storageRoot();
-    await _forEachImageFileInDirectory(
-      Directory(p.join(storageRoot.path, draftsFolder)),
+    final storageRoot = await _storage._storageRoot();
+    await _storage._paths.forEachImageFileInDirectory(
+      Directory(p.join(storageRoot.path, LocalFileStorage.draftsFolder)),
       (file) {
         final fileName = p.basename(file.path).toLowerCase();
         if (!unresolvedBasenames.contains(fileName)) {
@@ -147,7 +147,7 @@ extension _LocalFileStorageMigration on LocalFileStorage {
 
     final mainResolved = nextMain == null || nextMain.trim().isEmpty
         ? null
-        : await resolveExistingImagePath(
+        : await _storage.resolveExistingImagePath(
             nextMain,
             characterFolder: characterId,
           );
@@ -173,7 +173,7 @@ extension _LocalFileStorageMigration on LocalFileStorage {
     }
 
     final storedPath = path.trim();
-    final resolvedPath = await resolveExistingImagePath(
+    final resolvedPath = await _storage.resolveExistingImagePath(
       storedPath,
       characterFolder: characterId,
     );
@@ -182,8 +182,9 @@ extension _LocalFileStorageMigration on LocalFileStorage {
     }
 
     try {
-      var nextPath = await saveFile(resolvedPath, folder: characterId);
-      nextPath = await compressStoredFileIfNeeded(nextPath) ?? nextPath;
+      var nextPath = await _storage.saveFile(resolvedPath, folder: characterId);
+      nextPath =
+          await _storage.compressStoredFileIfNeeded(nextPath) ?? nextPath;
       return nextPath;
     } on Object {
       return storedPath;
