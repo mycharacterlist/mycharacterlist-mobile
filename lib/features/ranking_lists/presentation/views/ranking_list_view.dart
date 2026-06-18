@@ -15,8 +15,9 @@ import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked
 import 'package:mycharacterlist/core/presentation/listeners/view_model_error_listener.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
+import 'package:mycharacterlist/features/patches/presentation/controllers/patch_controller.dart';
+import 'package:mycharacterlist/features/patches/presentation/widgets/patch_action_button.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/add_character_button.dart';
-import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/patch_action_button.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/widgets/inside_list/ranking_character_card.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 
@@ -34,6 +35,7 @@ class RankingListView extends ConsumerWidget {
     final charactersState = ref.watch(rankingCharactersViewModelProvider(listId));
     final content = ref.watch(rankedListContentProvider(listId));
     final controller = ref.watch(rankingListControllerProvider(listId));
+    final patchController = ref.watch(patchControllerProvider(listId));
 
     listenViewModelError(
       ref,
@@ -88,7 +90,7 @@ class RankingListView extends ConsumerWidget {
             right: 20,
             bottom: 12 + SystemViewPadding.bottomOf(context),
             child: GestureDetector(
-              onTap: () => controller.showPatchOptionsSheet(context),
+              onTap: () => patchController.showPatchOptionsSheet(context),
               child: const PatchActionButton(),
             ),
           ),
