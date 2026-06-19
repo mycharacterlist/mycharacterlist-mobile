@@ -4,6 +4,7 @@ import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/core/storage/storage_providers.dart';
 import 'package:mycharacterlist/features/library/data/services/character_json_export_service.dart';
 import 'package:mycharacterlist/features/library/data/services/character_json_import_service.dart';
+import 'package:mycharacterlist/features/patches/data/repositories/patch_repository_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/repositories/ranking_list_repository_providers.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/characters_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/character_references_view_model.dart';
@@ -14,6 +15,7 @@ final characterJsonImportServiceProvider = Provider<CharacterJsonImportService>(
     characterRepository: ref.watch(characterRepositoryProvider),
     referenceRepository: ref.watch(characterReferenceRepositoryProvider),
     rankingListRepository: ref.watch(rankingListRepositoryProvider),
+    patchRepository: ref.watch(patchRepositoryProvider),
     localFileStorage: ref.watch(localFileStorageProvider),
   ),
 );
@@ -22,6 +24,7 @@ final characterJsonExportServiceProvider = Provider<CharacterJsonExportService>(
   (ref) => CharacterJsonExportService(
     characterRepository: ref.watch(characterRepositoryProvider),
     rankingListRepository: ref.watch(rankingListRepositoryProvider),
+    patchRepository: ref.watch(patchRepositoryProvider),
     localFileStorage: ref.watch(localFileStorageProvider),
   ),
 );

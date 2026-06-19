@@ -10,6 +10,33 @@ class RankingListPatchEntryModel extends RankingListPatchEntry {
     required super.position,
   });
 
+  factory RankingListPatchEntryModel.fromEntity(RankingListPatchEntry entry) {
+    return RankingListPatchEntryModel(
+      id: entry.id,
+      patchId: entry.patchId,
+      characterId: entry.characterId,
+      characterName: entry.characterName,
+      sourceTitle: entry.sourceTitle,
+      position: entry.position,
+    );
+  }
+
+  factory RankingListPatchEntryModel.fromJson(
+    Map<String, dynamic> json, {
+    required String patchId,
+  }) {
+    return RankingListPatchEntryModel(
+      id: json['id'] as String,
+      patchId: patchId,
+      characterId: json['characterId'] as String,
+      characterName: json['characterName'] as String? ?? '',
+      sourceTitle: json['sourceTitle'] as String? ?? '',
+      position: json['position'] is int
+          ? json['position'] as int
+          : int.parse(json['position'].toString()),
+    );
+  }
+
   factory RankingListPatchEntryModel.fromDatabase(Map<String, Object?> data) {
     return RankingListPatchEntryModel(
       id: data['id']! as String,
@@ -19,6 +46,16 @@ class RankingListPatchEntryModel extends RankingListPatchEntry {
       sourceTitle: data['source_title']! as String,
       position: data['position']! as int,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'characterId': characterId,
+      'characterName': characterName,
+      'sourceTitle': sourceTitle,
+      'position': position,
+    };
   }
 
   Map<String, Object?> toDatabase() {

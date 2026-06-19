@@ -97,4 +97,17 @@ class PatchRepositoryImpl implements PatchRepository {
   Future<void> deletePatch(String patchId) {
     return _localDataSource.deletePatch(patchId);
   }
+
+  @override
+  Future<void> saveImportedPatch(
+    RankingListPatch patch,
+    List<RankingListPatchEntry> entries,
+  ) {
+    return _localDataSource.savePatch(
+      RankingListPatchModel.fromEntity(patch),
+      entries
+          .map(RankingListPatchEntryModel.fromEntity)
+          .toList(growable: false),
+    );
+  }
 }

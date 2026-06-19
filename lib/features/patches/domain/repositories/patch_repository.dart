@@ -16,4 +16,9 @@ abstract interface class PatchRepository {
   Future<List<RankingListPatchEntry>> getPatchEntries(String patchId);
 
   Future<void> deletePatch(String patchId);
+
+  Future<void> saveImportedPatch(
+    RankingListPatch patch,
+    List<RankingListPatchEntry> entries,
+  );
 }

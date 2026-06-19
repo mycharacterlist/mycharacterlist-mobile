@@ -18,6 +18,7 @@ import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/core/theme/screen_app_bar_styles.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
+import 'package:mycharacterlist/features/patches/patch_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/Plus_button.dart';
@@ -136,6 +137,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       ref.invalidate(characterNameSuggestionsProvider);
       ref.invalidate(libraryCharactersProvider);
       ref.invalidate(rankingCharactersViewModelProvider);
+      ref.invalidate(rankingListPatchesProvider);
+      ref.invalidate(rankingListPatchByIdProvider);
+      ref.invalidate(patchEntriesProvider);
       await ref.read(listsViewModelProvider.notifier).loadLists();
       await ref.read(characterReferencesViewModelProvider.notifier).load();
 

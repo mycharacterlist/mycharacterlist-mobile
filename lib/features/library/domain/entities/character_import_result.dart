@@ -7,6 +7,9 @@ class CharacterImportResult {
     this.listsUpdated = 0,
     this.listsFailed = 0,
     this.missingListCharacters = 0,
+    this.patchesCreated = 0,
+    this.patchesUpdated = 0,
+    this.patchesFailed = 0,
   });
 
   final int created;
@@ -16,6 +19,9 @@ class CharacterImportResult {
   final int listsUpdated;
   final int listsFailed;
   final int missingListCharacters;
+  final int patchesCreated;
+  final int patchesUpdated;
+  final int patchesFailed;
 
   String get message {
     final parts = [
@@ -30,6 +36,12 @@ class CharacterImportResult {
 
     if (missingListCharacters > 0) {
       parts.add('Missing characters in lists: $missingListCharacters.');
+    }
+
+    if (patchesCreated > 0 || patchesUpdated > 0 || patchesFailed > 0) {
+      parts.add(
+        'Patches created: $patchesCreated, updated: $patchesUpdated, failed: $patchesFailed.',
+      );
     }
 
     return parts.join(' ');

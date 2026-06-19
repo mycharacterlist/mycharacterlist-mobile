@@ -10,6 +10,10 @@ import 'package:mycharacterlist/features/characters/domain/entities/character.da
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_export_result.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_import_progress.dart';
+import 'package:mycharacterlist/features/patches/data/models/ranking_list_patch_entry_model.dart';
+import 'package:mycharacterlist/features/patches/data/models/ranking_list_patch_model.dart';
+import 'package:mycharacterlist/features/patches/domain/entities/ranking_list_patch.dart';
+import 'package:mycharacterlist/features/patches/domain/repositories/patch_repository.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
 
@@ -17,13 +21,16 @@ class CharacterJsonExportService {
   const CharacterJsonExportService({
     required CharacterRepository characterRepository,
     required RankingListRepository rankingListRepository,
+    required PatchRepository patchRepository,
     required LocalFileStorage localFileStorage,
   }) : _characterRepository = characterRepository,
        _rankingListRepository = rankingListRepository,
+       _patchRepository = patchRepository,
        _localFileStorage = localFileStorage;
 
   final CharacterRepository _characterRepository;
   final RankingListRepository _rankingListRepository;
+  final PatchRepository _patchRepository;
   final LocalFileStorage _localFileStorage;
 
   Future<CharacterExportResult> exportToDirectory(
@@ -80,6 +87,8 @@ class CharacterJsonExportService {
       );
     }
 
+    final patchJson = await _buildPatchesJson(onProgress: onProgress);
+
     final jsonFile = File(p.join(exportDirectory.path, 'data.json'));
     const encoder = JsonEncoder.withIndent('  ');
     await jsonFile.writeAsString(
@@ -87,6 +96,7 @@ class CharacterJsonExportService {
         'schemaVersion': 1,
         'characters': exportData.characterJson,
         'lists': listJson,
+        'patches': patchJson,
       }),
     );
 
@@ -94,9 +104,55 @@ class CharacterJsonExportService {
       directoryPath: exportDirectory.path,
       characters: characters.length,
       lists: lists.length,
+      patches: patchJson.length,
       images: exportData.exportedImages,
       missingImages: exportData.missingImages,
     );
+  }
+
+  Future<List<Map<String, dynamic>>> _buildPatchesJson({
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
+    final lists = await _rankingListRepository.getLists();
+    final patches = <RankingListPatch>[];
+
+    for (final list in lists) {
+      patches.addAll(await _patchRepository.getPatchesForList(list.id));
+    }
+
+    final patchJson = <Map<String, dynamic>>[];
+    for (var index = 0; index < patches.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: patches.length,
+          phase: CharacterImportPhase.exportPatches,
+        ),
+      );
+
+      final patch = patches[index];
+      final entries = await _patchRepository.getPatchEntries(patch.id);
+      patchJson.add({
+        ...RankingListPatchModel.fromEntity(patch).toJson(),
+        'entries': entries
+            .map(
+              (entry) => RankingListPatchEntryModel.fromEntity(entry).toJson(),
+            )
+            .toList(),
+      });
+    }
+
+    if (patches.isNotEmpty) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: patches.length,
+          total: patches.length,
+          phase: CharacterImportPhase.exportPatches,
+        ),
+      );
+    }
+
+    return patchJson;
   }
 
   Future<CharacterSubsetExportData> buildCharactersExportData(

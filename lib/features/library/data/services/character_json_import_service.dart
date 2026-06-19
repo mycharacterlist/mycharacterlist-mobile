@@ -13,6 +13,9 @@ import 'package:mycharacterlist/features/characters/domain/repositories/characte
 import 'package:mycharacterlist/features/characters/domain/repositories/character_repository.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_import_progress.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_import_result.dart';
+import 'package:mycharacterlist/features/patches/data/models/ranking_list_patch_entry_model.dart';
+import 'package:mycharacterlist/features/patches/data/models/ranking_list_patch_model.dart';
+import 'package:mycharacterlist/features/patches/domain/repositories/patch_repository.dart';
 import 'package:mycharacterlist/features/ranking_lists/data/models/ranking_list_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/domain/repositories/ranking_list_repository.dart';
 
@@ -21,15 +24,18 @@ class CharacterJsonImportService {
     required CharacterRepository characterRepository,
     required CharacterReferenceRepository referenceRepository,
     required RankingListRepository rankingListRepository,
+    required PatchRepository patchRepository,
     required LocalFileStorage localFileStorage,
   }) : _characterRepository = characterRepository,
        _referenceRepository = referenceRepository,
        _rankingListRepository = rankingListRepository,
+       _patchRepository = patchRepository,
        _localFileStorage = localFileStorage;
 
   final CharacterRepository _characterRepository;
   final CharacterReferenceRepository _referenceRepository;
   final RankingListRepository _rankingListRepository;
+  final PatchRepository _patchRepository;
   final LocalFileStorage _localFileStorage;
 
   Future<CharacterImportResult> importFile(
@@ -58,23 +64,15 @@ class CharacterJsonImportService {
       onProgress: onProgress,
     );
 
-    final rawLists = decoded['lists'];
-    if (rawLists == null) {
-      return characterResult;
-    }
-
-    if (rawLists is! List) {
-      throw const FormatException('The lists field must be a list.');
-    }
-
-    if (rawLists.isEmpty) {
-      return characterResult;
-    }
-
     final listResult = await _importLists(
-      rawLists,
+      decoded['lists'],
       onProgress: onProgress,
     );
+    final patchResult = await _importPatches(
+      decoded['patches'],
+      onProgress: onProgress,
+    );
+
     return CharacterImportResult(
       created: characterResult.created,
       updated: characterResult.updated,
@@ -83,6 +81,9 @@ class CharacterJsonImportService {
       listsUpdated: listResult.listsUpdated,
       listsFailed: listResult.listsFailed,
       missingListCharacters: listResult.missingListCharacters,
+      patchesCreated: patchResult.patchesCreated,
+      patchesUpdated: patchResult.patchesUpdated,
+      patchesFailed: patchResult.patchesFailed,
     );
   }
 
@@ -92,6 +93,43 @@ class CharacterJsonImportService {
     int listsFailed,
     int missingListCharacters,
   })> _importLists(
+    Object? rawLists, {
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
+    if (rawLists == null) {
+      return (
+        listsCreated: 0,
+        listsUpdated: 0,
+        listsFailed: 0,
+        missingListCharacters: 0,
+      );
+    }
+
+    if (rawLists is! List) {
+      throw const FormatException('The lists field must be a list.');
+    }
+
+    if (rawLists.isEmpty) {
+      return (
+        listsCreated: 0,
+        listsUpdated: 0,
+        listsFailed: 0,
+        missingListCharacters: 0,
+      );
+    }
+
+    return _importListItems(
+      rawLists,
+      onProgress: onProgress,
+    );
+  }
+
+  Future<({
+    int listsCreated,
+    int listsUpdated,
+    int listsFailed,
+    int missingListCharacters,
+  })> _importListItems(
     List<dynamic> rawLists, {
     void Function(CharacterImportProgress progress)? onProgress,
   }) async {
@@ -180,6 +218,102 @@ class CharacterJsonImportService {
       listsUpdated: listsUpdated,
       listsFailed: listsFailed,
       missingListCharacters: missingListCharacters,
+    );
+  }
+
+  Future<({
+    int patchesCreated,
+    int patchesUpdated,
+    int patchesFailed,
+  })> _importPatches(
+    Object? rawPatches, {
+    void Function(CharacterImportProgress progress)? onProgress,
+  }) async {
+    if (rawPatches == null) {
+      return (
+        patchesCreated: 0,
+        patchesUpdated: 0,
+        patchesFailed: 0,
+      );
+    }
+
+    if (rawPatches is! List) {
+      throw const FormatException('The patches field must be a list.');
+    }
+
+    if (rawPatches.isEmpty) {
+      return (
+        patchesCreated: 0,
+        patchesUpdated: 0,
+        patchesFailed: 0,
+      );
+    }
+
+    var patchesCreated = 0;
+    var patchesUpdated = 0;
+    var patchesFailed = 0;
+
+    for (var index = 0; index < rawPatches.length; index++) {
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index,
+          total: rawPatches.length,
+          phase: CharacterImportPhase.patches,
+        ),
+      );
+
+      final rawPatch = rawPatches[index];
+      try {
+        if (rawPatch is! Map) {
+          throw const FormatException('Patch must be an object.');
+        }
+
+        final json = Map<String, dynamic>.from(rawPatch);
+        final patch = RankingListPatchModel.fromJson(json);
+        final list = await _rankingListRepository.getListById(patch.listId);
+        if (list == null) {
+          patchesFailed++;
+          continue;
+        }
+
+        final rawEntries = json['entries'];
+        if (rawEntries is! List) {
+          throw const FormatException('Patch entries must be an array.');
+        }
+
+        final entries = rawEntries
+            .map(
+              (rawEntry) => RankingListPatchEntryModel.fromJson(
+                Map<String, dynamic>.from(rawEntry as Map),
+                patchId: patch.id,
+              ),
+            )
+            .toList(growable: false);
+
+        final existing = await _patchRepository.getPatchById(patch.id);
+        await _patchRepository.saveImportedPatch(patch, entries);
+        if (existing == null) {
+          patchesCreated++;
+        } else {
+          patchesUpdated++;
+        }
+      } catch (_) {
+        patchesFailed++;
+      }
+
+      onProgress?.call(
+        CharacterImportProgress(
+          completed: index + 1,
+          total: rawPatches.length,
+          phase: CharacterImportPhase.patches,
+        ),
+      );
+    }
+
+    return (
+      patchesCreated: patchesCreated,
+      patchesUpdated: patchesUpdated,
+      patchesFailed: patchesFailed,
     );
   }
 

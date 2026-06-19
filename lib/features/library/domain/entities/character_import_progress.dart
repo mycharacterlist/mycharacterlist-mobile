@@ -1,8 +1,10 @@
 enum CharacterImportPhase {
   characters,
   lists,
+  patches,
   exportCharacters,
   exportLists,
+  exportPatches,
 }
 
 class CharacterImportProgress {
@@ -20,8 +22,10 @@ class CharacterImportProgress {
     return switch (phase) {
       CharacterImportPhase.characters => 'Importing characters...',
       CharacterImportPhase.lists => 'Importing lists...',
+      CharacterImportPhase.patches => 'Importing patches...',
       CharacterImportPhase.exportCharacters => 'Exporting characters...',
       CharacterImportPhase.exportLists => 'Exporting lists...',
+      CharacterImportPhase.exportPatches => 'Exporting patches...',
     };
   }
 }
