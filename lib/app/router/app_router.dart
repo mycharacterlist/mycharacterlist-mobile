@@ -6,6 +6,7 @@ import 'package:mycharacterlist/features/characters/presentation/pages/character
 import 'package:mycharacterlist/features/home/presentation/pages/home_page.dart';
 import 'package:mycharacterlist/features/library/presentation/pages/character_create_page.dart';
 import 'package:mycharacterlist/features/library/presentation/pages/library_page.dart';
+import 'package:mycharacterlist/features/gallery/presentation/pages/character_gallery_page.dart';
 import 'package:mycharacterlist/features/patches/presentation/pages/ranking_list_patch_detail_page.dart';
 import 'package:mycharacterlist/features/patches/presentation/pages/ranking_list_patches_page.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/pages/lists_page.dart';
@@ -95,6 +96,18 @@ final List<RouteBase> appRoutes = [
         child: CharacterPage(characterId: id),
       );
     },
+    routes: [
+      GoRoute(
+        path: 'gallery',
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return buildAppPage(
+            state: state,
+            child: CharacterGalleryPage(characterId: id),
+          );
+        },
+      ),
+    ],
   ),
   GoRoute(
     path: AppRoutes.library,

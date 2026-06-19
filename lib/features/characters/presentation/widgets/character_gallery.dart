@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:mycharacterlist/app/widgets/character/character_section_panel.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_image.dart';
+import 'package:mycharacterlist/features/gallery/presentation/controllers/gallery_controller.dart';
+import 'package:mycharacterlist/features/gallery/presentation/widgets/gallery_action_button.dart';
 
-class CharacterGallery extends StatelessWidget {
+class CharacterGallery extends ConsumerWidget {
   const CharacterGallery({
     super.key,
     required this.characterId,
@@ -14,9 +17,15 @@ class CharacterGallery extends StatelessWidget {
   final List<String> imagePaths;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final galleryController = ref.watch(galleryControllerProvider(characterId));
+
     return CharacterSectionPanel(
       title: 'Gallery:',
+      trailing: GestureDetector(
+        onTap: () => galleryController.openGallery(context),
+        child: const GalleryActionButton(),
+      ),
       child: imagePaths.isEmpty
           ? SizedBox(
               height: 180,

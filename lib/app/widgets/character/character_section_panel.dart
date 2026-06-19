@@ -9,11 +9,13 @@ class CharacterSectionPanel extends StatelessWidget {
     required this.title,
     required this.child,
     this.padding = const EdgeInsets.all(10),
+    this.trailing,
   });
 
   final String title;
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +28,16 @@ class CharacterSectionPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppTypography.characterSectionTitle,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: AppTypography.characterSectionTitle,
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
           ),
           const SizedBox(height: 10),
           child,
