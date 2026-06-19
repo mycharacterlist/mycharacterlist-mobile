@@ -100,41 +100,21 @@ class LocalFileStorage {
     return (await File(destinationPath).writeAsBytes(outputBytes)).path;
   }
 
-  /// Saves imported image bytes. Skips compression when [alreadyCompressed] is
-  /// true and updates the character manifest accordingly.
+  /// Saves imported image bytes without recompressing them.
   Future<String> saveImportedImageBytes(
     Uint8List bytes, {
     required String folder,
-    String? sourcePath,
     String extension = '',
     bool alreadyCompressed = false,
   }) async {
-    if (alreadyCompressed) {
-      final savedPath = await saveBytes(
-        bytes,
-        folder: folder,
-        extension: extension,
-        compress: false,
-      );
-      await markImageAsCompressed(folder, savedPath);
-      return savedPath;
-    }
-
-    final compressed = await _imageCompressor.compress(
-      bytes,
-      sourcePath: sourcePath,
-    );
-    final wasCompressed = compressed.bytes.length < bytes.length;
     final savedPath = await saveBytes(
-      compressed.bytes,
+      bytes,
       folder: folder,
-      extension: compressed.extension.isNotEmpty
-          ? compressed.extension
-          : extension,
+      extension: extension,
       compress: false,
     );
 
-    if (wasCompressed) {
+    if (alreadyCompressed) {
       await markImageAsCompressed(folder, savedPath);
     }
 

@@ -367,6 +367,7 @@ class CharacterJsonImportService {
       final savedPath = await _localFileStorage.saveFile(
         resolvedPath,
         folder: folder,
+        compress: false,
       );
       if (compressedFiles.contains(p.basename(resolvedPath))) {
         await _localFileStorage.markImageAsCompressed(folder, savedPath);
