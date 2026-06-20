@@ -362,7 +362,7 @@ class CharacterJsonImportService {
         }
 
         final now = DateTime.now();
-        final exportCompressedFiles = await _readExportCompressedManifest(
+        final legacyCompressedFiles = await _readLegacyCompressedManifest(
           jsonFile,
           id,
         );
@@ -370,6 +370,13 @@ class CharacterJsonImportService {
           json['mainImageData'],
           folder: id,
         );
+        final mainImagePathValue = json['mainImage'];
+        final mainImageSourceBasename = mainImagePathValue == null
+            ? null
+            : p.basename(
+                _resolveOptionalPath(jsonFile, mainImagePathValue) ??
+                    mainImagePathValue.toString(),
+              );
         final character = Character(
           id: id,
           name: _requiredString(json, 'name'),
@@ -404,7 +411,11 @@ class CharacterJsonImportService {
                       jsonFile,
                       json['mainImage'],
                       folder: id,
-                      compressedFiles: exportCompressedFiles,
+                      alreadyCompressed: _readMainImageCompressed(
+                        json,
+                        legacyCompressedFiles,
+                        mainImageSourceBasename,
+                      ),
                     )
               : existing?.mainImagePath,
           galleryImagePaths:
@@ -412,10 +423,11 @@ class CharacterJsonImportService {
                   json.containsKey('galleryImageData')
               ? await _importGalleryImages(
                   jsonFile,
+                  json,
                   json['galleryImages'],
                   json['galleryImageData'],
                   folder: id,
-                  compressedFiles: exportCompressedFiles,
+                  legacyCompressedFiles: legacyCompressedFiles,
                 )
               : existing?.galleryImagePaths ?? const [],
           grades: json.containsKey('grades')
@@ -482,7 +494,7 @@ class CharacterJsonImportService {
     File jsonFile,
     Object? rawPath, {
     required String folder,
-    Set<String> compressedFiles = const {},
+    bool alreadyCompressed = false,
   }) async {
     final sourcePath = _resolveOptionalPath(jsonFile, rawPath);
     if (sourcePath == null) {
@@ -503,7 +515,7 @@ class CharacterJsonImportService {
         folder: folder,
         compress: false,
       );
-      if (compressedFiles.contains(p.basename(resolvedPath))) {
+      if (alreadyCompressed) {
         await _localFileStorage.markImageAsCompressed(folder, savedPath);
       }
       return savedPath;
@@ -514,10 +526,11 @@ class CharacterJsonImportService {
 
   Future<List<String>> _importGalleryImages(
     File jsonFile,
+    Map<String, dynamic> characterJson,
     Object? rawPaths,
     Object? rawEmbedded, {
     required String folder,
-    Set<String> compressedFiles = const {},
+    Set<String> legacyCompressedFiles = const {},
   }) async {
     final pathEntries = rawPaths is List
         ? rawPaths.map((path) => path.toString().trim()).toList()
@@ -537,11 +550,17 @@ class CharacterJsonImportService {
       }
 
       if (importedPath == null && index < pathEntries.length) {
+        final sourcePath = _resolveOptionalPath(jsonFile, pathEntries[index]);
         importedPath = await _importImageFromJsonPath(
           jsonFile,
           pathEntries[index],
           folder: folder,
-          compressedFiles: compressedFiles,
+          alreadyCompressed: _readGalleryImageCompressed(
+            characterJson,
+            legacyCompressedFiles,
+            index,
+            sourcePath == null ? null : p.basename(sourcePath),
+          ),
         );
       }
 
@@ -553,7 +572,43 @@ class CharacterJsonImportService {
     return importedPaths;
   }
 
-  Future<Set<String>> _readExportCompressedManifest(
+  bool _readMainImageCompressed(
+    Map<String, dynamic> json,
+    Set<String> legacyCompressedFiles,
+    String? sourceBasename,
+  ) {
+    if (json.containsKey('mainImageCompressed')) {
+      return json['mainImageCompressed'] == true;
+    }
+
+    if (sourceBasename != null &&
+        legacyCompressedFiles.contains(sourceBasename)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _readGalleryImageCompressed(
+    Map<String, dynamic> json,
+    Set<String> legacyCompressedFiles,
+    int index,
+    String? sourceBasename,
+  ) {
+    final rawFlags = json['galleryImagesCompressed'];
+    if (rawFlags is List && index < rawFlags.length) {
+      return rawFlags[index] == true;
+    }
+
+    if (sourceBasename != null &&
+        legacyCompressedFiles.contains(sourceBasename)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  Future<Set<String>> _readLegacyCompressedManifest(
     File jsonFile,
     String characterId,
   ) async {

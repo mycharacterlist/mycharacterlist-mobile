@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'package:mycharacterlist/core/storage/compressed_images_manifest.dart';
 import 'package:mycharacterlist/core/storage/local_file_storage.dart';
 import 'package:mycharacterlist/features/characters/data/models/character_fact_model.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
@@ -190,40 +189,53 @@ class CharacterJsonExportService {
       }
 
       final galleryImages = <String>[];
-      for (var index = 0; index < character.galleryImagePaths.length; index++) {
+      var galleryImagesCompressed = <bool>[];
+      for (var galleryIndex = 0;
+          galleryIndex < character.galleryImagePaths.length;
+          galleryIndex++) {
         final image = await _copyImage(
-          sourcePath: character.galleryImagePaths[index],
+          sourcePath: character.galleryImagePaths[galleryIndex],
           exportDirectory: exportDirectory,
           characterId: character.id,
-          fileName: 'gallery_$index',
+          fileName: 'gallery_$galleryIndex',
         );
         if (image == null) {
           missingImages++;
+          galleryImagesCompressed.add(false);
         } else {
           exportedImages++;
           galleryImages.add(image);
+          galleryImagesCompressed.add(
+            await _localFileStorage.isImageCompressed(
+              character.id,
+              character.galleryImagePaths[galleryIndex],
+            ),
+          );
         }
       }
+
+      final mainImageCompressed = character.mainImagePath != null &&
+          await _localFileStorage.isImageCompressed(
+            character.id,
+            character.mainImagePath,
+          );
 
       characterJson.add(
         _characterToJson(
           character,
           mainImage: mainImage,
+          mainImageCompressed: mainImageCompressed,
           mainImageData: await _imageData(
             character.mainImagePath,
             characterId: character.id,
           ),
           galleryImages: galleryImages,
+          galleryImagesCompressed: galleryImagesCompressed,
           galleryImageData: await _galleryImageData(
             character.galleryImagePaths,
             characterId: character.id,
           ),
         ),
-      );
-
-      await _exportCompressedManifest(
-        characterId: character.id,
-        exportDirectory: exportDirectory,
       );
 
       onProgress?.call(
@@ -245,8 +257,10 @@ class CharacterJsonExportService {
   Map<String, dynamic> _characterToJson(
     Character character, {
     required String? mainImage,
+    required bool mainImageCompressed,
     required Map<String, dynamic>? mainImageData,
     required List<String> galleryImages,
+    required List<bool> galleryImagesCompressed,
     required List<Map<String, dynamic>> galleryImageData,
   }) {
     return {
@@ -261,8 +275,11 @@ class CharacterJsonExportService {
       'gender': character.gender,
       'personalNotes': character.personalNotes,
       'mainImage': mainImage ?? '',
+      if (mainImageCompressed) 'mainImageCompressed': true,
       'mainImageData': mainImageData,
       'galleryImages': galleryImages,
+      if (galleryImages.isNotEmpty)
+        'galleryImagesCompressed': galleryImagesCompressed,
       'galleryImageData': galleryImageData,
       'grades': character.grades,
       'facts': character.facts
@@ -345,46 +362,6 @@ class CharacterJsonExportService {
     await source.copy(destination.path);
 
     return relativePath.replaceAll(r'\', '/');
-  }
-
-  Future<void> _exportCompressedManifest({
-    required String characterId,
-    required Directory exportDirectory,
-  }) async {
-    final character = await _characterRepository.getCharacterById(characterId);
-    if (character == null) {
-      return;
-    }
-
-    final exportCompressed = <String>{};
-
-    if (character.mainImagePath != null &&
-        await _localFileStorage.isImageCompressed(
-          characterId,
-          character.mainImagePath,
-        )) {
-      exportCompressed.add('main${p.extension(character.mainImagePath!)}');
-    }
-
-    for (var index = 0; index < character.galleryImagePaths.length; index++) {
-      final path = character.galleryImagePaths[index];
-      if (await _localFileStorage.isImageCompressed(characterId, path)) {
-        exportCompressed.add('gallery_$index${p.extension(path)}');
-      }
-    }
-
-    if (exportCompressed.isEmpty) {
-      return;
-    }
-
-    final destinationDirectory = Directory(
-      p.join(
-        exportDirectory.path,
-        'images',
-        _safePathSegment(characterId),
-      ),
-    );
-    await CompressedImagesManifest.write(destinationDirectory, exportCompressed);
   }
 
   String _safePathSegment(String value) {
