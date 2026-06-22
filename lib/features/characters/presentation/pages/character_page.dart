@@ -9,8 +9,8 @@ import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
 import 'package:mycharacterlist/app/widgets/feedback/app_message_view.dart';
 import 'package:mycharacterlist/core/errors/app_messages.dart';
-import 'package:mycharacterlist/app/widgets/layout/background_stack.dart';
 import 'package:mycharacterlist/app/widgets/layout/framed_content_panel.dart';
+import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
@@ -53,7 +53,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage> {
       orElse: () => false,
     );
 
-    return Scaffold(
+    return ScreenScaffold(
       appBar: CustomAppBar(
         title: 'Character page',
         backgroundColor: AppColors.characterAppBarBackground,
@@ -74,52 +74,48 @@ class _CharacterPageState extends ConsumerState<CharacterPage> {
               )
             : null,
       ),
-      body: BackgroundStack(
-        backgroundAssetPath: AppBackgroundAssets.characterPage,
-        children: [
-          FramedContentPanel(
-            frameAssetPath: AppBackgroundAssets.characterFrame,
-            child: characterAsync.when(
-              loading: () => const AppLoadingIndicator(),
-              error: (_, __) => const AppMessageView(
-                message: AppMessages.couldNotLoadCharacter,
-              ),
-              data: (character) {
-                if (character == null) {
-                  return const AppMessageView(
-                    message: AppMessages.characterNotFound,
-                  );
-                }
-
-                return gradeDefinitionsAsync.when(
-                  loading: () => const AppLoadingIndicator(),
-                  error: (_, __) => _CharacterContent(
-                    character: character,
-                    definitions: const [],
-                    rankings: rankingsAsync.valueOrNull ?? const [],
-                  ),
-                  data: (definitions) => rankingsAsync.when(
-                    loading: () => _CharacterContent(
-                      character: character,
-                      definitions: definitions,
-                      rankings: const [],
-                    ),
-                    error: (_, __) => _CharacterContent(
-                      character: character,
-                      definitions: definitions,
-                      rankings: const [],
-                    ),
-                    data: (rankings) => _CharacterContent(
-                      character: character,
-                      definitions: definitions,
-                      rankings: rankings,
-                    ),
-                  ),
-                );
-              },
-            ),
+      backgroundAssetPath: AppBackgroundAssets.characterPage,
+      child: FramedContentPanel(
+        frameAssetPath: AppBackgroundAssets.characterFrame,
+        child: characterAsync.when(
+          loading: () => const AppLoadingIndicator(),
+          error: (_, __) => const AppMessageView(
+            message: AppMessages.couldNotLoadCharacter,
           ),
-        ],
+          data: (character) {
+            if (character == null) {
+              return const AppMessageView(
+                message: AppMessages.characterNotFound,
+              );
+            }
+
+            return gradeDefinitionsAsync.when(
+              loading: () => const AppLoadingIndicator(),
+              error: (_, __) => _CharacterContent(
+                character: character,
+                definitions: const [],
+                rankings: rankingsAsync.valueOrNull ?? const [],
+              ),
+              data: (definitions) => rankingsAsync.when(
+                loading: () => _CharacterContent(
+                  character: character,
+                  definitions: definitions,
+                  rankings: const [],
+                ),
+                error: (_, __) => _CharacterContent(
+                  character: character,
+                  definitions: definitions,
+                  rankings: const [],
+                ),
+                data: (rankings) => _CharacterContent(
+                  character: character,
+                  definitions: definitions,
+                  rankings: rankings,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
