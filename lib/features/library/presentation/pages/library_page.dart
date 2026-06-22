@@ -100,14 +100,18 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     context.pop();
   }
 
-  void _openPage(String route, {bool resetSearch = true}) {
+  Future<void> _openPage(String route, {bool resetSearch = true}) async {
     _unfocusSearch();
     if (resetSearch) {
       searchController.clear();
       filters = const CharacterFilters();
       _scheduleSearchReset();
     }
-    context.push(route);
+    await context.push(route);
+    if (!mounted) {
+      return;
+    }
+    await refreshLibraryAfterCharacterMutation(ref);
   }
 
   Future<void> _importCharacters() async {

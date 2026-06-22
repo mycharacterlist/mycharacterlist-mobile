@@ -16,7 +16,6 @@ import 'package:mycharacterlist/core/theme/screen_app_bar_styles.dart';
 import 'package:mycharacterlist/core/storage/storage_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
-import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/library/presentation/controllers/character_form_controller.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/character_references_view_model.dart';
 import 'package:mycharacterlist/features/library/presentation/viewmodels/create_character_view_model.dart';
@@ -184,8 +183,8 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       return;
     }
 
+    await _refreshLibraryAfterMutation(includeRanking: includeRanking);
     await _popWithoutWarning();
-    _refreshLibraryAfterMutation(includeRanking: includeRanking);
   }
 
   Future<_AnimeRenameChoice> _resolveAnimeRenameChoice(String newAnime) async {
@@ -280,8 +279,10 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       }
     }
 
+    await _refreshLibraryAfterMutation(
+      characterId: isEditing ? form.character?.id : null,
+    );
     await _popWithoutWarning();
-    _refreshLibraryAfterMutation();
   }
 
   Future<void> _saveCharacter(List<GradeDefinition> definitions) async {
@@ -331,8 +332,8 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
       }
     }
 
+    await _refreshLibraryAfterMutation(characterId: character.id);
     await _popWithoutWarning();
-    _refreshLibraryAfterMutation();
   }
 
   Future<bool?> _showAnimeRenameDialog({
@@ -401,20 +402,15 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     );
   }
 
-  void _refreshLibraryAfterMutation({bool includeRanking = false}) {
-    ref.invalidate(libraryCharactersProvider);
-    ref.invalidate(characterNameSuggestionsProvider);
-    ref.read(characterReferencesViewModelProvider.notifier).load();
-
-    if (includeRanking) {
-      ref.invalidate(rankingCharactersViewModelProvider);
-      ref.invalidate(rankedListCharacterDetailsProvider);
-    }
-
-    Future.microtask(() {
-      ref.read(charactersViewModelProvider.notifier).loadCharacters();
-      ref.read(characterReferencesViewModelProvider.notifier).load();
-    });
+  Future<void> _refreshLibraryAfterMutation({
+    String? characterId,
+    bool includeRanking = true,
+  }) {
+    return refreshLibraryAfterCharacterMutation(
+      ref,
+      characterId: characterId,
+      includeRanking: includeRanking,
+    );
   }
 
   Future<void> _clearAll() async {

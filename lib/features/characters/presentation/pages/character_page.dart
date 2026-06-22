@@ -13,6 +13,7 @@ import 'package:mycharacterlist/app/widgets/layout/framed_content_panel.dart';
 import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/characters/character_providers.dart';
+import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character_ranking_display.dart';
@@ -66,9 +67,12 @@ class _CharacterPageState extends ConsumerState<CharacterPage> {
                   await context.push(
                     AppRoutes.characterEditById(widget.characterId),
                   );
-                  ref.invalidate(characterByIdProvider(widget.characterId));
-                  ref.invalidate(
-                    characterRankingDisplaysProvider(widget.characterId),
+                  if (!context.mounted) {
+                    return;
+                  }
+                  await refreshLibraryAfterCharacterMutation(
+                    ref,
+                    characterId: widget.characterId,
                   );
                 },
               )
