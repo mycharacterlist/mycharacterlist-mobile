@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:mycharacterlist/core/theme/app_colors.dart';
-
 import 'package:mycharacterlist/core/text/text_editing_utils.dart';
 
 class AnimeField extends StatelessWidget {
@@ -27,70 +26,74 @@ class AnimeField extends StatelessWidget {
         onExistingTitleSelected?.call(value);
       },
       optionsBuilder: (TextEditingValue textEditingValue) {
-        if (textEditingValue.text.isEmpty) {
+        final query = textEditingValue.text;
+        if (normalizeSearchText(query).isEmpty) {
           return const Iterable<String>.empty();
         }
 
-        return items.where((item) {
-          return item.toLowerCase().startsWith(
-            textEditingValue.text.toLowerCase(),
-          );
-        });
+        return items.where((item) => matchesSearchQuery(query, item));
       },
-
-      fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-        return TextField(
-          controller: controller,
-          focusNode: focusNode,
-          onChanged: (value) {
-            syncControllerValue(this.controller, controller.value);
-            _notifyExistingTitleMatch(value);
+      fieldViewBuilder: (context, fieldController, focusNode, onFieldSubmitted) {
+        return ValueListenableBuilder<TextEditingValue>(
+          valueListenable: fieldController,
+          builder: (context, value, _) {
+            return TextField(
+              controller: fieldController,
+              focusNode: focusNode,
+              onChanged: (changedValue) {
+                syncControllerValue(controller, fieldController.value);
+                _notifyExistingTitleMatch(changedValue);
+              },
+              decoration: InputDecoration(
+                labelText: 'Anime',
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.65),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: hasError ? Colors.red : Colors.grey,
+                    width: hasError ? 2 : 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: hasError ? Colors.red : AppColors.formAccent,
+                    width: 2,
+                  ),
+                ),
+                suffixIcon: value.text.isEmpty
+                    ? null
+                    : IconButton(
+                        onPressed: () {
+                          fieldController.clear();
+                          syncControllerValue(controller, fieldController.value);
+                        },
+                        icon: const Icon(Icons.close, color: Colors.black54),
+                        tooltip: 'Clear',
+                      ),
+              ),
+            );
           },
-
-          decoration: InputDecoration(
-            labelText: 'Anime',
-            filled: true,
-            fillColor: Colors.white.withOpacity(0.65),
-
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: hasError ? Colors.red : Colors.grey,
-                width: hasError ? 2 : 1,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: hasError ? Colors.red : AppColors.formAccent,
-                width: 2,
-              ),
-            ),
-          ),
         );
       },
-
       optionsViewBuilder: (context, onSelected, options) {
         return Material(
           elevation: 4,
-
           child: Container(
             constraints: const BoxConstraints(maxHeight: 200),
-
             color: Colors.white,
-
             child: ListView.builder(
               shrinkWrap: true,
-
               itemCount: options.length,
-
               itemBuilder: (context, index) {
                 final option = options.elementAt(index);
 
                 return ListTile(
                   title: Text(option),
-
                   onTap: () {
                     onSelected(option);
                   },
