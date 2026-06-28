@@ -11,6 +11,8 @@ class AppRoutes {
   static const characterCreate = '/characters/create';
   static const characterEdit = '/characters/:id/edit';
   static const library = '/library';
+  static const compareCharacters = '/compare/characters';
+  static const compareAnime = '/compare/anime';
 
   static String rankingListById(String id) => '/lists/$id';
 

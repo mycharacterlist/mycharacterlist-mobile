@@ -17,6 +17,7 @@ import 'package:mycharacterlist/core/storage/app_disk_cache.dart';
 import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/core/theme/screen_app_bar_styles.dart';
+import 'package:mycharacterlist/features/compare/presentation/controllers/compare_controller.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/patches/patch_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
@@ -112,6 +113,11 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       return;
     }
     await refreshLibraryAfterCharacterMutation(ref);
+  }
+
+  Future<void> _showCompareOptions() async {
+    _unfocusSearch();
+    await ref.read(compareControllerProvider).showCompareOptionsSheet(context);
   }
 
   Future<void> _importCharacters() async {
@@ -297,6 +303,11 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         backButtonColor: AppScreenAppBars.library.backButtonColor,
         titleColor: AppScreenAppBars.library.titleColor,
         onBackPressed: _leaveLibrary,
+        actionWidget: IconButton(
+          icon: const Icon(Icons.compare_arrows, color: Colors.white),
+          tooltip: 'Compare',
+          onPressed: _showCompareOptions,
+        ),
       ),
       bodyWrapper: (body) => GestureDetector(
         behavior: HitTestBehavior.translucent,
