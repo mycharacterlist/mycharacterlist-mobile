@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
+import 'package:mycharacterlist/features/gallery/presentation/widgets/character_gallery_picker.dart';
+import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/Plus_button.dart';
 
-class CharacterGalleryPage
-    extends ConsumerWidget {
+class CharacterGalleryPage extends ConsumerWidget {
 
   const CharacterGalleryPage({
     super.key,
@@ -23,9 +24,8 @@ class CharacterGalleryPage
       appBar: CustomAppBar(
         title: 'Gallery page',
         backgroundColor: const Color(0xFF024818),
-        titleColor: const Color(0xFFFFFFFF),
+        titleColor: Colors.white,
         backButtonColor: Colors.black,
-
       ),
 
       body: Stack(
@@ -34,12 +34,13 @@ class CharacterGalleryPage
           Positioned.fill(
             child: Image.asset(
               'assets/images/Gallery_bg.jpg',
-
               fit: BoxFit.cover,
             ),
           ),
 
-          Center(
+          Align(
+            alignment: Alignment.topCenter,
+
             child: SizedBox(
               width:
               MediaQuery.of(context)
@@ -57,7 +58,6 @@ class CharacterGalleryPage
                   Positioned.fill(
                     child: Image.asset(
                       'assets/images/cropped_rectangle.png',
-
                       fit: BoxFit.fill,
                     ),
                   ),
@@ -66,7 +66,7 @@ class CharacterGalleryPage
                     top: 0,
                     left: 5,
                     right: 5,
-                    bottom: 20,
+                    bottom: 100,
 
                     child: SingleChildScrollView(
                       child: Column(
@@ -76,13 +76,46 @@ class CharacterGalleryPage
                             height: 5,
                           ),
 
+                          const Text(
+                            'Character name',
 
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'DoublePicaREG',
+                              color: Colors.black,
+                            ),
+                          ),
+
+                          const SizedBox(
+                            height: 20,
+                          ),
+
+                          const CharacterGalleryPicker(),
 
                         ],
                       ),
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 25,
+
+            child: Center(
+              child: PlusButton(
+                icon: const Icon(
+                  Icons.add,
+                  size: 40,
+                  color: Colors.white,
+                ),
+
+                onPressed: () {},
               ),
             ),
           ),
