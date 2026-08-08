@@ -89,6 +89,7 @@ flutter:
     - assets/images/CharacterPage_bg.jpg
     - assets/images/cropped_rectangle.png
     - assets/images/LouiseTest.jpg
+    - assets/images/Gallery_bg.jpg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
