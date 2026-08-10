@@ -14,24 +14,19 @@ class CharacterGalleryPicker extends StatefulWidget {
 
 class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
 
-  final ImagePicker _picker = ImagePicker();
-
   final List<File> _images = [];
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final images = await picker.pickMultiImage();
 
-    final XFile? image =
-    await _picker.pickImage(
-      source: ImageSource.gallery,
-    );
-
-    if (image == null) {
+    if (images.isEmpty || !mounted) {
       return;
     }
 
     setState(() {
-      _images.add(
-        File(image.path),
+      _images.addAll(
+        images.map((image) => File(image.path)),
       );
     });
   }
@@ -60,7 +55,7 @@ class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
             if (index == _images.length) {
 
               return InkWell(
-                onTap: _pickImage,
+                onTap: _pickImages,
 
                 borderRadius: BorderRadius.circular(12),
 
@@ -94,9 +89,6 @@ class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
           },
         ),
 
-        const SizedBox(
-          height: 90,
-        ),
       ],
     );
   }
