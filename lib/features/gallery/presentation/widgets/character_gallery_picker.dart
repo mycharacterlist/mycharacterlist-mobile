@@ -90,6 +90,8 @@ class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
               characterFolder: widget.characterId,
               fit: BoxFit.cover,
               enableFullscreenPreview: true,
+              previewImagePaths: widget.imagePaths,
+              previewInitialIndex: index,
             );
           },
         ),

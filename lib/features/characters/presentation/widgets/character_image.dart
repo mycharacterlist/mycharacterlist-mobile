@@ -17,6 +17,8 @@ class CharacterImage extends StatefulWidget {
     this.placeholderIconSize = 80,
     this.showPlaceholderBorder = false,
     this.enableFullscreenPreview = false,
+    this.previewImagePaths,
+    this.previewInitialIndex = 0,
   });
 
   final String? imagePath;
@@ -27,6 +29,8 @@ class CharacterImage extends StatefulWidget {
   final double placeholderIconSize;
   final bool showPlaceholderBorder;
   final bool enableFullscreenPreview;
+  final List<String>? previewImagePaths;
+  final int previewInitialIndex;
 
   @override
   State<CharacterImage> createState() => _CharacterImageState();
@@ -81,7 +85,20 @@ class _CharacterImageState extends State<CharacterImage> {
     }
 
     return GestureDetector(
-      onTap: () => CharacterImageViewer.open(context, _resolvedPath!),
+      onTap: () {
+        final previewImagePaths = widget.previewImagePaths;
+        if (previewImagePaths != null && previewImagePaths.isNotEmpty) {
+          CharacterImageViewer.openGallery(
+            context,
+            imagePaths: previewImagePaths,
+            initialIndex: widget.previewInitialIndex,
+            characterFolder: widget.characterFolder,
+          );
+          return;
+        }
+
+        CharacterImageViewer.open(context, _resolvedPath!);
+      },
       child: child,
     );
   }

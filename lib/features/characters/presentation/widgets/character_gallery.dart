@@ -58,6 +58,8 @@ class CharacterGallery extends ConsumerWidget {
                       height: 180,
                       placeholderIconSize: 48,
                       enableFullscreenPreview: true,
+                      previewImagePaths: imagePaths,
+                      previewInitialIndex: index,
                     ),
                   );
                 },
