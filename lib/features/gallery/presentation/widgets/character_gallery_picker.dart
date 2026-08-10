@@ -1,11 +1,20 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mycharacterlist/features/characters/presentation/widgets/character_image.dart';
 
 class CharacterGalleryPicker extends StatefulWidget {
   const CharacterGalleryPicker({
     super.key,
+    required this.characterId,
+    required this.imagePaths,
+    required this.onAddImages,
+    this.isSaving = false,
   });
+
+  final String characterId;
+  final List<String> imagePaths;
+  final Future<void> Function(List<String> imagePaths) onAddImages;
+  final bool isSaving;
 
   @override
   State<CharacterGalleryPicker> createState() =>
@@ -13,10 +22,11 @@ class CharacterGalleryPicker extends StatefulWidget {
 }
 
 class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
-
-  final List<File> _images = [];
-
   Future<void> _pickImages() async {
+    if (widget.isSaving) {
+      return;
+    }
+
     final picker = ImagePicker();
     final images = await picker.pickMultiImage();
 
@@ -24,38 +34,31 @@ class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
       return;
     }
 
-    setState(() {
-      _images.addAll(
-        images.map((image) => File(image.path)),
-      );
-    });
+    await widget.onAddImages(
+      images.map((image) => image.path).toList(),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Column(
       children: [
-
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate:
-          const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             crossAxisSpacing: 10,
             mainAxisSpacing: 10,
             childAspectRatio: 0.75,
           ),
 
-          itemCount: _images.length + 1,
+          itemCount: widget.imagePaths.length + 1,
 
           itemBuilder: (context, index) {
-
-            if (index == _images.length) {
-
+            if (index == widget.imagePaths.length) {
               return InkWell(
-                onTap: _pickImages,
+                onTap: widget.isSaving ? null : _pickImages,
 
                 borderRadius: BorderRadius.circular(12),
 
@@ -82,13 +85,14 @@ class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
               );
             }
 
-            return Image.file(
-              _images[index],
+            return CharacterImage(
+              imagePath: widget.imagePaths[index],
+              characterFolder: widget.characterId,
               fit: BoxFit.cover,
+              enableFullscreenPreview: true,
             );
           },
         ),
-
       ],
     );
   }

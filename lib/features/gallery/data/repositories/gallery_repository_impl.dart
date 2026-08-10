@@ -13,4 +13,43 @@ class GalleryRepositoryImpl implements GalleryRepository {
     final character = await _characterRepository.getCharacterById(characterId);
     return character?.galleryImagePaths ?? const [];
   }
+
+  @override
+  Future<void> addGalleryImages({
+    required String characterId,
+    required List<String> imagePaths,
+    void Function(int completed, int total)? onProgress,
+  }) async {
+    if (imagePaths.isEmpty) {
+      return;
+    }
+
+    final total = imagePaths.length;
+    var completed = 0;
+    final initialCharacter = await _characterRepository.getCharacterById(
+      characterId,
+    );
+    if (initialCharacter == null) {
+      throw StateError('Character not found.');
+    }
+    var character = initialCharacter;
+
+    for (final imagePath in imagePaths) {
+      final updatedCharacter = character.copyWith(
+        galleryImagePaths: [
+          ...character.galleryImagePaths,
+          imagePath,
+        ],
+        updatedAt: DateTime.now(),
+      );
+
+      await _characterRepository.saveCharacter(updatedCharacter);
+      completed += 1;
+      onProgress?.call(completed, total);
+
+      character =
+          await _characterRepository.getCharacterById(characterId) ??
+          updatedCharacter;
+    }
+  }
 }
