@@ -29,8 +29,18 @@ class CharacterReferenceLocalDataSource {
 
   Future<String> ensureAnimeTitle(String name) async {
     final normalizedName = name.trim();
-    final existingName = await _findName('anime_titles', normalizedName);
-    if (existingName != null) {
+    final existingTitle = await _findNameRow('anime_titles', normalizedName);
+    if (existingTitle != null) {
+      final existingName = existingTitle['name']! as String;
+      if (existingName != normalizedName) {
+        await _renameAnimeTitleCasing(
+          id: existingTitle['id']! as String,
+          oldName: existingName,
+          newName: normalizedName,
+        );
+        return normalizedName;
+      }
+
       return existingName;
     }
 
@@ -121,14 +131,46 @@ class CharacterReferenceLocalDataSource {
   }
 
   Future<String?> _findName(String table, String name) async {
+    final row = await _findNameRow(table, name);
+    return row == null ? null : row['name']! as String;
+  }
+
+  Future<Map<String, Object?>?> _findNameRow(String table, String name) async {
     final database = await _appDatabase.database;
     final rows = await database.query(
       table,
-      columns: ['name'],
+      columns: ['id', 'name'],
       where: 'name = ? COLLATE NOCASE',
       whereArgs: [name.trim()],
       limit: 1,
     );
-    return rows.isEmpty ? null : rows.first['name']! as String;
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<void> _renameAnimeTitleCasing({
+    required String id,
+    required String oldName,
+    required String newName,
+  }) async {
+    final database = await _appDatabase.database;
+
+    await database.transaction((transaction) async {
+      await transaction.update(
+        'anime_titles',
+        {'name': newName},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+
+      await transaction.update(
+        'characters',
+        {
+          'source_title': newName,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'source_title = ? COLLATE NOCASE',
+        whereArgs: [oldName],
+      );
+    });
   }
 }
