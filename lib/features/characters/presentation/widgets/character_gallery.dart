@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/router/routes.dart';
 import 'package:mycharacterlist/app/widgets/character/character_section_panel.dart';
+import 'package:mycharacterlist/features/characters/character_providers.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_image.dart';
-import 'package:mycharacterlist/features/gallery/presentation/controllers/gallery_controller.dart';
+import 'package:mycharacterlist/features/gallery/gallery_providers.dart';
 import 'package:mycharacterlist/features/gallery/presentation/widgets/gallery_action_button.dart';
 
 class CharacterGallery extends ConsumerWidget {
@@ -18,12 +21,14 @@ class CharacterGallery extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final galleryController = ref.watch(galleryControllerProvider(characterId));
-
     return CharacterSectionPanel(
       title: 'Gallery:',
       trailing: GestureDetector(
-        onTap: () => galleryController.openGallery(context),
+        onTap: () async {
+          await context.push(AppRoutes.characterGalleryById(characterId));
+          ref.invalidate(characterByIdProvider(characterId));
+          ref.invalidate(characterGalleryImagesProvider(characterId));
+        },
         child: const GalleryActionButton(),
       ),
       child: imagePaths.isEmpty

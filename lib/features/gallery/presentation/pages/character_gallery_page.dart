@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mycharacterlist/app/assets/app_background_assets.dart';
 import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
 import 'package:mycharacterlist/app/widgets/feedback/app_loading_overlay.dart';
@@ -31,11 +32,21 @@ class CharacterGalleryPage extends ConsumerStatefulWidget {
 class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
   final ScrollController _scrollController = ScrollController();
   bool _isSaving = false;
+  bool _isEditMode = false;
+  bool _isPersistingOrder = false;
+  bool _isPersistingRemoval = false;
+  bool _hasGalleryChanges = false;
+  String _loadingTitle = 'Adding photos...';
+  List<String>? _localImagePaths;
   int _savingCompleted = 0;
   int _savingTotal = 0;
 
   @override
   void dispose() {
+    if (_hasGalleryChanges) {
+      ref.invalidate(characterByIdProvider(widget.characterId));
+      ref.invalidate(characterGalleryImagesProvider(widget.characterId));
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -50,7 +61,15 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
         title: 'Gallery page',
         backgroundColor: const Color(0xFF024818),
         titleColor: Colors.white,
-        backButtonColor: Colors.black,
+        backButtonColor: Colors.white,
+        actionWidget: IconButton(
+          onPressed: _isSaving
+              ? null
+              : () => setState(() => _isEditMode = !_isEditMode),
+          icon: Icon(_isEditMode ? Icons.close : Icons.edit),
+          color: Colors.white,
+          tooltip: _isEditMode ? 'Cancel editing' : 'Edit gallery',
+        ),
       ),
       overlays: [
         BottomActionSlot(
@@ -61,12 +80,12 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
               size: 40,
               color: Colors.white,
             ),
-            onPressed: () {},
+            onPressed: _pickGalleryImages,
           ),
         ),
         if (_isSaving)
           AppLoadingOverlay(
-            title: 'Adding photos...',
+            title: _loadingTitle,
             completed: _savingCompleted,
             total: _savingTotal,
           ),
@@ -101,6 +120,8 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
                         message: AppMessages.characterNotFound,
                       );
                     }
+                    final imagePaths =
+                        _localImagePaths ?? loadedCharacter.galleryImagePaths;
 
                     return Column(
                       children: [
@@ -123,21 +144,31 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
                         ),
                         const SizedBox(height: 20),
                         Expanded(
-                          child: Scrollbar(
-                            controller: _scrollController,
-                            thumbVisibility: true,
-                            thickness: 4,
-                            radius: const Radius.circular(8),
-                            child: SingleChildScrollView(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
+                          child: ScrollbarTheme(
+                            data: ScrollbarTheme.of(context).copyWith(
+                              thumbColor: MaterialStateProperty.all(
+                                Colors.black.withValues(alpha: 0.55),
                               ),
-                              child: CharacterGalleryPicker(
-                                characterId: loadedCharacter.id,
-                                imagePaths: loadedCharacter.galleryImagePaths,
-                                isSaving: _isSaving,
-                                onAddImages: _addGalleryImages,
+                            ),
+                            child: Scrollbar(
+                              controller: _scrollController,
+                              thumbVisibility: true,
+                              thickness: 6,
+                              radius: const Radius.circular(8),
+                              child: SingleChildScrollView(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                ),
+                                child: CharacterGalleryPicker(
+                                  characterId: loadedCharacter.id,
+                                  imagePaths: imagePaths,
+                                  isSaving: _isSaving,
+                                  isEditMode: _isEditMode,
+                                  onAddPressed: _pickGalleryImages,
+                                  onRemoveImage: _removeGalleryImage,
+                                  onReorderImage: _reorderGalleryImage,
+                                ),
                               ),
                             ),
                           ),
@@ -154,6 +185,23 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
     );
   }
 
+  Future<void> _pickGalleryImages() async {
+    if (_isSaving) {
+      return;
+    }
+
+    final picker = ImagePicker();
+    final images = await picker.pickMultiImage();
+
+    if (images.isEmpty || !mounted) {
+      return;
+    }
+
+    await _addGalleryImages(
+      images.map((image) => image.path).toList(),
+    );
+  }
+
   Future<void> _addGalleryImages(List<String> imagePaths) async {
     if (_isSaving || imagePaths.isEmpty) {
       return;
@@ -161,6 +209,7 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
 
     setState(() {
       _isSaving = true;
+      _loadingTitle = 'Adding photos...';
       _savingCompleted = 0;
       _savingTotal = imagePaths.length;
     });
@@ -188,9 +237,103 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
       if (mounted) {
         setState(() {
           _isSaving = false;
+          _localImagePaths = null;
           _savingCompleted = 0;
           _savingTotal = 0;
         });
+      }
+    }
+  }
+
+  Future<void> _removeGalleryImage(int imageIndex) async {
+    if (_isSaving || _isPersistingRemoval) {
+      return;
+    }
+
+    final character = ref
+        .read(characterByIdProvider(widget.characterId))
+        .valueOrNull;
+    if (character == null) {
+      return;
+    }
+
+    final previousPaths = [
+      ...(_localImagePaths ?? character.galleryImagePaths),
+    ];
+    if (imageIndex < 0 || imageIndex >= previousPaths.length) {
+      return;
+    }
+
+    final updatedPaths = [...previousPaths]..removeAt(imageIndex);
+
+    setState(() {
+      _isPersistingRemoval = true;
+      _localImagePaths = updatedPaths;
+    });
+
+    try {
+      await ref.read(galleryRepositoryProvider).updateGalleryImagePaths(
+        characterId: widget.characterId,
+        imagePaths: updatedPaths,
+      );
+      _hasGalleryChanges = true;
+    } catch (_) {
+      if (mounted) {
+        setState(() => _localImagePaths = previousPaths);
+        AppSnackBar.showCentered(context, AppMessages.couldNotSaveCharacter);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPersistingRemoval = false);
+      }
+    }
+  }
+
+  Future<void> _reorderGalleryImage(int fromIndex, int toIndex) async {
+    if (_isSaving || _isPersistingOrder || fromIndex == toIndex) {
+      return;
+    }
+
+    final character = ref
+        .read(characterByIdProvider(widget.characterId))
+        .valueOrNull;
+    if (character == null) {
+      return;
+    }
+
+    final previousPaths = [
+      ...(_localImagePaths ?? character.galleryImagePaths),
+    ];
+    if (fromIndex < 0 ||
+        fromIndex >= previousPaths.length ||
+        toIndex < 0 ||
+        toIndex >= previousPaths.length) {
+      return;
+    }
+
+    final updatedPaths = [...previousPaths];
+    final movedPath = updatedPaths.removeAt(fromIndex);
+    updatedPaths.insert(toIndex, movedPath);
+
+    setState(() {
+      _isPersistingOrder = true;
+      _localImagePaths = updatedPaths;
+    });
+
+    try {
+      await ref.read(galleryRepositoryProvider).updateGalleryImagePaths(
+        characterId: widget.characterId,
+        imagePaths: updatedPaths,
+      );
+      _hasGalleryChanges = true;
+    } catch (_) {
+      if (mounted) {
+        setState(() => _localImagePaths = previousPaths);
+        AppSnackBar.showCentered(context, AppMessages.couldNotSaveCharacter);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isPersistingOrder = false);
       }
     }
   }

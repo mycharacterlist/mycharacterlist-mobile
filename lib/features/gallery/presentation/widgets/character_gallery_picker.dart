@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mycharacterlist/features/characters/presentation/widgets/character_image.dart';
 
 class CharacterGalleryPicker extends StatefulWidget {
@@ -7,14 +6,20 @@ class CharacterGalleryPicker extends StatefulWidget {
     super.key,
     required this.characterId,
     required this.imagePaths,
-    required this.onAddImages,
+    required this.onAddPressed,
+    required this.onRemoveImage,
+    required this.onReorderImage,
     this.isSaving = false,
+    this.isEditMode = false,
   });
 
   final String characterId;
   final List<String> imagePaths;
-  final Future<void> Function(List<String> imagePaths) onAddImages;
+  final VoidCallback onAddPressed;
+  final ValueChanged<int> onRemoveImage;
+  final void Function(int fromIndex, int toIndex) onReorderImage;
   final bool isSaving;
+  final bool isEditMode;
 
   @override
   State<CharacterGalleryPicker> createState() =>
@@ -22,23 +27,6 @@ class CharacterGalleryPicker extends StatefulWidget {
 }
 
 class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
-  Future<void> _pickImages() async {
-    if (widget.isSaving) {
-      return;
-    }
-
-    final picker = ImagePicker();
-    final images = await picker.pickMultiImage();
-
-    if (images.isEmpty || !mounted) {
-      return;
-    }
-
-    await widget.onAddImages(
-      images.map((image) => image.path).toList(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -58,7 +46,7 @@ class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
           itemBuilder: (context, index) {
             if (index == widget.imagePaths.length) {
               return InkWell(
-                onTap: widget.isSaving ? null : _pickImages,
+                onTap: widget.isSaving ? null : widget.onAddPressed,
 
                 borderRadius: BorderRadius.circular(12),
 
@@ -85,16 +73,140 @@ class _CharacterGalleryPickerState extends State<CharacterGalleryPicker> {
               );
             }
 
-            return CharacterImage(
-              imagePath: widget.imagePaths[index],
-              characterFolder: widget.characterId,
-              fit: BoxFit.cover,
-              enableFullscreenPreview: true,
-              previewImagePaths: widget.imagePaths,
-              previewInitialIndex: index,
+            final imageTile = _GalleryImageTile(
+              key: ValueKey(widget.imagePaths[index]),
+              characterId: widget.characterId,
+              imagePaths: widget.imagePaths,
+              index: index,
+              isEditMode: widget.isEditMode,
+              isSaving: widget.isSaving,
+              onRemoveImage: widget.onRemoveImage,
+            );
+
+            if (!widget.isEditMode || widget.isSaving) {
+              return imageTile;
+            }
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                return DragTarget<int>(
+                  onAcceptWithDetails: (details) {
+                    widget.onReorderImage(details.data, index);
+                  },
+                  builder: (context, candidateData, rejectedData) {
+                    final isHighlighted = candidateData.isNotEmpty;
+                    final highlightedTile = DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: isHighlighted
+                            ? Border.all(color: Colors.black, width: 3)
+                            : null,
+                      ),
+                      child: imageTile,
+                    );
+
+                    return LongPressDraggable<int>(
+                      data: index,
+                      feedback: Material(
+                        color: Colors.transparent,
+                        child: SizedBox(
+                          width: constraints.maxWidth,
+                          height: constraints.maxHeight,
+                          child: Opacity(
+                            opacity: 0.88,
+                            child: _GalleryImageTile(
+                              key: ValueKey(
+                                'drag-${widget.imagePaths[index]}',
+                              ),
+                              characterId: widget.characterId,
+                              imagePaths: widget.imagePaths,
+                              index: index,
+                              isEditMode: false,
+                              isSaving: widget.isSaving,
+                              onRemoveImage: widget.onRemoveImage,
+                            ),
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.35,
+                        child: highlightedTile,
+                      ),
+                      child: highlightedTile,
+                    );
+                  },
+                );
+              },
             );
           },
         ),
+      ],
+    );
+  }
+}
+
+class _GalleryImageTile extends StatelessWidget {
+  const _GalleryImageTile({
+    super.key,
+    required this.characterId,
+    required this.imagePaths,
+    required this.index,
+    required this.isEditMode,
+    required this.isSaving,
+    required this.onRemoveImage,
+  });
+
+  final String characterId;
+  final List<String> imagePaths;
+  final int index;
+  final bool isEditMode;
+  final bool isSaving;
+  final ValueChanged<int> onRemoveImage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: IgnorePointer(
+            ignoring: isEditMode,
+            child: CharacterImage(
+              key: ValueKey(imagePaths[index]),
+              imagePath: imagePaths[index],
+              characterFolder: characterId,
+              fit: BoxFit.cover,
+              enableFullscreenPreview: true,
+              previewImagePaths: imagePaths,
+              previewInitialIndex: index,
+            ),
+          ),
+        ),
+        if (isEditMode)
+          Positioned.fill(
+            child: ColoredBox(
+              color: Colors.black.withValues(alpha: 0.04),
+            ),
+          ),
+        if (isEditMode)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: isSaving ? null : () => onRemoveImage(index),
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: const BoxDecoration(
+                  color: Colors.black87,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close,
+                  size: 20,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

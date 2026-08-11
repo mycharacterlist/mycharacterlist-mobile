@@ -52,4 +52,69 @@ class GalleryRepositoryImpl implements GalleryRepository {
           updatedCharacter;
     }
   }
+
+  @override
+  Future<void> removeGalleryImage({
+    required String characterId,
+    required int imageIndex,
+  }) async {
+    final character = await _characterRepository.getCharacterById(characterId);
+    if (character == null) {
+      throw StateError('Character not found.');
+    }
+
+    if (imageIndex < 0 || imageIndex >= character.galleryImagePaths.length) {
+      return;
+    }
+
+    final imagePaths = [...character.galleryImagePaths]..removeAt(imageIndex);
+
+    await _characterRepository.updateCharacterGalleryImagePaths(
+      characterId: characterId,
+      imagePaths: imagePaths,
+    );
+  }
+
+  @override
+  Future<void> reorderGalleryImages({
+    required String characterId,
+    required int fromIndex,
+    required int toIndex,
+  }) async {
+    if (fromIndex == toIndex) {
+      return;
+    }
+
+    final character = await _characterRepository.getCharacterById(characterId);
+    if (character == null) {
+      throw StateError('Character not found.');
+    }
+
+    if (fromIndex < 0 ||
+        fromIndex >= character.galleryImagePaths.length ||
+        toIndex < 0 ||
+        toIndex >= character.galleryImagePaths.length) {
+      return;
+    }
+
+    final imagePaths = [...character.galleryImagePaths];
+    final movedPath = imagePaths.removeAt(fromIndex);
+    imagePaths.insert(toIndex, movedPath);
+
+    await _characterRepository.updateCharacterGalleryImagePaths(
+      characterId: characterId,
+      imagePaths: imagePaths,
+    );
+  }
+
+  @override
+  Future<void> updateGalleryImagePaths({
+    required String characterId,
+    required List<String> imagePaths,
+  }) async {
+    await _characterRepository.updateCharacterGalleryImagePaths(
+      characterId: characterId,
+      imagePaths: imagePaths,
+    );
+  }
 }
