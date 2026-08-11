@@ -90,6 +90,7 @@ flutter:
     - assets/images/cropped_rectangle.png
     - assets/images/LouiseTest.jpg
     - assets/images/Gallery_bg.jpg
+    - assets/images/Patches_bg.jpg
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -157,6 +158,10 @@ flutter:
     - family: JimNightshade
       fonts:
         - asset: assets/fonts/JimNightshade-Regular.ttf
+    - family: Jomolhari
+      fonts:
+        - asset: assets/fonts/Jomolhari-Regular.ttf
+
 
 
   #       - asset: fonts/TrajanPro_Bold.ttf
