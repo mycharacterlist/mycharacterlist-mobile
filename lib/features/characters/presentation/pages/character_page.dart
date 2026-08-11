@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +10,7 @@ import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
 import 'package:mycharacterlist/app/widgets/feedback/app_message_view.dart';
 import 'package:mycharacterlist/core/errors/app_messages.dart';
+import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
 import 'package:mycharacterlist/app/widgets/layout/framed_content_panel.dart';
 import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
@@ -145,19 +147,26 @@ class _CharacterContent extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(
-              character.name,
-              textAlign: TextAlign.center,
-              textHeightBehavior: const TextHeightBehavior(
-                applyHeightToFirstAscent: false,
-                applyHeightToLastDescent: false,
+            child: GestureDetector(
+              onLongPress: () => _copyText(
+                context,
+                character.name,
+                label: 'character name',
               ),
-              style: const TextStyle(
-                fontSize: 36,
-                height: 1.0,
-                color: Colors.black,
-                fontFamily: 'DoublePicaREG',
-                fontWeight: FontWeight.bold,
+              child: Text(
+                character.name,
+                textAlign: TextAlign.center,
+                textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
+                style: const TextStyle(
+                  fontSize: 36,
+                  height: 1.0,
+                  color: Colors.black,
+                  fontFamily: 'DoublePicaREG',
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -189,5 +198,21 @@ class _CharacterContent extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _copyText(
+    BuildContext context,
+    String value, {
+    required String label,
+  }) async {
+    final text = value.trim();
+    if (text.isEmpty) {
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      AppSnackBar.showCentered(context, 'Copied $label');
+    }
   }
 }
