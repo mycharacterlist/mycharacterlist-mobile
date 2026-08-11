@@ -24,7 +24,7 @@ class AppDatabase {
 
     return openDatabase(
       databasePath,
-      version: 2,
+      version: 3,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
       },
@@ -134,6 +134,7 @@ class AppDatabase {
             description TEXT NOT NULL,
             show_avatars INTEGER NOT NULL,
             color_value INTEGER NOT NULL DEFAULT 4285958909,
+            list_order INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
           )
@@ -225,10 +226,40 @@ class AppDatabase {
           await _createRankingListPatchTables(database);
         }
         if (oldVersion < 3) {
+          await _addRankingListOrderColumn(database);
           await _migratePatchEntriesToV3(database);
         }
       },
     );
+  }
+
+  Future<void> _addRankingListOrderColumn(Database database) async {
+    final columns = await database.rawQuery('PRAGMA table_info(ranking_lists)');
+    final hasOrderColumn = columns.any(
+      (column) => column['name'] == 'list_order',
+    );
+
+    if (!hasOrderColumn) {
+      await database.execute(
+        'ALTER TABLE ranking_lists '
+        'ADD COLUMN list_order INTEGER NOT NULL DEFAULT 0',
+      );
+    }
+
+    final lists = await database.query(
+      'ranking_lists',
+      columns: ['id'],
+      orderBy: 'created_at ASC',
+    );
+
+    for (var index = 0; index < lists.length; index++) {
+      await database.update(
+        'ranking_lists',
+        {'list_order': index + 1},
+        where: 'id = ?',
+        whereArgs: [lists[index]['id']],
+      );
+    }
   }
 
   Future<void> _createRankingListPatchTables(Database database) async {

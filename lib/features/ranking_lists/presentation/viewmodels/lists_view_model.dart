@@ -89,6 +89,7 @@ class ListsViewModel extends StateNotifier<ListsState> {
       id: 'list_${now.microsecondsSinceEpoch}',
       name: trimmedName,
       colorValue: color.toARGB32(),
+      listOrder: _nextListOrder(),
       createdAt: now,
       updatedAt: now,
     );
@@ -150,11 +151,65 @@ class ListsViewModel extends StateNotifier<ListsState> {
     }
   }
 
+  Future<void> reorderLists(int oldIndex, int newIndex) async {
+    if (oldIndex < 0 || oldIndex >= state.lists.length) {
+      return;
+    }
+
+    var targetIndex = newIndex;
+    if (targetIndex > oldIndex) {
+      targetIndex -= 1;
+    }
+
+    if (targetIndex < 0 || targetIndex >= state.lists.length) {
+      return;
+    }
+
+    final previousLists = state.lists;
+    final reorderedLists = [...state.lists];
+    final movedList = reorderedLists.removeAt(oldIndex);
+    reorderedLists.insert(targetIndex, movedList);
+
+    final orderedLists = reorderedLists
+        .asMap()
+        .entries
+        .map(
+          (entry) => entry.value.copyWith(
+            listOrder: entry.key + 1,
+            updatedAt: DateTime.now(),
+          ),
+        )
+        .toList();
+
+    state = state.copyWith(lists: orderedLists);
+
+    try {
+      await _repository.updateListOrder(
+        orderedLists.map((list) => list.id).toList(),
+      );
+    } catch (error) {
+      state = state.copyWith(
+        lists: previousLists,
+        errorMessage: ErrorMapper.userMessage(error),
+      );
+    }
+  }
+
   void clearError() {
     state = ListsState(
       lists: state.lists,
       isLoading: state.isLoading,
       isEditMode: state.isEditMode,
     );
+  }
+
+  int _nextListOrder() {
+    var maxOrder = 0;
+    for (final list in state.lists) {
+      if (list.listOrder > maxOrder) {
+        maxOrder = list.listOrder;
+      }
+    }
+    return maxOrder + 1;
   }
 }

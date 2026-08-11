@@ -9,6 +9,7 @@ class RankingList {
     this.description = '',
     this.showAvatars = false,
     this.colorValue = defaultColorValue,
+    this.listOrder = 0,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class RankingList {
   final String description;
   final bool showAvatars;
   final int colorValue;
+  final int listOrder;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +27,7 @@ class RankingList {
     String? description,
     bool? showAvatars,
     int? colorValue,
+    int? listOrder,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -34,6 +37,7 @@ class RankingList {
       description: description ?? this.description,
       showAvatars: showAvatars ?? this.showAvatars,
       colorValue: colorValue ?? this.colorValue,
+      listOrder: listOrder ?? this.listOrder,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

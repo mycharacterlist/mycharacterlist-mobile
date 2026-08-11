@@ -10,6 +10,8 @@ abstract interface class RankingListRepository {
 
   Future<void> deleteList(String id);
 
+  Future<void> updateListOrder(List<String> orderedListIds);
+
   Future<List<RankedCharacter>> getRankedCharacters(String listId);
 
   Future<List<RankedCharacter>> getCharacterRankings(String characterId);

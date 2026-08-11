@@ -14,7 +14,7 @@ class RankingListLocalDataSource {
     final database = await _appDatabase.database;
     final lists = await database.query(
       'ranking_lists',
-      orderBy: 'created_at ASC',
+      orderBy: 'list_order ASC, created_at ASC',
     );
 
     return lists.map(RankingListModel.fromDatabase).toList();
@@ -56,6 +56,24 @@ class RankingListLocalDataSource {
     final database = await _appDatabase.database;
 
     await database.delete('ranking_lists', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> updateListOrder(List<String> orderedListIds) async {
+    final database = await _appDatabase.database;
+
+    await database.transaction((transaction) async {
+      for (var index = 0; index < orderedListIds.length; index++) {
+        await transaction.update(
+          'ranking_lists',
+          {
+            'list_order': index + 1,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [orderedListIds[index]],
+        );
+      }
+    });
   }
 
   Future<List<RankedCharacterModel>> getRankedCharacters(String listId) async {
