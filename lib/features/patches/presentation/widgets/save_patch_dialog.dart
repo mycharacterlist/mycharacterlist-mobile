@@ -62,7 +62,6 @@ class _SavePatchDialogState extends State<SavePatchDialog> {
           const SizedBox(height: 12),
           TextField(
             controller: _controller,
-            autofocus: true,
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               labelText: 'Patch name',

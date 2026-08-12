@@ -89,4 +89,15 @@ class PatchLocalDataSource {
       whereArgs: [patchId],
     );
   }
+
+  Future<void> updatePatch(RankingListPatchModel patch) async {
+    final database = await _appDatabase.database;
+
+    await database.update(
+      'ranking_list_patches',
+      patch.toDatabase(),
+      where: 'id = ?',
+      whereArgs: [patch.id],
+    );
+  }
 }

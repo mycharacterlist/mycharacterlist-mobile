@@ -30,6 +30,7 @@ class PatchRepositoryImpl implements PatchRepository {
   Future<RankingListPatch> createPatchFromCurrentList(
     String listId, {
     required String label,
+    DateTime? createdAt,
   }) async {
     final listCharacters = await _rankingListRepository.getRankedCharacters(listId);
 
@@ -43,11 +44,12 @@ class PatchRepositoryImpl implements PatchRepository {
     }
 
     final now = DateTime.now();
+    final patchCreatedAt = createdAt ?? now;
     final patch = RankingListPatchModel(
       id: 'patch_${listId}_${now.microsecondsSinceEpoch}',
       listId: listId,
       label: trimmedLabel,
-      createdAt: now,
+      createdAt: patchCreatedAt,
     );
 
     final characterIds = listCharacters
@@ -96,6 +98,13 @@ class PatchRepositoryImpl implements PatchRepository {
   @override
   Future<void> deletePatch(String patchId) {
     return _localDataSource.deletePatch(patchId);
+  }
+
+  @override
+  Future<void> updatePatch(RankingListPatch patch) {
+    return _localDataSource.updatePatch(
+      RankingListPatchModel.fromEntity(patch),
+    );
   }
 
   @override

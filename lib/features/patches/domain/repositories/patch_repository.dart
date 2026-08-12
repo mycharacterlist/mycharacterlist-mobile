@@ -7,6 +7,7 @@ abstract interface class PatchRepository {
   Future<RankingListPatch> createPatchFromCurrentList(
     String listId, {
     required String label,
+    DateTime? createdAt,
   });
 
   Future<List<RankingListPatch>> getPatchesForList(String listId);
@@ -16,6 +17,8 @@ abstract interface class PatchRepository {
   Future<List<RankingListPatchEntry>> getPatchEntries(String patchId);
 
   Future<void> deletePatch(String patchId);
+
+  Future<void> updatePatch(RankingListPatch patch);
 
   Future<void> saveImportedPatch(
     RankingListPatch patch,

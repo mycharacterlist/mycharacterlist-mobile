@@ -1,65 +1,101 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:mycharacterlist/app/router/routes.dart';
+import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
+import 'package:mycharacterlist/app/widgets/layout/empty_state_message.dart';
+import 'package:mycharacterlist/core/errors/error_mapper.dart';
+import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
+import 'package:mycharacterlist/features/patches/data/repositories/patch_repository_providers.dart';
+import 'package:mycharacterlist/features/patches/domain/entities/ranking_list_patch.dart';
+import 'package:mycharacterlist/features/patches/patch_providers.dart';
+import 'package:mycharacterlist/features/patches/presentation/utils/patch_formatters.dart';
+import 'package:mycharacterlist/features/patches/presentation/widgets/edit_patch_dialog.dart';
 import 'package:mycharacterlist/features/patches/presentation/widgets/patch_note_card.dart';
 import 'package:mycharacterlist/features/patches/presentation/widgets/patch_note_form.dart';
 
-class PatchNotesManager extends StatefulWidget {
+class PatchNotesManager extends ConsumerStatefulWidget {
   const PatchNotesManager({
     super.key,
+    required this.listId,
+    required this.isEditMode,
   });
 
+  final String listId;
+  final bool isEditMode;
+
   @override
-  State<PatchNotesManager> createState() =>
-      PatchNotesManagerState();
+  ConsumerState<PatchNotesManager> createState() => PatchNotesManagerState();
 }
 
-class PatchNotesManagerState extends State<PatchNotesManager> {
-
-  final TextEditingController
-  _versionController = TextEditingController();
-
-  final TextEditingController
-  _releaseDateController = TextEditingController();
-
-  final ScrollController
-  _scrollController = ScrollController();
-
-  final List<PatchNoteData> _patches =
-  [];
+class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
+  final TextEditingController _versionController = TextEditingController();
+  final TextEditingController _releaseDateController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _versionFocusNode = FocusNode();
 
   bool _showAddPatch = false;
+  bool _isSaving = false;
 
-  void toggleAddPatch() {
+  void showAddPatchForm() {
     setState(() {
-      _showAddPatch =
-      !_showAddPatch;
+      _showAddPatch = true;
     });
   }
 
-  void addPatch() {
-    final String version = _versionController.text.trim();
+  void toggleAddPatch() {
+    setState(() {
+      _showAddPatch = !_showAddPatch;
+    });
+  }
 
-    final String releaseDate = _releaseDateController.text.trim();
+  Future<void> addPatch() async {
+    final version = _versionController.text.trim();
+    final releaseDate = _releaseDateController.text.trim();
 
-    if (version.isEmpty ||
-        releaseDate.isEmpty) {
+    if (version.isEmpty || releaseDate.isEmpty) {
       return;
     }
 
-    setState(() {
-      _patches.add(
-        PatchNoteData(
-          version: version,
-          releaseDate: releaseDate,
-        ),
-      );
+    final createdAt = PatchFormatters.parseReleaseDate(releaseDate);
 
-      _versionController.clear();
+    if (createdAt == null) {
+      AppSnackBar.showCentered(context, 'Enter release date as dd.mm.yyyy');
+      return;
+    }
 
-      _releaseDateController.clear();
+    setState(() => _isSaving = true);
 
-      _showAddPatch = false;
-    });
+    try {
+      await ref.read(patchRepositoryProvider).createPatchFromCurrentList(
+            widget.listId,
+            label: version,
+            createdAt: createdAt,
+          );
+
+      ref.invalidate(rankingListPatchesProvider(widget.listId));
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _versionController.clear();
+        _releaseDateController.clear();
+        _showAddPatch = false;
+      });
+
+      AppSnackBar.showCentered(context, 'Patch saved');
+    } catch (error) {
+      if (mounted) {
+        AppSnackBar.showCentered(context, ErrorMapper.userMessage(error));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   void closeForm() {
@@ -68,87 +104,138 @@ class PatchNotesManagerState extends State<PatchNotesManager> {
     });
   }
 
+  void _openPatch(String patchId) {
+    context.push(
+      AppRoutes.rankingListPatchById(
+        widget.listId,
+        patchId,
+      ),
+    );
+  }
+
+  Future<void> _editPatch(RankingListPatch patch) async {
+    final result = await EditPatchDialog.show(
+      context,
+      patch: patch,
+    );
+
+    if (result == null || !mounted) {
+      return;
+    }
+
+    final createdAt = PatchFormatters.parseReleaseDate(result.releaseDate);
+
+    if (createdAt == null) {
+      AppSnackBar.showCentered(context, 'Enter release date as dd.mm.yyyy');
+      return;
+    }
+
+    try {
+      await ref.read(patchRepositoryProvider).updatePatch(
+            RankingListPatch(
+              id: patch.id,
+              listId: patch.listId,
+              label: result.label,
+              createdAt: createdAt,
+            ),
+          );
+
+      ref.invalidate(rankingListPatchesProvider(widget.listId));
+
+      if (mounted) {
+        AppSnackBar.showCentered(context, 'Patch updated');
+      }
+    } catch (error) {
+      if (mounted) {
+        AppSnackBar.showCentered(context, ErrorMapper.userMessage(error));
+      }
+    }
+  }
+
   @override
   void dispose() {
     _versionController.dispose();
-
     _releaseDateController.dispose();
-
     _scrollController.dispose();
+    _versionFocusNode.dispose();
 
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final patchesAsync = ref.watch(rankingListPatchesProvider(widget.listId));
+
     return Stack(
       children: [
-
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 30,
-
-          child: Scrollbar(
-            controller: _scrollController,
-            thumbVisibility: true,
-            trackVisibility: true,
-            thickness: 5,
-            radius: const Radius.circular(10),
-
-            child: ListView.builder(
-              controller:
-              _scrollController,
-
-              padding:
-              const EdgeInsets.only(
-                top: 5,
-                right: 8,
+        Positioned.fill(
+          child: patchesAsync.when(
+            loading: () => const AppLoadingIndicator(),
+            error: (error, _) => Center(
+              child: EmptyStateMessage(
+                message: ErrorMapper.userMessage(error),
+                bottomPadding: 0,
+                color: Colors.white,
               ),
-
-              itemCount: _patches.length,
-
-              itemBuilder:
-                  (context, index) {
-
-                final patch = _patches[index];
-
-                return PatchNoteCard(
-                  number: index + 1,
-                  version: patch.version,
-                  releaseDate: patch.releaseDate,
-
-                  onPressed: () {},
-                );
-              },
             ),
+            data: (patches) {
+              if (patches.isEmpty) {
+                return const EmptyStateMessage(
+                  message: 'No patches yet',
+                  bottomPadding: 0,
+                  color: Colors.white,
+                );
+              }
+
+              return Scrollbar(
+                controller: _scrollController,
+                thumbVisibility: true,
+                trackVisibility: true,
+                thickness: 5,
+                radius: const Radius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.only(
+                      right: 8,
+                      bottom: 3,
+                    ),
+                    itemCount: patches.length,
+                    itemBuilder: (context, index) {
+                      final patch = patches[index];
+
+                      return PatchNoteCard(
+                        number: index + 1,
+                        version: patch.label,
+                        releaseDate:
+                            PatchFormatters.formatReleaseDate(patch.createdAt),
+                        isEditMode: widget.isEditMode,
+                        onPressed: widget.isEditMode
+                            ? () => _editPatch(patch)
+                            : () => _openPatch(patch.id),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
           ),
         ),
-
         if (_showAddPatch)
           Positioned(
             top: 5,
             left: 0,
             right: 0,
-
             child: PatchNoteForm(
               versionController: _versionController,
               releaseDateController: _releaseDateController,
+              versionFocusNode: _versionFocusNode,
               onAdd: addPatch,
+              isSaving: _isSaving,
             ),
           ),
       ],
     );
   }
-}
-
-class PatchNoteData {
-  const PatchNoteData({
-    required this.version,
-    required this.releaseDate,
-  });
-
-  final String version;
-  final String releaseDate;
 }

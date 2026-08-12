@@ -6,12 +6,14 @@ class PatchNoteCard extends StatelessWidget {
     required this.number,
     required this.version,
     required this.releaseDate,
+    this.isEditMode = false,
     this.onPressed,
   });
 
   final int number;
   final String version;
   final String releaseDate;
+  final bool isEditMode;
 
   final VoidCallback? onPressed;
 
@@ -29,8 +31,11 @@ class PatchNoteCard extends StatelessWidget {
 
         child: InkWell(
           onTap: onPressed,
-
           borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.black12,
+          focusColor: Colors.black12,
 
           child: Ink(
             width: double.infinity,
@@ -112,6 +117,9 @@ class PatchNoteCard extends StatelessWidget {
 
                         Text(
                           version,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
 
                           style:
                           const TextStyle(
@@ -126,6 +134,8 @@ class PatchNoteCard extends StatelessWidget {
                         ),
 
                         RichText(
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           text: TextSpan(
                             children: [
 
@@ -160,8 +170,8 @@ class PatchNoteCard extends StatelessWidget {
                   ),
                 ),
 
-                const Icon(
-                  Icons.edit_outlined,
+                Icon(
+                  isEditMode ? Icons.edit_outlined : Icons.chevron_right,
                   color: Colors.black,
                   size: 30,
                 ),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
-import 'package:mycharacterlist/features/patches/presentation/widgets/patch_notes_manager.dart';
 
-class RankingListPatchesPage extends ConsumerWidget {
+import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
+import 'package:mycharacterlist/app/widgets/utils/system_view_padding.dart';
+import 'package:mycharacterlist/features/patches/presentation/widgets/patch_notes_manager.dart';
+import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
+
+class RankingListPatchesPage extends ConsumerStatefulWidget {
   const RankingListPatchesPage({
     super.key,
     required this.listId,
@@ -12,10 +15,22 @@ class RankingListPatchesPage extends ConsumerWidget {
   final String listId;
 
   @override
-  Widget build(
-      BuildContext context,
-      WidgetRef ref,
-      ) {
+  ConsumerState<RankingListPatchesPage> createState() =>
+      _RankingListPatchesPageState();
+}
+
+class _RankingListPatchesPageState
+    extends ConsumerState<RankingListPatchesPage> {
+  final GlobalKey<PatchNotesManagerState> _patchNotesManagerKey =
+      GlobalKey<PatchNotesManagerState>();
+
+  bool _isEditMode = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final rankingList = ref.watch(rankingListByIdProvider(widget.listId));
+    final listName = rankingList?.name ?? 'List';
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
 
@@ -25,11 +40,22 @@ class RankingListPatchesPage extends ConsumerWidget {
         titleColor: Colors.black,
         backButtonColor: Colors.black,
 
-        actionWidget: IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.add,
-            color: Colors.black,
+        actionWidget: Theme(
+          data: Theme.of(context).copyWith(
+            splashFactory: NoSplash.splashFactory,
+            highlightColor: Colors.transparent,
+            hoverColor: Colors.transparent,
+          ),
+          child: IconButton(
+            onPressed: () {
+              setState(() {
+                _isEditMode = !_isEditMode;
+              });
+            },
+            icon: Icon(
+              _isEditMode ? Icons.check : Icons.edit_outlined,
+              color: Colors.black,
+            ),
           ),
         ),
       ),
@@ -50,26 +76,36 @@ class RankingListPatchesPage extends ConsumerWidget {
                   height: 5,
                 ),
 
-                const Text(
-                  'Main list Patches',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    color: Colors.white,
-                    fontFamily: 'DoublePicaREG',
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    listName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      color: Colors.white,
+                      fontFamily: 'DoublePicaREG',
+                    ),
                   ),
                 ),
 
-                const SizedBox(
-                  height: 10,
-                ),
+                const SizedBox(height: 10),
 
-                const Expanded(
+                Expanded(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12,
+                    padding: EdgeInsets.only(
+                      left: 12,
+                      right: 12,
+                      bottom: SystemViewPadding.bottomOf(context) + 12,
                     ),
-                    child: PatchNotesManager(),
+                    child: PatchNotesManager(
+                      key: _patchNotesManagerKey,
+                      listId: widget.listId,
+                      isEditMode: _isEditMode,
+                    ),
                   ),
                 ),
               ],

@@ -5,13 +5,17 @@ class PatchNoteForm extends StatelessWidget {
     super.key,
     required this.versionController,
     required this.releaseDateController,
+    required this.versionFocusNode,
     required this.onAdd,
+    required this.isSaving,
   });
 
   final TextEditingController versionController;
   final TextEditingController releaseDateController;
+  final FocusNode versionFocusNode;
 
-  final VoidCallback onAdd;
+  final Future<void> Function() onAdd;
+  final bool isSaving;
 
   @override
   Widget build(BuildContext context) {
@@ -29,12 +33,11 @@ class PatchNoteForm extends StatelessWidget {
 
       child: Column(
         children: [
-
           TextField(
             controller: versionController,
+            focusNode: versionFocusNode,
 
-            decoration:
-            const InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Version',
               hintText: '1.0.0',
               border: OutlineInputBorder(),
@@ -48,8 +51,7 @@ class PatchNoteForm extends StatelessWidget {
           TextField(
             controller: releaseDateController,
 
-            decoration:
-            const InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Release date',
               hintText: '23.06.2026',
               border: OutlineInputBorder(),
@@ -64,8 +66,8 @@ class PatchNoteForm extends StatelessWidget {
             width: double.infinity,
 
             child: ElevatedButton(
-              onPressed: onAdd,
-              child: const Text('Add patch'),
+              onPressed: isSaving ? null : () => onAdd(),
+              child: Text(isSaving ? 'Saving...' : 'Add patch'),
             ),
           ),
         ],
