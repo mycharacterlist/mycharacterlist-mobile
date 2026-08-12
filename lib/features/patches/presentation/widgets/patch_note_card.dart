@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:mycharacterlist/app/widgets/text/marquee_text.dart';
+
 class PatchNoteCard extends StatelessWidget {
   const PatchNoteCard({
     super.key,
@@ -115,17 +117,17 @@ class PatchNoteCard extends StatelessWidget {
 
                       children: [
 
-                        Text(
-                          version,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-
-                          style:
-                          const TextStyle(
-                            fontSize: 36,
-                            color: Colors.white,
-                            fontFamily: 'Jomolhari',
+                        SizedBox(
+                          height: 44,
+                          child: MarqueeText(
+                            key: ValueKey('patch-$number-$version'),
+                            resetToken: number,
+                            text: version,
+                            style: const TextStyle(
+                              fontSize: 36,
+                              color: Colors.white,
+                              fontFamily: 'Jomolhari',
+                            ),
                           ),
                         ),
 
