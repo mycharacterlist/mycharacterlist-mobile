@@ -19,6 +19,7 @@ class RankingCharacterCard extends StatelessWidget {
     this.onPositionSubmitted,
     this.onTap,
     this.isCharacterAvailable = true,
+    this.colorOpacity = 1,
   });
 
   final String itemId;
@@ -33,6 +34,26 @@ class RankingCharacterCard extends StatelessWidget {
   final ValueChanged<int>? onPositionSubmitted;
   final VoidCallback? onTap;
   final bool isCharacterAvailable;
+  final double colorOpacity;
+
+  Color _transparentColor(Color color) {
+    return color.withOpacity(colorOpacity);
+  }
+
+  LinearGradient _transparentGradient(LinearGradient gradient) {
+    if (colorOpacity >= 1) {
+      return gradient;
+    }
+
+    return LinearGradient(
+      begin: gradient.begin,
+      end: gradient.end,
+      stops: gradient.stops,
+      tileMode: gradient.tileMode,
+      transform: gradient.transform,
+      colors: gradient.colors.map(_transparentColor).toList(),
+    );
+  }
 
   Widget _buildTitleText() {
     const style = TextStyle(
@@ -41,7 +62,9 @@ class RankingCharacterCard extends StatelessWidget {
       color: Colors.white,
     );
 
-    final titleGradient = RankingMedalColors.titleGradientForPosition(index);
+    final titleGradient = _transparentGradient(
+      RankingMedalColors.titleGradientForPosition(index),
+    );
 
     if (!animateMarquee) {
       return _StaticClippedText(
@@ -112,44 +135,50 @@ class RankingCharacterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Opacity(
-      opacity: isCharacterAvailable ? 1 : 0.72,
-      child: Container(
+    final card = Container(
       height: 115,
-      decoration: BoxDecoration(
-        gradient: RankingMedalColors.cardGradientForPosition(index),
-        borderRadius: BorderRadius.circular(30),
-      ),
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(30)),
       child: Row(
         children: [
           Container(
             width: 68,
+            height: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              color: RankingMedalColors.badgeColorForPosition(index),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(30),
-                bottomLeft: Radius.circular(30),
-              ),
+            color: _transparentColor(
+              RankingMedalColors.badgeColorForPosition(index),
             ),
             child: Center(child: _buildPositionBadge()),
           ),
-          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 55, child: _buildTitleText()),
-                SizedBox(height: 35, child: _buildSubtitleText()),
-              ],
+            child: Container(
+              height: double.infinity,
+              padding: const EdgeInsets.only(left: 12),
+              decoration: BoxDecoration(
+                gradient: _transparentGradient(
+                  RankingMedalColors.cardGradientForPosition(index),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 55, child: _buildTitleText()),
+                        SizedBox(height: 35, child: _buildSubtitleText()),
+                      ],
+                    ),
+                  ),
+                  if (dragHandle != null) dragHandle!,
+                  const SizedBox(width: 8),
+                ],
+              ),
             ),
           ),
-          if (dragHandle != null) dragHandle!,
-          const SizedBox(width: 8),
         ],
       ),
-    ),
     );
 
     return Padding(
