@@ -45,22 +45,29 @@ final patchDisplayContentProvider =
         return const RankedListContent(isEmpty: true);
       }
 
-      final libraryIds = libraryAsync.maybeWhen(
-        data: (characters) => characters.map((character) => character.id).toSet(),
+      final libraryCharactersById = libraryAsync.maybeWhen(
+        data: (characters) => {
+          for (final character in characters) character.id: character,
+        },
         orElse: () => null,
       );
 
       final items = entries
           .map(
-            (entry) => RankedCharacterDisplayItem(
-              id: entry.id,
-              characterId: entry.characterId,
-              position: entry.position,
-              title: _patchEntryTitle(entry, null),
-              subtitle: _patchEntrySubtitle(entry, null),
-              isCharacterAvailable:
-                  libraryIds?.contains(entry.characterId) ?? true,
-            ),
+            (entry) {
+              final character = libraryCharactersById?[entry.characterId];
+
+              return RankedCharacterDisplayItem(
+                id: entry.id,
+                characterId: entry.characterId,
+                position: entry.position,
+                title: _patchEntryTitle(entry, character),
+                subtitle: _patchEntrySubtitle(entry, character),
+                isCharacterAvailable:
+                    libraryCharactersById?.containsKey(entry.characterId) ??
+                        true,
+              );
+            },
           )
           .toList();
 

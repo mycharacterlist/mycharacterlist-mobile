@@ -131,7 +131,9 @@ class _RankingCharactersListState extends ConsumerState<RankingCharactersList> {
           currentItem.characterId != incomingItem.characterId ||
           currentItem.position != incomingItem.position ||
           currentItem.title != incomingItem.title ||
-          currentItem.subtitle != incomingItem.subtitle) {
+          currentItem.subtitle != incomingItem.subtitle ||
+          currentItem.isCharacterAvailable !=
+              incomingItem.isCharacterAvailable) {
         return false;
       }
     }
@@ -151,6 +153,7 @@ class _RankingCharactersListState extends ConsumerState<RankingCharactersList> {
         position: entry.key + 1,
         title: item.title,
         subtitle: item.subtitle,
+        isCharacterAvailable: item.isCharacterAvailable,
       );
     }).toList();
   }
@@ -235,6 +238,10 @@ class _RankingCharactersListState extends ConsumerState<RankingCharactersList> {
   }
 
   VoidCallback? _onItemTap(RankedCharacterDisplayItem item) {
+    if (!item.isCharacterAvailable) {
+      return null;
+    }
+
     if (widget.isEditMode && widget.allowEditing) {
       return () => ref
           .read(rankingListControllerProvider(widget.listId))
