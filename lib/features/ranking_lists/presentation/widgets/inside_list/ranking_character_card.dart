@@ -20,6 +20,7 @@ class RankingCharacterCard extends StatelessWidget {
     this.onTap,
     this.isCharacterAvailable = true,
     this.colorOpacity = 1,
+    this.bottomSpacing = 16,
   });
 
   final String itemId;
@@ -35,6 +36,7 @@ class RankingCharacterCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool isCharacterAvailable;
   final double colorOpacity;
+  final double bottomSpacing;
 
   Color _transparentColor(Color color) {
     return color.withOpacity(colorOpacity);
@@ -182,7 +184,7 @@ class RankingCharacterCard extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: bottomSpacing),
       child: RepaintBoundary(
         child: Material(
           color: Colors.transparent,

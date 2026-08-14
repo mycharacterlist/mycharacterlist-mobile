@@ -28,7 +28,7 @@ class RankingListPatchDetailPage extends ConsumerWidget {
       position: 1,
       title: 'Mai Sakurajima',
       subtitle: 'Rascal Does Not Dream of Bunny Girl Senpai',
-      isCharacterAvailable: false
+      isCharacterAvailable: false,
     ),
     RankedCharacterDisplayItem(
       id: 'patch_test_2',
@@ -124,6 +124,7 @@ class RankingListPatchDetailPage extends ConsumerWidget {
         isEditMode: false,
         allowEditing: false,
         unavailableCardColorOpacity: 0.50,
+        bottomContentPadding: 16,
       ),
     );
   }

@@ -23,6 +23,7 @@ class RankingCharactersList extends ConsumerStatefulWidget {
     this.cardColorOpacity = 1,
     this.unavailableCardColorOpacity = 1,
     this.cardColorOpacityBuilder,
+    this.bottomContentPadding = 84,
   });
 
   final String listId;
@@ -33,6 +34,7 @@ class RankingCharactersList extends ConsumerStatefulWidget {
   final double cardColorOpacity;
   final double unavailableCardColorOpacity;
   final double Function(RankedCharacterDisplayItem item)? cardColorOpacityBuilder;
+  final double bottomContentPadding;
 
   @override
   ConsumerState<RankingCharactersList> createState() =>
@@ -287,11 +289,19 @@ class _RankingCharactersListState extends ConsumerState<RankingCharactersList> {
     final animateMarquee = !widget.isEditMode || !_isDragging;
     final bottomInset = SystemViewPadding.bottomOf(context);
 
-    return Scrollbar(
-      controller: _scrollController,
-      thumbVisibility: true,
-      child: Padding(
-        padding: EdgeInsets.only(left: 16, top: 16, bottom: 84 + bottomInset),
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16,
+        top: 16,
+        bottom: widget.bottomContentPadding + bottomInset,
+      ),
+      child: RawScrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        thickness: 5,
+        radius: const Radius.circular(10),
+        mainAxisMargin: 0,
+        padding: EdgeInsets.zero,
         child: Listener(
           onPointerUp: (_) => _setDragging(false),
           onPointerCancel: (_) => _setDragging(false),
@@ -338,6 +348,7 @@ class _RankingCharactersListState extends ConsumerState<RankingCharactersList> {
                 animateMarquee: animateMarquee,
                 isCharacterAvailable: item.isCharacterAvailable,
                 colorOpacity: colorOpacity,
+                bottomSpacing: index == displayItems.length - 1 ? 0 : 16,
                 maxPosition: displayItems.length,
                 onPositionSubmitted: widget.isEditMode && widget.allowEditing
                     ? (targetPosition) =>
