@@ -36,6 +36,7 @@ class RankingListPatchDetailPage extends ConsumerWidget {
       position: 2,
       title: 'Saber Artoria Pendragon',
       subtitle: 'Fate/stay night',
+      isCharacterAvailable: false,
     ),
     RankedCharacterDisplayItem(
       id: 'patch_test_3',
@@ -43,6 +44,7 @@ class RankingListPatchDetailPage extends ConsumerWidget {
       position: 3,
       title: 'Makise Kurisu',
       subtitle: 'Steins;Gate',
+      isCharacterAvailable: false,
     ),
     RankedCharacterDisplayItem(
       id: 'patch_test_4',
@@ -109,18 +111,19 @@ class RankingListPatchDetailPage extends ConsumerWidget {
 
     return ScreenScaffold(
       resizeToAvoidBottomInset: false,
-      backgroundAssetPath: AppBackgroundAssets.rankingList,
+      backgroundAssetPath: AppBackgroundAssets.patches,
       appBar: CustomAppBar(
         title: title,
-        backgroundColor: AppColors.rankingAppBarBackground,
-        backButtonColor: Colors.purple,
-        titleColor: Colors.limeAccent,
+        backgroundColor: AppColors.InsidePatchAppBarBackground,
+        backButtonColor: Colors.black,
+        titleColor: const Color(0xFF7A789A),
       ),
       child: RankingCharactersList(
         listId: listId,
         content: const RankedListContent(items: _testItems),
         isEditMode: false,
         allowEditing: false,
+        unavailableCardColorOpacity: 0.50,
       ),
     );
   }
