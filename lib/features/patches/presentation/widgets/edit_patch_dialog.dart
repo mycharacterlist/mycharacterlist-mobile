@@ -5,12 +5,19 @@ import 'package:mycharacterlist/features/patches/presentation/utils/patch_format
 
 class EditPatchResult {
   const EditPatchResult({
-    required this.label,
-    required this.releaseDate,
+    required this.action,
+    this.label,
+    this.releaseDate,
   });
 
-  final String label;
-  final String releaseDate;
+  final EditPatchAction action;
+  final String? label;
+  final String? releaseDate;
+}
+
+enum EditPatchAction {
+  save,
+  delete,
 }
 
 class EditPatchDialog extends StatefulWidget {
@@ -72,9 +79,44 @@ class _EditPatchDialogState extends State<EditPatchDialog> {
     Navigator.pop(
       context,
       EditPatchResult(
+        action: EditPatchAction.save,
         label: label,
         releaseDate: PatchFormatters.formatReleaseDate(_selectedReleaseDate),
       ),
+    );
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete patch?'),
+        content: Text(
+          '"${widget.patch.label}" will be permanently deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    Navigator.pop(
+      context,
+      const EditPatchResult(action: EditPatchAction.delete),
     );
   }
 
@@ -103,6 +145,7 @@ class _EditPatchDialogState extends State<EditPatchDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Edit patch'),
+      actionsAlignment: MainAxisAlignment.spaceBetween,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -129,6 +172,13 @@ class _EditPatchDialogState extends State<EditPatchDialog> {
         ],
       ),
       actions: [
+        TextButton(
+          onPressed: _delete,
+          child: const Text(
+            'Delete',
+            style: TextStyle(color: Colors.redAccent),
+          ),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),

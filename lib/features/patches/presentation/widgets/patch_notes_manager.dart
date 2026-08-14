@@ -123,7 +123,19 @@ class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
       return;
     }
 
-    final createdAt = PatchFormatters.parseReleaseDate(result.releaseDate);
+    if (result.action == EditPatchAction.delete) {
+      await _deletePatch(patch);
+      return;
+    }
+
+    final releaseDate = result.releaseDate;
+    final label = result.label;
+
+    if (releaseDate == null || label == null) {
+      return;
+    }
+
+    final createdAt = PatchFormatters.parseReleaseDate(releaseDate);
 
     if (createdAt == null) {
       AppSnackBar.showCentered(context, 'Enter release date as dd.mm.yyyy');
@@ -135,7 +147,7 @@ class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
             RankingListPatch(
               id: patch.id,
               listId: patch.listId,
-              label: result.label,
+              label: label,
               createdAt: createdAt,
             ),
           );
@@ -144,6 +156,24 @@ class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
 
       if (mounted) {
         AppSnackBar.showCentered(context, 'Patch updated');
+      }
+    } catch (error) {
+      if (mounted) {
+        AppSnackBar.showCentered(context, ErrorMapper.userMessage(error));
+      }
+    }
+  }
+
+  Future<void> _deletePatch(RankingListPatch patch) async {
+    try {
+      await ref.read(patchRepositoryProvider).deletePatch(patch.id);
+
+      ref.invalidate(rankingListPatchesProvider(widget.listId));
+      ref.invalidate(rankingListPatchByIdProvider(patch.id));
+      ref.invalidate(patchEntriesProvider(patch.id));
+
+      if (mounted) {
+        AppSnackBar.showCentered(context, 'Deleted: ${patch.label}');
       }
     } catch (error) {
       if (mounted) {
