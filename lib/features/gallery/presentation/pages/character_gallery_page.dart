@@ -30,6 +30,13 @@ class CharacterGalleryPage extends ConsumerStatefulWidget {
 }
 
 class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
+  static const double _actionButtonBottomMargin = 25;
+  static const double _actionButtonTopMargin = 25;
+  static const double _actionButtonClearance =
+      _actionButtonBottomMargin +
+      BottomActionSlot.defaultButtonHeight +
+      _actionButtonTopMargin;
+
   final ScrollController _scrollController = ScrollController();
   bool _isSaving = false;
   bool _isEditMode = false;
@@ -72,17 +79,6 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
         ),
       ),
       overlays: [
-        BottomActionSlot(
-          bottomMargin: 25,
-          child: PlusButton(
-            icon: const Icon(
-              Icons.add,
-              size: 40,
-              color: Colors.white,
-            ),
-            onPressed: _pickGalleryImages,
-          ),
-        ),
         if (_isSaving)
           AppLoadingOverlay(
             title: _loadingTitle,
@@ -90,97 +86,126 @@ class _CharacterGalleryPageState extends ConsumerState<CharacterGalleryPage> {
             total: _savingTotal,
           ),
       ],
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: SizedBox(
-          width: MediaQuery.sizeOf(context).width * 0.95,
-          height: MediaQuery.sizeOf(context).height * 0.87,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  AppBackgroundAssets.characterFrame,
-                  fit: BoxFit.fill,
-                ),
-              ),
-              Positioned.fill(
-                top: 0,
-                left: 5,
-                right: 5,
-                bottom: 130,
-                child: characterAsync.when(
-                  loading: () => const AppLoadingIndicator(),
-                  error: (_, __) => const AppMessageView(
-                    message: AppMessages.couldNotLoadCharacter,
-                  ),
-                  data: (character) {
-                    final loadedCharacter = character;
-                    if (loadedCharacter == null) {
-                      return const AppMessageView(
-                        message: AppMessages.characterNotFound,
-                      );
-                    }
-                    final imagePaths =
-                        _localImagePaths ?? loadedCharacter.galleryImagePaths;
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const panelBottomMargin = 8.0;
+          final bottomInset = MediaQuery.paddingOf(context).bottom;
+          final maxPanelHeight =
+              constraints.maxHeight - bottomInset - panelBottomMargin;
+          final preferredPanelHeight = MediaQuery.sizeOf(context).height * 0.87;
+          final panelHeight = preferredPanelHeight > maxPanelHeight
+              ? maxPanelHeight
+              : preferredPanelHeight;
 
-                    return Column(
-                      children: [
-                        const SizedBox(height: 5),
-                        Text(
-                          loadedCharacter.name,
-                          textAlign: TextAlign.center,
-                          softWrap: true,
-                          textHeightBehavior: const TextHeightBehavior(
-                            applyHeightToFirstAscent: false,
-                            applyHeightToLastDescent: false,
-                          ),
-                          style: const TextStyle(
-                            fontSize: 32,
-                            height: 1.0,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'DoublePicaREG',
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Expanded(
-                          child: ScrollbarTheme(
-                            data: ScrollbarTheme.of(context).copyWith(
-                              thumbColor: MaterialStateProperty.all(
-                                Colors.black.withValues(alpha: 0.55),
+          return Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: MediaQuery.sizeOf(context).width * 0.95,
+              height: panelHeight,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      AppBackgroundAssets.characterFrame,
+                      fit: BoxFit.fill,
+                    ),
+                  ),
+                  Positioned.fill(
+                    top: 0,
+                    left: 5,
+                    right: 5,
+                    bottom: _actionButtonClearance,
+                    child: characterAsync.when(
+                      loading: () => const AppLoadingIndicator(),
+                      error: (_, __) => const AppMessageView(
+                        message: AppMessages.couldNotLoadCharacter,
+                      ),
+                      data: (character) {
+                        final loadedCharacter = character;
+                        if (loadedCharacter == null) {
+                          return const AppMessageView(
+                            message: AppMessages.characterNotFound,
+                          );
+                        }
+                        final imagePaths =
+                            _localImagePaths ??
+                            loadedCharacter.galleryImagePaths;
+
+                        return Column(
+                          children: [
+                            const SizedBox(height: 5),
+                            Text(
+                              loadedCharacter.name,
+                              textAlign: TextAlign.center,
+                              softWrap: true,
+                              textHeightBehavior: const TextHeightBehavior(
+                                applyHeightToFirstAscent: false,
+                                applyHeightToLastDescent: false,
+                              ),
+                              style: const TextStyle(
+                                fontSize: 32,
+                                height: 1.0,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'DoublePicaREG',
+                                color: Colors.black,
                               ),
                             ),
-                            child: Scrollbar(
-                              controller: _scrollController,
-                              thumbVisibility: true,
-                              thickness: 6,
-                              radius: const Radius.circular(8),
-                              child: SingleChildScrollView(
-                                controller: _scrollController,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
+                            const SizedBox(height: 20),
+                            Expanded(
+                              child: ScrollbarTheme(
+                                data: ScrollbarTheme.of(context).copyWith(
+                                  thumbColor: MaterialStateProperty.all(
+                                    Colors.black.withValues(alpha: 0.55),
+                                  ),
                                 ),
-                                child: CharacterGalleryPicker(
-                                  characterId: loadedCharacter.id,
-                                  imagePaths: imagePaths,
-                                  isSaving: _isSaving,
-                                  isEditMode: _isEditMode,
-                                  onAddPressed: _pickGalleryImages,
-                                  onRemoveImage: _removeGalleryImage,
-                                  onReorderImage: _reorderGalleryImage,
+                                child: Scrollbar(
+                                  controller: _scrollController,
+                                  thumbVisibility: true,
+                                  thickness: 6,
+                                  radius: const Radius.circular(8),
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                    ),
+                                    child: CharacterGalleryPicker(
+                                      characterId: loadedCharacter.id,
+                                      imagePaths: imagePaths,
+                                      isSaving: _isSaving,
+                                      isEditMode: _isEditMode,
+                                      onAddPressed: _pickGalleryImages,
+                                      onRemoveImage: _removeGalleryImage,
+                                      onReorderImage: _reorderGalleryImage,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: _actionButtonBottomMargin,
+                    child: Center(
+                      child: PlusButton(
+                        icon: const Icon(
+                          Icons.add,
+                          size: 40,
+                          color: Colors.white,
                         ),
-                      ],
-                    );
-                  },
-                ),
+                        onPressed: _pickGalleryImages,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
