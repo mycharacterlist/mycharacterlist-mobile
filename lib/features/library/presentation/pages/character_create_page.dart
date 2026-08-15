@@ -38,7 +38,8 @@ class CharacterCreatePage extends ConsumerStatefulWidget {
       _CharacterCreatePageState();
 }
 
-class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
+class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage>
+    with WidgetsBindingObserver {
   final form = CharacterFormController();
   final formScrollController = ScrollController();
   int formVersion = 0;
@@ -54,12 +55,20 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     form.name.addListener(_clearNameError);
     form.anime.addListener(_clearAnimeError);
     form.archetype.addListener(_clearArchetypeError);
 
     if (isEditing) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadCharacter());
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -428,6 +437,7 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     AppImageCache.trimAfterHeavyScreen();
     AppDiskCache.cleanUnused(includeDrafts: true);
     form.name.removeListener(_clearNameError);
@@ -451,7 +461,9 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
     final characterNames =
         ref.watch(characterNameSuggestionsProvider).value ?? const <String>[];
     form.syncGradeControllers(referencesState.gradeDefinitions);
+    final view = View.of(context);
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final keyboardInset = view.viewInsets.bottom / view.devicePixelRatio;
 
     listenViewModelError(
       ref,
@@ -595,7 +607,11 @@ class _CharacterCreatePageState extends ConsumerState<CharacterCreatePage> {
                                       : 'Clear all',
                                   createLabel: isEditing ? 'Save' : 'Create',
                                 ),
-                                SizedBox(height: 20 + bottomInset),
+                                SizedBox(
+                                  height: 20 +
+                                      bottomInset +
+                                      (keyboardInset > 0 ? 72 : 0),
+                                ),
                               ],
                             ),
                   ),
