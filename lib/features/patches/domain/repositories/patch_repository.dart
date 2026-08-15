@@ -10,6 +10,8 @@ abstract interface class PatchRepository {
     DateTime? createdAt,
   });
 
+  Future<RankingListPatch?> findDuplicatePatchForCurrentList(String listId);
+
   Future<List<RankingListPatch>> getPatchesForList(String listId);
 
   Future<RankingListPatch?> getPatchById(String patchId);

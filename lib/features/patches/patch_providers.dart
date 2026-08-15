@@ -24,6 +24,28 @@ final rankingListPatchByIdProvider =
   return ref.watch(patchRepositoryProvider).getPatchById(patchId);
 });
 
+final currentListDuplicatePatchProvider =
+    FutureProvider.autoDispose.family<RankingListPatch?, String>((
+  ref,
+  listId,
+) {
+  ref.watch(rankingListPatchesProvider(listId));
+  ref.watch(
+    rankingCharactersViewModelProvider(listId).select(
+      (state) => state.characters
+          .map(
+            (rankedCharacter) =>
+                '${rankedCharacter.characterId}:${rankedCharacter.position}',
+          )
+          .join('|'),
+    ),
+  );
+
+  return ref
+      .watch(patchRepositoryProvider)
+      .findDuplicatePatchForCurrentList(listId);
+});
+
 final patchEntriesProvider =
     FutureProvider.autoDispose.family<List<RankingListPatchEntry>, String>((
   ref,

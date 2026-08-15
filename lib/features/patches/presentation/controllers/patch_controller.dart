@@ -9,6 +9,7 @@ import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/patches/patch_providers.dart';
 import 'package:mycharacterlist/features/patches/data/repositories/patch_repository_providers.dart';
+import 'package:mycharacterlist/features/patches/presentation/widgets/duplicate_patch_confirmation_dialog.dart';
 import 'package:mycharacterlist/features/patches/presentation/widgets/save_patch_dialog.dart';
 
 class PatchController {
@@ -80,11 +81,31 @@ class PatchController {
         return;
       }
 
+      final duplicatePatch = await repository.findDuplicatePatchForCurrentList(
+        listId,
+      );
+
+      if (duplicatePatch != null) {
+        if (!context.mounted) {
+          return;
+        }
+
+        final confirmed = await showDuplicatePatchConfirmationDialog(
+          context,
+          duplicatePatch: duplicatePatch,
+        );
+
+        if (!confirmed || !context.mounted) {
+          return;
+        }
+      }
+
       final patch = await repository.createPatchFromCurrentList(
         listId,
         label: label,
       );
       _ref.invalidate(rankingListPatchesProvider(listId));
+      _ref.invalidate(currentListDuplicatePatchProvider(listId));
 
       if (context.mounted) {
         AppSnackBar.showCentered(context, 'Saved: ${patch.label}');

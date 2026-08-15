@@ -11,6 +11,7 @@ import 'package:mycharacterlist/features/patches/data/repositories/patch_reposit
 import 'package:mycharacterlist/features/patches/domain/entities/ranking_list_patch.dart';
 import 'package:mycharacterlist/features/patches/patch_providers.dart';
 import 'package:mycharacterlist/features/patches/presentation/utils/patch_formatters.dart';
+import 'package:mycharacterlist/features/patches/presentation/widgets/duplicate_patch_confirmation_dialog.dart';
 import 'package:mycharacterlist/features/patches/presentation/widgets/edit_patch_dialog.dart';
 import 'package:mycharacterlist/features/patches/presentation/widgets/patch_note_card.dart';
 import 'package:mycharacterlist/features/patches/presentation/widgets/patch_note_form.dart';
@@ -65,16 +66,37 @@ class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
       return;
     }
 
+    final repository = ref.read(patchRepositoryProvider);
+    final duplicatePatch = await repository.findDuplicatePatchForCurrentList(
+      widget.listId,
+    );
+
+    if (duplicatePatch != null) {
+      if (!mounted) {
+        return;
+      }
+
+      final confirmed = await showDuplicatePatchConfirmationDialog(
+        context,
+        duplicatePatch: duplicatePatch,
+      );
+
+      if (!confirmed || !mounted) {
+        return;
+      }
+    }
+
     setState(() => _isSaving = true);
 
     try {
-      await ref.read(patchRepositoryProvider).createPatchFromCurrentList(
+      await repository.createPatchFromCurrentList(
             widget.listId,
             label: version,
             createdAt: createdAt,
           );
 
       ref.invalidate(rankingListPatchesProvider(widget.listId));
+      ref.invalidate(currentListDuplicatePatchProvider(widget.listId));
 
       if (!mounted) {
         return;
@@ -153,6 +175,7 @@ class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
           );
 
       ref.invalidate(rankingListPatchesProvider(widget.listId));
+      ref.invalidate(currentListDuplicatePatchProvider(widget.listId));
 
       if (mounted) {
         AppSnackBar.showCentered(context, 'Patch updated');
@@ -171,6 +194,7 @@ class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
       ref.invalidate(rankingListPatchesProvider(widget.listId));
       ref.invalidate(rankingListPatchByIdProvider(patch.id));
       ref.invalidate(patchEntriesProvider(patch.id));
+      ref.invalidate(currentListDuplicatePatchProvider(widget.listId));
 
       if (mounted) {
         AppSnackBar.showCentered(context, 'Deleted: ${patch.label}');
@@ -195,6 +219,9 @@ class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
   @override
   Widget build(BuildContext context) {
     final patchesAsync = ref.watch(rankingListPatchesProvider(widget.listId));
+    final currentDuplicatePatch = ref
+        .watch(currentListDuplicatePatchProvider(widget.listId))
+        .valueOrNull;
 
     return Stack(
       children: [
@@ -241,6 +268,8 @@ class PatchNotesManagerState extends ConsumerState<PatchNotesManager> {
                         releaseDate:
                             PatchFormatters.formatReleaseDate(patch.createdAt),
                         isEditMode: widget.isEditMode,
+                        isCurrentSnapshot:
+                            currentDuplicatePatch?.id == patch.id,
                         onPressed: widget.isEditMode
                             ? () => _editPatch(patch)
                             : () => _openPatch(patch.id),

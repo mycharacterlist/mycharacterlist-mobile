@@ -32,7 +32,9 @@ class PatchRepositoryImpl implements PatchRepository {
     required String label,
     DateTime? createdAt,
   }) async {
-    final listCharacters = await _rankingListRepository.getRankedCharacters(listId);
+    final listCharacters = await _rankingListRepository.getRankedCharacters(
+      listId,
+    );
 
     if (listCharacters.isEmpty) {
       throw StateError('Cannot save a patch for an empty list.');
@@ -81,6 +83,34 @@ class PatchRepositoryImpl implements PatchRepository {
   }
 
   @override
+  Future<RankingListPatch?> findDuplicatePatchForCurrentList(
+    String listId,
+  ) async {
+    final listCharacters = await _rankingListRepository.getRankedCharacters(
+      listId,
+    );
+
+    if (listCharacters.isEmpty) {
+      return null;
+    }
+
+    final currentCharacterIds = listCharacters
+        .map((rankedCharacter) => rankedCharacter.characterId)
+        .toList(growable: false);
+    final patches = await _localDataSource.getPatchesForList(listId);
+
+    for (final patch in patches) {
+      final entries = await _localDataSource.getPatchEntries(patch.id);
+
+      if (_hasSameCharacterOrder(currentCharacterIds, entries)) {
+        return patch;
+      }
+    }
+
+    return null;
+  }
+
+  @override
   Future<List<RankingListPatch>> getPatchesForList(String listId) {
     return _localDataSource.getPatchesForList(listId);
   }
@@ -118,5 +148,22 @@ class PatchRepositoryImpl implements PatchRepository {
           .map(RankingListPatchEntryModel.fromEntity)
           .toList(growable: false),
     );
+  }
+
+  bool _hasSameCharacterOrder(
+    List<String> currentCharacterIds,
+    List<RankingListPatchEntry> entries,
+  ) {
+    if (currentCharacterIds.length != entries.length) {
+      return false;
+    }
+
+    for (var index = 0; index < currentCharacterIds.length; index++) {
+      if (currentCharacterIds[index] != entries[index].characterId) {
+        return false;
+      }
+    }
+
+    return true;
   }
 }
