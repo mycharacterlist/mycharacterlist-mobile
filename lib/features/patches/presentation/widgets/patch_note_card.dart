@@ -9,6 +9,7 @@ class PatchNoteCard extends StatelessWidget {
     required this.version,
     required this.releaseDate,
     this.isEditMode = false,
+    this.isCurrentSnapshot = false,
     this.onPressed,
   });
 
@@ -16,6 +17,7 @@ class PatchNoteCard extends StatelessWidget {
   final String version;
   final String releaseDate;
   final bool isEditMode;
+  final bool isCurrentSnapshot;
 
   final VoidCallback? onPressed;
 
@@ -169,6 +171,19 @@ class PatchNoteCard extends StatelessWidget {
                     ],
                   ),
                 ),
+
+                if (isCurrentSnapshot)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 6, right: 4),
+                    child: Tooltip(
+                      message: 'Current patch',
+                      child: Icon(
+                        Icons.radio_button_checked,
+                        color: Color(0xFFE7D68A),
+                        size: 24,
+                      ),
+                    ),
+                  ),
 
                 Icon(
                   isEditMode ? Icons.edit_outlined : Icons.chevron_right,
