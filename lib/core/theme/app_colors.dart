@@ -41,4 +41,8 @@ abstract final class AppColors {
   static const addCharacterGradientEnd = Color(0xFF24114D);
 
   static const defaultListColor = Color(0xFF768AFD);
+
+  // InsidePatch page
+  static const InsidePatchAppBarBackground = Color(0xFF1D2A34);
+
 }

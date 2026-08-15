@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,10 +10,12 @@ import 'package:mycharacterlist/app/widgets/layout/app_appbar.dart';
 import 'package:mycharacterlist/app/widgets/feedback/app_loading_indicator.dart';
 import 'package:mycharacterlist/app/widgets/feedback/app_message_view.dart';
 import 'package:mycharacterlist/core/errors/app_messages.dart';
-import 'package:mycharacterlist/app/widgets/layout/background_stack.dart';
+import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
 import 'package:mycharacterlist/app/widgets/layout/framed_content_panel.dart';
+import 'package:mycharacterlist/app/widgets/layout/screen_scaffold.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/features/characters/character_providers.dart';
+import 'package:mycharacterlist/features/library/library_providers.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/grade_definition.dart';
 import 'package:mycharacterlist/features/characters/domain/entities/character_ranking_display.dart';
@@ -53,7 +56,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage> {
       orElse: () => false,
     );
 
-    return Scaffold(
+    return ScreenScaffold(
       appBar: CustomAppBar(
         title: 'Character page',
         backgroundColor: AppColors.characterAppBarBackground,
@@ -66,60 +69,59 @@ class _CharacterPageState extends ConsumerState<CharacterPage> {
                   await context.push(
                     AppRoutes.characterEditById(widget.characterId),
                   );
-                  ref.invalidate(characterByIdProvider(widget.characterId));
-                  ref.invalidate(
-                    characterRankingDisplaysProvider(widget.characterId),
+                  if (!context.mounted) {
+                    return;
+                  }
+                  await refreshLibraryAfterCharacterMutation(
+                    ref,
+                    characterId: widget.characterId,
                   );
                 },
               )
             : null,
       ),
-      body: BackgroundStack(
-        backgroundAssetPath: AppBackgroundAssets.characterPage,
-        children: [
-          FramedContentPanel(
-            frameAssetPath: AppBackgroundAssets.characterFrame,
-            child: characterAsync.when(
-              loading: () => const AppLoadingIndicator(),
-              error: (_, __) => const AppMessageView(
-                message: AppMessages.couldNotLoadCharacter,
-              ),
-              data: (character) {
-                if (character == null) {
-                  return const AppMessageView(
-                    message: AppMessages.characterNotFound,
-                  );
-                }
-
-                return gradeDefinitionsAsync.when(
-                  loading: () => const AppLoadingIndicator(),
-                  error: (_, __) => _CharacterContent(
-                    character: character,
-                    definitions: const [],
-                    rankings: rankingsAsync.valueOrNull ?? const [],
-                  ),
-                  data: (definitions) => rankingsAsync.when(
-                    loading: () => _CharacterContent(
-                      character: character,
-                      definitions: definitions,
-                      rankings: const [],
-                    ),
-                    error: (_, __) => _CharacterContent(
-                      character: character,
-                      definitions: definitions,
-                      rankings: const [],
-                    ),
-                    data: (rankings) => _CharacterContent(
-                      character: character,
-                      definitions: definitions,
-                      rankings: rankings,
-                    ),
-                  ),
-                );
-              },
-            ),
+      backgroundAssetPath: AppBackgroundAssets.characterPage,
+      child: FramedContentPanel(
+        frameAssetPath: AppBackgroundAssets.characterFrame,
+        child: characterAsync.when(
+          loading: () => const AppLoadingIndicator(),
+          error: (_, __) => const AppMessageView(
+            message: AppMessages.couldNotLoadCharacter,
           ),
-        ],
+          data: (character) {
+            if (character == null) {
+              return const AppMessageView(
+                message: AppMessages.characterNotFound,
+              );
+            }
+
+            return gradeDefinitionsAsync.when(
+              loading: () => const AppLoadingIndicator(),
+              error: (_, __) => _CharacterContent(
+                character: character,
+                definitions: const [],
+                rankings: rankingsAsync.valueOrNull ?? const [],
+              ),
+              data: (definitions) => rankingsAsync.when(
+                loading: () => _CharacterContent(
+                  character: character,
+                  definitions: definitions,
+                  rankings: const [],
+                ),
+                error: (_, __) => _CharacterContent(
+                  character: character,
+                  definitions: definitions,
+                  rankings: const [],
+                ),
+                data: (rankings) => _CharacterContent(
+                  character: character,
+                  definitions: definitions,
+                  rankings: rankings,
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -145,19 +147,26 @@ class _CharacterContent extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(
-              character.name,
-              textAlign: TextAlign.center,
-              textHeightBehavior: const TextHeightBehavior(
-                applyHeightToFirstAscent: false,
-                applyHeightToLastDescent: false,
+            child: GestureDetector(
+              onLongPress: () => _copyText(
+                context,
+                character.name,
+                label: 'character name',
               ),
-              style: const TextStyle(
-                fontSize: 36,
-                height: 1.0,
-                color: Colors.black,
-                fontFamily: 'DoublePicaREG',
-                fontWeight: FontWeight.bold,
+              child: Text(
+                character.name,
+                textAlign: TextAlign.center,
+                textHeightBehavior: const TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
+                style: const TextStyle(
+                  fontSize: 36,
+                  height: 1.0,
+                  color: Colors.black,
+                  fontFamily: 'DoublePicaREG',
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -189,5 +198,21 @@ class _CharacterContent extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _copyText(
+    BuildContext context,
+    String value, {
+    required String label,
+  }) async {
+    final text = value.trim();
+    if (text.isEmpty) {
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      AppSnackBar.showCentered(context, 'Copied $label');
+    }
   }
 }

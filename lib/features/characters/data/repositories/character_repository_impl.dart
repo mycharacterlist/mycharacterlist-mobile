@@ -199,6 +199,49 @@ class CharacterRepositoryImpl implements CharacterRepository {
     await _localFileStorage.clearDraftsFolder();
   }
 
+  @override
+  Future<void> updateCharacterGalleryImagePaths({
+    required String characterId,
+    required List<String> imagePaths,
+  }) async {
+    final character = await _localDataSource.getCharacterById(characterId);
+    if (character == null) {
+      throw StateError('Character not found.');
+    }
+
+    final previousPaths = character.galleryImagePaths.toSet();
+    final updatedPaths = imagePaths
+        .where((path) => path.trim().isNotEmpty)
+        .toList(growable: false);
+
+    await _localDataSource.saveCharacter(
+      CharacterModel.fromEntity(
+        character.copyWith(
+          galleryImagePaths: updatedPaths,
+          updatedAt: DateTime.now(),
+        ),
+      ),
+    );
+
+    final savedPaths = {
+      character.mainImagePath,
+      ...updatedPaths,
+    }.whereType<String>().toSet();
+
+    await _localFileStorage.deleteFiles(
+      previousPaths.difference(savedPaths).toList(),
+      characterFolder: character.id,
+    );
+
+    await _localFileStorage.syncCompressedManifest(
+      character.id,
+      [
+        character.mainImagePath,
+        ...updatedPaths,
+      ].whereType<String>(),
+    );
+  }
+
   void _validateFacts(Character character) {
     final keys = <String>{};
 

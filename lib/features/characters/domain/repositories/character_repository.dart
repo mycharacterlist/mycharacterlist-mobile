@@ -46,6 +46,11 @@ abstract interface class CharacterRepository {
 
   Future<void> saveCharacter(Character character);
 
+  Future<void> updateCharacterGalleryImagePaths({
+    required String characterId,
+    required List<String> imagePaths,
+  });
+
   Future<void> deleteCharacter(String id);
 
   Future<int> countCharactersWithSourceTitle(

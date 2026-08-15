@@ -9,6 +9,7 @@ class RankingListModel extends RankingList {
     super.description,
     super.showAvatars,
     super.colorValue,
+    super.listOrder,
   });
 
   factory RankingListModel.fromEntity(RankingList list) {
@@ -18,6 +19,7 @@ class RankingListModel extends RankingList {
       description: list.description,
       showAvatars: list.showAvatars,
       colorValue: list.colorValue,
+      listOrder: list.listOrder,
       createdAt: list.createdAt,
       updatedAt: list.updatedAt,
     );
@@ -30,6 +32,7 @@ class RankingListModel extends RankingList {
       description: json['description'] as String? ?? '',
       showAvatars: json['showAvatars'] as bool? ?? false,
       colorValue: json['colorValue'] as int? ?? RankingList.defaultColorValue,
+      listOrder: json['listOrder'] as int? ?? 0,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -42,6 +45,7 @@ class RankingListModel extends RankingList {
       description: data['description']! as String,
       showAvatars: (data['show_avatars']! as int) == 1,
       colorValue: data['color_value'] as int? ?? RankingList.defaultColorValue,
+      listOrder: data['list_order'] as int? ?? 0,
       createdAt: DateTime.parse(data['created_at']! as String),
       updatedAt: DateTime.parse(data['updated_at']! as String),
     );
@@ -54,6 +58,7 @@ class RankingListModel extends RankingList {
       'description': description,
       'showAvatars': showAvatars,
       'colorValue': colorValue,
+      'listOrder': listOrder,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -66,6 +71,7 @@ class RankingListModel extends RankingList {
       'description': description,
       'show_avatars': showAvatars ? 1 : 0,
       'color_value': colorValue,
+      'list_order': listOrder,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

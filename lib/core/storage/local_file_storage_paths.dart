@@ -29,28 +29,6 @@ class _LocalFileStoragePaths {
     return null;
   }
 
-  Future<void> forEachImageFileInDirectory(
-    Directory directory,
-    void Function(File file) onFile,
-  ) async {
-    if (!await directory.exists()) {
-      return;
-    }
-
-    await for (final entity in directory.list()) {
-      if (entity is! File) {
-        continue;
-      }
-
-      final fileName = p.basename(entity.path);
-      if (!StoragePathUtils.isImageFileName(fileName)) {
-        continue;
-      }
-
-      onFile(entity);
-    }
-  }
-
   Future<List<String>> _buildPathResolutionCandidates(
     String path, {
     String? characterFolder,

@@ -39,8 +39,12 @@ class _GalleryDropdownState extends State<GalleryDropdown> {
       return;
     }
 
+    FocusManager.instance.primaryFocus?.unfocus();
+
     final picker = ImagePicker();
     final images = await picker.pickMultiImage();
+
+    FocusManager.instance.primaryFocus?.unfocus();
 
     if (images.isEmpty || !mounted) {
       return;

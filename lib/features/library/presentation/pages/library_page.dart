@@ -17,7 +17,9 @@ import 'package:mycharacterlist/core/storage/app_disk_cache.dart';
 import 'package:mycharacterlist/core/presentation/feedback/app_snack_bar.dart';
 import 'package:mycharacterlist/core/theme/app_colors.dart';
 import 'package:mycharacterlist/core/theme/screen_app_bar_styles.dart';
+import 'package:mycharacterlist/features/compare/presentation/controllers/compare_controller.dart';
 import 'package:mycharacterlist/features/library/library_providers.dart';
+import 'package:mycharacterlist/features/patches/patch_providers.dart';
 import 'package:mycharacterlist/features/ranking_lists/ranking_list_providers.dart';
 import 'package:mycharacterlist/features/library/domain/entities/character_filters.dart';
 import 'package:mycharacterlist/features/library/presentation/widgets/library_widgets/Plus_button.dart';
@@ -99,14 +101,23 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
     context.pop();
   }
 
-  void _openPage(String route, {bool resetSearch = true}) {
+  Future<void> _openPage(String route, {bool resetSearch = true}) async {
     _unfocusSearch();
     if (resetSearch) {
       searchController.clear();
       filters = const CharacterFilters();
       _scheduleSearchReset();
     }
-    context.push(route);
+    await context.push(route);
+    if (!mounted) {
+      return;
+    }
+    await refreshLibraryAfterCharacterMutation(ref);
+  }
+
+  Future<void> _showCompareOptions() async {
+    _unfocusSearch();
+    await ref.read(compareControllerProvider).showCompareOptionsSheet(context);
   }
 
   Future<void> _importCharacters() async {
@@ -136,6 +147,9 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
       ref.invalidate(characterNameSuggestionsProvider);
       ref.invalidate(libraryCharactersProvider);
       ref.invalidate(rankingCharactersViewModelProvider);
+      ref.invalidate(rankingListPatchesProvider);
+      ref.invalidate(rankingListPatchByIdProvider);
+      ref.invalidate(patchEntriesProvider);
       await ref.read(listsViewModelProvider.notifier).loadLists();
       await ref.read(characterReferencesViewModelProvider.notifier).load();
 
@@ -289,6 +303,11 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
         backButtonColor: AppScreenAppBars.library.backButtonColor,
         titleColor: AppScreenAppBars.library.titleColor,
         onBackPressed: _leaveLibrary,
+        actionWidget: IconButton(
+          icon: const Icon(Icons.compare_arrows, color: Colors.white),
+          tooltip: 'Compare',
+          onPressed: _showCompareOptions,
+        ),
       ),
       bodyWrapper: (body) => GestureDetector(
         behavior: HitTestBehavior.translucent,
@@ -358,39 +377,47 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                             bottomMargin: 20,
                           ),
                         ),
-                        child: Scrollbar(
-                        thumbVisibility: true,
-                        controller: charactersScrollController,
-                        child: ListView.builder(
+                        child: RawScrollbar(
+                          thumbVisibility: true,
                           controller: charactersScrollController,
-                          padding: const EdgeInsets.only(top: 5),
-                          itemCount: state.characters.length +
-                              (state.isLoadingMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == state.characters.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: AppLoadingIndicator(),
+                          thickness: 5,
+                          radius: const Radius.circular(10),
+                          mainAxisMargin: 0,
+                          padding: EdgeInsets.zero,
+                          child: ListView.builder(
+                            controller: charactersScrollController,
+                            padding: const EdgeInsets.only(top: 5),
+                            itemCount: state.characters.length +
+                                (state.isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == state.characters.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: AppLoadingIndicator(),
+                                );
+                              }
+                              final character = state.characters[index];
+                              return LibraryCard(
+                                key: ValueKey(character.id),
+                                mainText: character.name,
+                                sideText: character.sourceTitle,
+                                index: index,
+                                onPressed: () => _openPage(
+                                  AppRoutes.characterById(character.id),
+                                  resetSearch: false,
+                                ),
+                                onEditPressed: () => _openPage(
+                                  AppRoutes.characterEditById(character.id),
+                                  resetSearch: false,
+                                ),
+                                bottomSpacing:
+                                    index == state.characters.length - 1
+                                        ? 0
+                                        : 10,
                               );
-                            }
-                            final character = state.characters[index];
-                            return LibraryCard(
-                              key: ValueKey(character.id),
-                              mainText: character.name,
-                              sideText: character.sourceTitle,
-                              index: index,
-                              onPressed: () => _openPage(
-                                AppRoutes.characterById(character.id),
-                                resetSearch: false,
-                              ),
-                              onEditPressed: () => _openPage(
-                                AppRoutes.characterEditById(character.id),
-                                resetSearch: false,
-                              ),
-                            );
-                          },
+                            },
+                          ),
                         ),
-                      ),
                     ),
               ),
             ),

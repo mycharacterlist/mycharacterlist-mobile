@@ -26,8 +26,12 @@ class _MainPhotoPickerState extends State<MainPhotoPicker> {
   static const _previewWidth = 150.0;
   static const _previewHeight = 190.0;
   Future<void> pickImage() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
+
+    FocusManager.instance.primaryFocus?.unfocus();
 
     if (image == null || !mounted) {
       return;

@@ -8,7 +8,9 @@ class AppBackgroundAssets {
   static const rankingList = 'assets/images/InsideListMain_bg.jpg';
   static const rankingListAlt = 'assets/images/InsideList2_bg.jpg';
   static const characterPage = 'assets/images/CharacterPage_bg.jpg';
+  static const gallery = 'assets/images/Gallery_bg.jpg';
   static const characterFrame = 'assets/images/cropped_rectangle.png';
+  static const patches = 'assets/images/InsidePatch_bg.jpg';
 
   static const all = [
     home,
@@ -18,6 +20,8 @@ class AppBackgroundAssets {
     rankingList,
     rankingListAlt,
     characterPage,
+    gallery,
     characterFrame,
+    patches,
   ];
 }

@@ -10,6 +10,7 @@ class LibraryCard extends StatelessWidget {
 
   final VoidCallback onPressed;
   final VoidCallback onEditPressed;
+  final double bottomSpacing;
 
   const LibraryCard({
     super.key,
@@ -20,12 +21,18 @@ class LibraryCard extends StatelessWidget {
 
     required this.onPressed,
     required this.onEditPressed,
+    this.bottomSpacing = 10,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      margin: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 10,
+        bottom: bottomSpacing,
+      ),
 
       height: 100,
 

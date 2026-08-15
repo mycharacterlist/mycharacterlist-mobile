@@ -9,7 +9,7 @@ import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked
 import 'package:mycharacterlist/features/ranking_lists/presentation/state/ranked_list_content.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/lists_view_model.dart';
 import 'package:mycharacterlist/features/ranking_lists/presentation/viewmodels/ranking_characters_view_model.dart';
-import 'package:mycharacterlist/features/ranking_lists/ranking_list_repository_providers.dart';
+import 'package:mycharacterlist/features/ranking_lists/data/repositories/ranking_list_repository_providers.dart';
 
 final libraryCharactersProvider = FutureProvider<List<Character>>((ref) {
   ref.keepAlive();

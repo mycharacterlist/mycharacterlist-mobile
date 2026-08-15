@@ -35,12 +35,28 @@ class RankingListRepositoryImpl implements RankingListRepository {
       throw StateError('Ranking list with this name already exists.');
     }
 
-    await _localDataSource.saveList(RankingListModel.fromEntity(list));
+    var listToSave = list;
+    if (listToSave.listOrder <= 0) {
+      var maxOrder = 0;
+      for (final item in lists) {
+        if (item.listOrder > maxOrder) {
+          maxOrder = item.listOrder;
+        }
+      }
+      listToSave = listToSave.copyWith(listOrder: maxOrder + 1);
+    }
+
+    await _localDataSource.saveList(RankingListModel.fromEntity(listToSave));
   }
 
   @override
   Future<void> deleteList(String id) {
     return _localDataSource.deleteList(id);
+  }
+
+  @override
+  Future<void> updateListOrder(List<String> orderedListIds) {
+    return _localDataSource.updateListOrder(orderedListIds);
   }
 
   @override

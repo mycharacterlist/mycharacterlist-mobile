@@ -91,42 +91,4 @@ class _LocalFileStorageDrafts {
       }
     }
   }
-
-  Future<void> clearUnreferencedDraftFiles(Set<String> referencedPaths) async {
-    final storageRoot = await _storage._storageRoot();
-    final draftsDirectory = Directory(
-      p.join(storageRoot.path, LocalFileStorage.draftsFolder),
-    );
-
-    if (!await draftsDirectory.exists()) {
-      return;
-    }
-
-    final referencedBasenames = <String>{};
-    for (final path in referencedPaths) {
-      if (path.trim().isEmpty) {
-        continue;
-      }
-
-      referencedBasenames.add(StoragePathUtils.basenameKey(path));
-
-      final resolved = await _storage.resolveExistingImagePath(path);
-      if (resolved != null) {
-        referencedBasenames.add(p.basename(resolved).toLowerCase());
-      }
-    }
-
-    await for (final entity in draftsDirectory.list()) {
-      if (entity is! File) {
-        continue;
-      }
-
-      final fileName = p.basename(entity.path).toLowerCase();
-      if (referencedBasenames.contains(fileName)) {
-        continue;
-      }
-
-      await entity.delete();
-    }
-  }
 }
