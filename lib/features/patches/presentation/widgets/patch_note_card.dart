@@ -45,7 +45,7 @@ class PatchNoteCard extends StatelessWidget {
             padding:
             const EdgeInsets.symmetric(
               horizontal: 10,
-              vertical: 8,
+              vertical: 10,
             ),
 
             decoration: BoxDecoration(
@@ -78,7 +78,7 @@ class PatchNoteCard extends StatelessWidget {
 
                 Container(
                   width: 48,
-                  height: 70,
+                  height: 78,
 
                   alignment: Alignment.center,
 
@@ -105,70 +105,68 @@ class PatchNoteCard extends StatelessWidget {
                 ),
 
                 Expanded(
-                  child:
-                  Transform.translate(
-                    offset:
-                    const Offset(0, -7),
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment
+                        .start,
 
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment
-                          .start,
+                    mainAxisAlignment:
+                    MainAxisAlignment
+                        .center,
 
-                      children: [
+                    children: [
 
-                        SizedBox(
-                          height: 44,
-                          child: MarqueeText(
-                            key: ValueKey('patch-$number-$version'),
-                            resetToken: number,
-                            text: version,
-                            style: const TextStyle(
-                              fontSize: 36,
-                              color: Colors.white,
-                              fontFamily: 'Jomolhari',
+                      SizedBox(
+                        height: 48,
+                        child: MarqueeText(
+                          key: ValueKey('patch-$number-$version'),
+                          resetToken: number,
+                          text: version,
+                          style: const TextStyle(
+                            fontSize: 36,
+                            color: Colors.white,
+                            fontFamily: 'Jomolhari',
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(
+                        height: 6,
+                      ),
+
+                      RichText(
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          children: [
+
+                            TextSpan(
+                              text:
+                              'Release date: ',
+
+                              style:
+                              const TextStyle(
+                                fontSize: 22,
+                                color: Colors.black,
+                                fontFamily: 'JosefinSlab',
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ),
 
-                        const SizedBox(
-                          height: 2,
-                        ),
+                            TextSpan(
+                              text: releaseDate,
 
-                        RichText(
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          text: TextSpan(
-                            children: [
-
-                              TextSpan(
-                                text:
-                                'Release date: ',
-
-                                style:
-                                const TextStyle(
-                                  fontSize: 22,
-                                  color: Colors.black,
-                                  fontFamily: 'JosefinSlab',
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              style:
+                              const TextStyle(
+                                fontSize: 22,
+                                color: Colors.black,
+                                fontFamily: 'JosefinSlab',
                               ),
-
-                              TextSpan(
-                                text: releaseDate,
-
-                                style:
-                                const TextStyle(
-                                  fontSize: 22,
-                                  color: Colors.black,
-                                  fontFamily: 'JosefinSlab',
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
 
