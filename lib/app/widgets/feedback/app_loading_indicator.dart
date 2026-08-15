@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:mycharacterlist/core/theme/app_typography.dart';
-
 class AppLoadingIndicator extends StatelessWidget {
   const AppLoadingIndicator({
     super.key,
