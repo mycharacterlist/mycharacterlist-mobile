@@ -377,39 +377,47 @@ class _LibraryPageState extends ConsumerState<LibraryPage> {
                             bottomMargin: 20,
                           ),
                         ),
-                        child: Scrollbar(
-                        thumbVisibility: true,
-                        controller: charactersScrollController,
-                        child: ListView.builder(
+                        child: RawScrollbar(
+                          thumbVisibility: true,
                           controller: charactersScrollController,
-                          padding: const EdgeInsets.only(top: 5),
-                          itemCount: state.characters.length +
-                              (state.isLoadingMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == state.characters.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: AppLoadingIndicator(),
+                          thickness: 5,
+                          radius: const Radius.circular(10),
+                          mainAxisMargin: 0,
+                          padding: EdgeInsets.zero,
+                          child: ListView.builder(
+                            controller: charactersScrollController,
+                            padding: const EdgeInsets.only(top: 5),
+                            itemCount: state.characters.length +
+                                (state.isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == state.characters.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: AppLoadingIndicator(),
+                                );
+                              }
+                              final character = state.characters[index];
+                              return LibraryCard(
+                                key: ValueKey(character.id),
+                                mainText: character.name,
+                                sideText: character.sourceTitle,
+                                index: index,
+                                onPressed: () => _openPage(
+                                  AppRoutes.characterById(character.id),
+                                  resetSearch: false,
+                                ),
+                                onEditPressed: () => _openPage(
+                                  AppRoutes.characterEditById(character.id),
+                                  resetSearch: false,
+                                ),
+                                bottomSpacing:
+                                    index == state.characters.length - 1
+                                        ? 0
+                                        : 10,
                               );
-                            }
-                            final character = state.characters[index];
-                            return LibraryCard(
-                              key: ValueKey(character.id),
-                              mainText: character.name,
-                              sideText: character.sourceTitle,
-                              index: index,
-                              onPressed: () => _openPage(
-                                AppRoutes.characterById(character.id),
-                                resetSearch: false,
-                              ),
-                              onEditPressed: () => _openPage(
-                                AppRoutes.characterEditById(character.id),
-                                resetSearch: false,
-                              ),
-                            );
-                          },
+                            },
+                          ),
                         ),
-                      ),
                     ),
               ),
             ),
