@@ -33,7 +33,7 @@ class _CompareCharactersPageState
         title: 'Compare page',
         backgroundColor: const Color(0xFF0D0F24),
         titleColor: const Color(0xFFFDFFCD),
-        backButtonColor: Colors.black,
+        backButtonColor: const Color(0xFFFDFFCD),
       ),
 
       body: Stack(
