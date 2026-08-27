@@ -92,6 +92,8 @@ flutter:
     - assets/images/Gallery_bg.jpg
     - assets/images/Patches_bg.jpg
     - assets/images/InsidePatch_bg.jpg
+    - assets/images/Compare_bg.jpg
+    - assets/images/cropped_rectangle_gray.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -162,6 +164,12 @@ flutter:
     - family: Jomolhari
       fonts:
         - asset: assets/fonts/Jomolhari-Regular.ttf
+    - family: Jura
+      fonts:
+        - asset: assets/fonts/Jura.ttf
+    - family: ImFellEnglishSC
+      fonts:
+        - asset: assets/fonts/ImFeENsc28P.ttf
 
 
 
